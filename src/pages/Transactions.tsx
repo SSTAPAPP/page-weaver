@@ -1,10 +1,11 @@
 import { useMemo, useState } from "react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { Search, ArrowUpCircle, ArrowDownCircle, CreditCard } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Search, ArrowUpCircle, ArrowDownCircle, CreditCard, ChevronLeft, ChevronRight } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -28,10 +29,14 @@ const paymentMethodMap = {
   cash: "现金",
 };
 
+const PAGE_SIZE = 8;
+const MAX_PAGES = 5;
+
 export default function Transactions() {
   const { transactions } = useStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
@@ -46,12 +51,34 @@ export default function Transactions() {
     });
   }, [transactions, searchQuery, typeFilter]);
 
+  // 分页逻辑
+  const totalPages = Math.min(Math.ceil(filteredTransactions.length / PAGE_SIZE), MAX_PAGES);
+  const startIndex = (currentPage - 1) * PAGE_SIZE;
+  const endIndex = startIndex + PAGE_SIZE;
+  const paginatedTransactions = filteredTransactions.slice(startIndex, endIndex);
+
+  // 当筛选条件变化时重置页码
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchQuery, typeFilter]);
+
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">交易流水</h1>
-        <p className="text-muted-foreground">共 {transactions.length} 条记录</p>
+        <p className="text-muted-foreground">
+          共 {filteredTransactions.length} 条记录
+          {filteredTransactions.length > PAGE_SIZE * MAX_PAGES && (
+            <span className="ml-2 text-sm">（显示前 {PAGE_SIZE * MAX_PAGES} 条）</span>
+          )}
+        </p>
       </div>
 
       {/* Filters */}
@@ -82,7 +109,7 @@ export default function Transactions() {
       </Card>
 
       {/* Transaction List */}
-      {filteredTransactions.length === 0 ? (
+      {paginatedTransactions.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <CreditCard className="mb-4 h-16 w-16 text-muted-foreground/50" />
@@ -91,57 +118,96 @@ export default function Transactions() {
           </CardContent>
         </Card>
       ) : (
-        <div className="space-y-3">
-          {filteredTransactions.map((tx) => {
-            const typeInfo = typeMap[tx.type];
-            const TypeIcon = typeInfo.icon;
+        <>
+          <div className="space-y-3">
+            {paginatedTransactions.map((tx) => {
+              const typeInfo = typeMap[tx.type];
+              const TypeIcon = typeInfo.icon;
 
-            return (
-              <Card key={tx.id}>
-                <CardContent className="flex items-center justify-between p-4">
-                  <div className="flex items-center gap-4">
+              return (
+                <Card key={tx.id}>
+                  <CardContent className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-4">
+                      <div
+                        className={`flex h-10 w-10 items-center justify-center rounded-full bg-muted ${typeInfo.color}`}
+                      >
+                        <TypeIcon className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{tx.description}</p>
+                          <Badge variant="secondary" className="text-xs">
+                            {typeInfo.label}
+                          </Badge>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                          <span>{tx.memberName}</span>
+                          <span>•</span>
+                          <span>
+                            {format(new Date(tx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
+                          </span>
+                          {tx.paymentMethod && (
+                            <>
+                              <span>•</span>
+                              <span>{paymentMethodMap[tx.paymentMethod]}</span>
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    </div>
                     <div
-                      className={`flex h-10 w-10 items-center justify-center rounded-full bg-muted ${typeInfo.color}`}
+                      className={`text-lg font-semibold ${
+                        tx.type === "recharge" || tx.type === "refund"
+                          ? "text-chart-2"
+                          : "text-destructive"
+                      }`}
                     >
-                      <TypeIcon className="h-5 w-5" />
+                      {tx.type === "recharge" || tx.type === "refund" ? "+" : "-"}¥
+                      {tx.amount.toFixed(2)}
                     </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <p className="font-medium">{tx.description}</p>
-                        <Badge variant="secondary" className="text-xs">
-                          {typeInfo.label}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <span>{tx.memberName}</span>
-                        <span>•</span>
-                        <span>
-                          {format(new Date(tx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
-                        </span>
-                        {tx.paymentMethod && (
-                          <>
-                            <span>•</span>
-                            <span>{paymentMethodMap[tx.paymentMethod]}</span>
-                          </>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div
-                    className={`text-lg font-semibold ${
-                      tx.type === "recharge" || tx.type === "refund"
-                        ? "text-chart-2"
-                        : "text-destructive"
-                    }`}
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                上一页
+              </Button>
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <Button
+                    key={page}
+                    variant={currentPage === page ? "default" : "outline"}
+                    size="sm"
+                    className="w-10"
+                    onClick={() => goToPage(page)}
                   >
-                    {tx.type === "recharge" || tx.type === "refund" ? "+" : "-"}¥
-                    {tx.amount.toFixed(2)}
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                    {page}
+                  </Button>
+                ))}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+              >
+                下一页
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

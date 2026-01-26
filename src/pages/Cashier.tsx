@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Search, ShoppingCart, Trash2, CreditCard, Wallet, AlertCircle } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Search, ShoppingCart, Trash2, CreditCard, Wallet, AlertCircle, UserX } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,9 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
 import { Member, Service, MemberCard } from "@/types";
+import { matchMemberSearch } from "@/lib/pinyin";
+import { CheckoutConfirmDialog } from "@/components/dialogs/CheckoutConfirmDialog";
 
 interface CartItem {
   service: Service;
@@ -20,7 +23,7 @@ interface CartItem {
 export default function Cashier() {
   const { toast } = useToast();
   const {
-    searchMembers,
+    members,
     services,
     deductBalance,
     deductCard,
@@ -30,31 +33,27 @@ export default function Cashier() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
-  const [searchResults, setSearchResults] = useState<Member[]>([]);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [paymentMethod, setPaymentMethod] = useState<"wechat" | "alipay" | "cash">("wechat");
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
-  const handleSearch = () => {
-    if (searchQuery.length < 2) return;
-    const results = searchMembers(searchQuery);
-    setSearchResults(results);
-  };
+  const isWalkIn = !selectedMember;
+
+  // 实时搜索会员
+  const searchResults = useMemo(() => {
+    if (searchQuery.length < 1) return [];
+    return members.filter((m) => matchMemberSearch(m.name, m.phone, searchQuery)).slice(0, 5);
+  }, [members, searchQuery]);
 
   const selectMember = (member: Member) => {
     setSelectedMember(member);
-    setSearchResults([]);
     setSearchQuery("");
     setCart([]);
   };
 
   const addToCart = (service: Service) => {
-    if (!selectedMember) {
-      toast({ title: "请先选择会员", variant: "destructive" });
-      return;
-    }
-
-    // 检查是否有对应服务的次卡
-    const availableCard = selectedMember.cards.find(
+    // 检查是否有对应服务的次卡（仅会员）
+    const availableCard = selectedMember?.cards.find(
       (card) => card.services.includes(service.id) && card.remainingCount > 0
     );
 
@@ -93,7 +92,7 @@ export default function Cashier() {
       }
     });
 
-    const balanceDeduct = Math.min(selectedMember?.balance || 0, needPayTotal);
+    const balanceDeduct = isWalkIn ? 0 : Math.min(selectedMember?.balance || 0, needPayTotal);
     const cashNeed = needPayTotal - balanceDeduct;
 
     return { cardDeductTotal, balanceDeduct, cashNeed, total: cardDeductTotal + needPayTotal };
@@ -101,78 +100,107 @@ export default function Cashier() {
 
   const { cardDeductTotal, balanceDeduct, cashNeed, total } = calculatePayment();
 
-  const handleCheckout = () => {
-    if (!selectedMember || cart.length === 0) {
+  const handleCheckoutClick = () => {
+    if (cart.length === 0) {
       toast({ title: "请添加服务项目", variant: "destructive" });
       return;
     }
+    setConfirmDialogOpen(true);
+  };
 
-    // 处理次卡扣除
-    cart.forEach((item) => {
-      if (item.useCard && item.card) {
-        deductCard(selectedMember.id, item.card.id);
+  const handleConfirmCheckout = () => {
+    // 处理次卡扣除（仅会员）
+    if (selectedMember) {
+      cart.forEach((item) => {
+        if (item.useCard && item.card) {
+          deductCard(selectedMember.id, item.card.id);
+          addTransaction({
+            memberId: selectedMember.id,
+            memberName: selectedMember.name,
+            type: "card_deduct",
+            amount: item.service.price,
+            description: `${item.service.name} (次卡扣除)`,
+          });
+        }
+      });
+
+      // 处理余额扣除
+      if (balanceDeduct > 0) {
+        deductBalance(selectedMember.id, balanceDeduct);
         addTransaction({
           memberId: selectedMember.id,
           memberName: selectedMember.name,
-          type: "card_deduct",
-          amount: item.service.price,
-          description: `${item.service.name} (次卡扣除)`,
+          type: "consume",
+          amount: balanceDeduct,
+          paymentMethod: "balance",
+          description: `余额支付 ¥${balanceDeduct}`,
         });
       }
-    });
 
-    // 处理余额扣除
-    if (balanceDeduct > 0) {
-      deductBalance(selectedMember.id, balanceDeduct);
-      addTransaction({
+      // 处理现金/在线支付
+      if (cashNeed > 0) {
+        addTransaction({
+          memberId: selectedMember.id,
+          memberName: selectedMember.name,
+          type: "consume",
+          amount: cashNeed,
+          paymentMethod,
+          description: `${paymentMethod === "wechat" ? "微信" : paymentMethod === "alipay" ? "支付宝" : "现金"}支付 ¥${cashNeed}`,
+        });
+      }
+
+      // 添加订单
+      addOrder({
         memberId: selectedMember.id,
         memberName: selectedMember.name,
-        type: "consume",
-        amount: balanceDeduct,
-        paymentMethod: "balance",
-        description: `余额支付 ¥${balanceDeduct}`,
+        services: cart.map((item) => ({
+          serviceId: item.service.id,
+          serviceName: item.service.name,
+          price: item.service.price,
+          useCard: item.useCard,
+          cardId: item.card?.id,
+        })),
+        totalAmount: total,
+        payments: [
+          ...(cardDeductTotal > 0 ? [{ method: "card" as const, amount: cardDeductTotal }] : []),
+          ...(balanceDeduct > 0 ? [{ method: "balance" as const, amount: balanceDeduct }] : []),
+          ...(cashNeed > 0 ? [{ method: paymentMethod, amount: cashNeed }] : []),
+        ],
       });
-    }
-
-    // 处理现金/在线支付
-    if (cashNeed > 0) {
+    } else {
+      // 散客结账 - 只记录交易和订单
       addTransaction({
-        memberId: selectedMember.id,
-        memberName: selectedMember.name,
+        memberId: "walk-in",
+        memberName: "散客",
         type: "consume",
-        amount: cashNeed,
+        amount: total,
         paymentMethod,
-        description: `${paymentMethod === "wechat" ? "微信" : paymentMethod === "alipay" ? "支付宝" : "现金"}支付 ¥${cashNeed}`,
+        description: `散客消费 - ${cart.map(c => c.service.name).join(", ")}`,
+      });
+
+      addOrder({
+        memberId: "walk-in",
+        memberName: "散客",
+        services: cart.map((item) => ({
+          serviceId: item.service.id,
+          serviceName: item.service.name,
+          price: item.service.price,
+          useCard: false,
+        })),
+        totalAmount: total,
+        payments: [{ method: paymentMethod, amount: total }],
       });
     }
-
-    // 添加订单
-    addOrder({
-      memberId: selectedMember.id,
-      memberName: selectedMember.name,
-      services: cart.map((item) => ({
-        serviceId: item.service.id,
-        serviceName: item.service.name,
-        price: item.service.price,
-        useCard: item.useCard,
-        cardId: item.card?.id,
-      })),
-      totalAmount: total,
-      payments: [
-        ...(cardDeductTotal > 0 ? [{ method: "card" as const, amount: cardDeductTotal }] : []),
-        ...(balanceDeduct > 0 ? [{ method: "balance" as const, amount: balanceDeduct }] : []),
-        ...(cashNeed > 0 ? [{ method: paymentMethod, amount: cashNeed }] : []),
-      ],
-    });
 
     toast({
       title: "结账成功",
-      description: `共消费 ¥${total}`,
+      description: `${isWalkIn ? "散客" : selectedMember?.name}消费 ¥${total}`,
     });
 
     // 重置
     setSelectedMember(null);
     setCart([]);
+    setConfirmDialogOpen(false);
   };
 
   return (
@@ -189,7 +217,7 @@ export default function Cashier() {
           {/* 会员搜索 */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">选择会员</CardTitle>
+              <CardTitle className="text-base">选择顾客</CardTitle>
             </CardHeader>
             <CardContent>
               {selectedMember ? (
@@ -215,24 +243,26 @@ export default function Cashier() {
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2 rounded-lg bg-muted/50 p-3 text-sm">
+                    <UserX className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-muted-foreground">当前为散客模式，可搜索选择会员</span>
+                  </div>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="输入手机号或姓名搜索"
+                      placeholder="输入姓名拼音首字母/手机号搜索会员"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                      className="pl-10"
                     />
-                    <Button variant="secondary" onClick={handleSearch}>
-                      <Search className="h-4 w-4" />
-                    </Button>
                   </div>
                   {searchResults.length > 0 && (
-                    <div className="max-h-48 space-y-2 overflow-auto">
+                    <div className="max-h-48 space-y-2 overflow-auto rounded-lg border border-border">
                       {searchResults.map((member) => (
                         <div
                           key={member.id}
                           onClick={() => selectMember(member)}
-                          className="cursor-pointer rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
+                          className="cursor-pointer p-3 transition-colors hover:bg-muted/50"
                         >
                           <div className="flex items-center justify-between">
                             <div>
@@ -297,6 +327,11 @@ export default function Cashier() {
               <CardTitle className="flex items-center gap-2 text-base">
                 <ShoppingCart className="h-4 w-4" />
                 结算清单
+                {isWalkIn && (
+                  <Badge variant="outline" className="ml-auto">
+                    散客
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -306,6 +341,16 @@ export default function Cashier() {
                 </p>
               ) : (
                 <>
+                  {/* 散客提示 */}
+                  {isWalkIn && (
+                    <Alert>
+                      <UserX className="h-4 w-4" />
+                      <AlertDescription>
+                        当前为散客结账，无法使用会员余额和次卡抵扣
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
                   <div className="space-y-2">
                     {cart.map((item, index) => (
                       <div
@@ -324,7 +369,7 @@ export default function Cashier() {
                               ¥{item.service.price}
                             </p>
                           )}
-                          {item.card && (
+                          {item.card && !isWalkIn && (
                             <Button
                               variant="link"
                               size="sm"
@@ -369,9 +414,16 @@ export default function Cashier() {
                       </div>
                     )}
                     {cashNeed > 0 && (
-                      <div className="flex justify-between font-medium">
-                        <span>需支付</span>
-                        <span className="text-lg">¥{cashNeed}</span>
+                      <div className="rounded-lg bg-primary/10 p-3">
+                        <div className="flex justify-between font-medium">
+                          <span>需补差价</span>
+                          <span className="text-lg text-primary">¥{cashNeed}</span>
+                        </div>
+                        {!isWalkIn && balanceDeduct > 0 && (
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            余额不足，需额外支付 ¥{cashNeed}
+                          </p>
+                        )}
                       </div>
                     )}
                   </div>
@@ -413,7 +465,7 @@ export default function Cashier() {
                     </div>
                   )}
 
-                  <Button className="w-full" size="lg" onClick={handleCheckout}>
+                  <Button className="w-full" size="lg" onClick={handleCheckoutClick}>
                     确认结账 ¥{total}
                   </Button>
                 </>
@@ -422,6 +474,27 @@ export default function Cashier() {
           </Card>
         </div>
       </div>
+
+      {/* 结账确认弹窗 */}
+      <CheckoutConfirmDialog
+        open={confirmDialogOpen}
+        onOpenChange={setConfirmDialogOpen}
+        onConfirm={handleConfirmCheckout}
+        isWalkIn={isWalkIn}
+        memberName={selectedMember?.name}
+        memberBalance={selectedMember?.balance}
+        balanceAfter={(selectedMember?.balance || 0) - balanceDeduct}
+        services={cart.map((item) => ({
+          name: item.service.name,
+          price: item.service.price,
+          useCard: item.useCard,
+        }))}
+        cardDeductTotal={cardDeductTotal}
+        balanceDeduct={balanceDeduct}
+        cashNeed={cashNeed}
+        total={total}
+        paymentMethod={paymentMethod}
+      />
     </div>
   );
 }

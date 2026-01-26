@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Search, UserPlus, Phone, CreditCard } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -8,15 +8,20 @@ import { useStore } from "@/stores/useStore";
 import { QuickMemberDialog } from "@/components/dialogs/QuickMemberDialog";
 import { QuickRechargeDialog } from "@/components/dialogs/QuickRechargeDialog";
 import { MemberDetailSheet } from "@/components/sheets/MemberDetailSheet";
+import { matchMemberSearch } from "@/lib/pinyin";
 
 export default function Members() {
-  const { members, searchMembers } = useStore();
+  const { members } = useStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [memberDialogOpen, setMemberDialogOpen] = useState(false);
   const [rechargeDialogOpen, setRechargeDialogOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
-  const filteredMembers = searchQuery ? searchMembers(searchQuery) : members;
+  // 实时搜索 - 支持拼音首字母和手机号
+  const filteredMembers = useMemo(() => {
+    if (!searchQuery) return members;
+    return members.filter((m) => matchMemberSearch(m.name, m.phone, searchQuery));
+  }, [members, searchQuery]);
 
   return (
     <div className="space-y-6">
@@ -41,7 +46,7 @@ export default function Members() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="输入手机号或姓名搜索会员..."
+          placeholder="输入姓名拼音首字母（如：李安全输入laq）或手机号搜索..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
@@ -53,8 +58,12 @@ export default function Members() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <UserPlus className="mb-4 h-16 w-16 text-muted-foreground/50" />
-            <p className="text-lg font-medium">暂无会员</p>
-            <p className="text-muted-foreground">点击"快速开卡"添加第一位会员</p>
+            <p className="text-lg font-medium">
+              {searchQuery ? "未找到匹配的会员" : "暂无会员"}
+            </p>
+            <p className="text-muted-foreground">
+              {searchQuery ? "请尝试其他搜索条件" : '点击"快速开卡"添加第一位会员'}
+            </p>
           </CardContent>
         </Card>
       ) : (

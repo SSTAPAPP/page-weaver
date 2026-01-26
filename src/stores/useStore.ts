@@ -44,6 +44,13 @@ interface Store {
   orders: Order[];
   addOrder: (order: Omit<Order, 'id' | 'createdAt'>) => void;
   
+  // 设置
+  adminPassword: string;
+  setAdminPassword: (password: string) => void;
+  
+  // 删除会员
+  deleteMember: (id: string) => void;
+  
   // 统计
   getTodayStats: () => {
     revenue: number;
@@ -234,6 +241,17 @@ export const useStore = create<Store>()(
             { ...order, id: generateId(), createdAt: new Date() },
             ...state.orders,
           ],
+        }));
+      },
+
+      // 设置
+      adminPassword: '123456',
+      setAdminPassword: (password) => set({ adminPassword: password }),
+      
+      // 删除会员
+      deleteMember: (id) => {
+        set((state) => ({
+          members: state.members.filter((m) => m.id !== id),
         }));
       },
 
