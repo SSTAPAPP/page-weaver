@@ -10,6 +10,7 @@ import {
   FileText,
   ChevronLeft,
   ChevronRight,
+  Settings,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
@@ -17,12 +18,13 @@ import { Button } from "@/components/ui/button";
 
 const menuItems = [
   { title: "仪表盘", url: "/", icon: LayoutDashboard },
-  { title: "会员管理", url: "/members", icon: Users },
   { title: "收银台", url: "/cashier", icon: ShoppingCart },
+  { title: "会员管理", url: "/members", icon: Users },
   { title: "预约管理", url: "/appointments", icon: Calendar },
   { title: "服务管理", url: "/services", icon: Scissors },
   { title: "数据报表", url: "/reports", icon: BarChart3 },
   { title: "交易流水", url: "/transactions", icon: FileText },
+  { title: "设置", url: "/settings", icon: Settings },
 ];
 
 export function AppSidebar() {
