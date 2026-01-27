@@ -1,8 +1,17 @@
 import { useMemo } from "react";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { TrendingUp, TrendingDown, Wallet, CreditCard, Users, Calendar } from "lucide-react";
+import { TrendingUp, Wallet, CreditCard, Users, HelpCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { StatCard } from "@/components/ui/stat-card";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Badge } from "@/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useStore } from "@/stores/useStore";
 import {
   LineChart,
@@ -10,7 +19,7 @@ import {
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip,
+  Tooltip as RechartsTooltip,
   ResponsiveContainer,
   BarChart,
   Bar,
@@ -18,7 +27,7 @@ import {
 } from "recharts";
 
 export default function Reports() {
-  const { transactions, members, appointments, getTodayStats } = useStore();
+  const { transactions, members, getTodayStats } = useStore();
   const todayStats = getTodayStats();
 
   // 计算30天趋势数据
@@ -97,151 +106,210 @@ export default function Reports() {
     },
     {
       title: "会员总数",
-      value: members.length,
+      value: members.length.toString(),
       total: `今日新增: ${todayStats.newMembers}`,
       icon: Users,
       color: "text-chart-4",
     },
   ];
 
+  const hasData = transactions.length > 0;
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">数据报表</h1>
-        <p className="text-muted-foreground">经营数据分析</p>
-      </div>
+      <PageHeader
+        title="数据报表"
+        description="经营数据分析"
+      >
+        <Badge variant="outline" className="font-normal">
+          近30天
+        </Badge>
+      </PageHeader>
 
       {/* Stats Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (
-          <Card key={stat.title}>
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">
-                {stat.title}
-              </CardTitle>
-              <stat.icon className={`h-4 w-4 ${stat.color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stat.value}</div>
-              <p className="text-xs text-muted-foreground">{stat.total}</p>
-            </CardContent>
-          </Card>
+          <StatCard
+            key={stat.title}
+            title={stat.title}
+            value={stat.value}
+            description={stat.total}
+            icon={stat.icon}
+            iconColor={stat.color}
+          />
         ))}
       </div>
 
-      {/* Charts */}
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* 收入趋势 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">30天收入趋势</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis
-                    dataKey="date"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    className="fill-muted-foreground"
-                  />
-                  <YAxis
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `¥${value}`}
-                    className="fill-muted-foreground"
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "var(--radius)",
-                    }}
-                    formatter={(value: number) => [`¥${value}`, ""]}
-                  />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="实收"
-                    stroke="hsl(var(--chart-1))"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="充值"
-                    stroke="hsl(var(--chart-2))"
-                    strokeWidth={2}
-                    dot={false}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
+      {!hasData ? (
+        <EmptyState
+          icon={TrendingUp}
+          title="暂无数据"
+          description="产生交易后将自动生成报表"
+        />
+      ) : (
+        <>
+          {/* Charts */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* 收入趋势 */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  30天收入趋势
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>实收：现金/微信/支付宝</p>
+                      <p>充值：储值卡/次卡入账</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={trendData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis
+                        dataKey="date"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        className="fill-muted-foreground"
+                      />
+                      <YAxis
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(value) => `¥${value}`}
+                        className="fill-muted-foreground"
+                      />
+                      <RechartsTooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "var(--radius)",
+                        }}
+                        formatter={(value: number) => [`¥${value}`, ""]}
+                      />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="实收"
+                        stroke="hsl(var(--chart-1))"
+                        strokeWidth={2}
+                        dot={false}
+                        activeDot={{ r: 4 }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="充值"
+                        stroke="hsl(var(--chart-2))"
+                        strokeWidth={2}
+                        dot={false}
+                        activeDot={{ r: 4 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
 
-        {/* 消耗趋势 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">30天消耗趋势</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={trendData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis
-                    dataKey="date"
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    className="fill-muted-foreground"
-                  />
-                  <YAxis
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `¥${value}`}
-                    className="fill-muted-foreground"
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "hsl(var(--card))",
-                      border: "1px solid hsl(var(--border))",
-                      borderRadius: "var(--radius)",
-                    }}
-                    formatter={(value: number) => [`¥${value}`, ""]}
-                  />
-                  <Bar dataKey="消耗" fill="hsl(var(--chart-3))" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            {/* 消耗趋势 */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-base">
+                  30天消耗趋势
+                  <Tooltip>
+                    <TooltipTrigger>
+                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>消耗：余额+次卡实际服务金额</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-[300px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={trendData}>
+                      <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                      <XAxis
+                        dataKey="date"
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        className="fill-muted-foreground"
+                      />
+                      <YAxis
+                        fontSize={12}
+                        tickLine={false}
+                        axisLine={false}
+                        tickFormatter={(value) => `¥${value}`}
+                        className="fill-muted-foreground"
+                      />
+                      <RechartsTooltip
+                        contentStyle={{
+                          backgroundColor: "hsl(var(--card))",
+                          border: "1px solid hsl(var(--border))",
+                          borderRadius: "var(--radius)",
+                        }}
+                        formatter={(value: number) => [`¥${value}`, ""]}
+                      />
+                      <Bar
+                        dataKey="消耗"
+                        fill="hsl(var(--chart-3))"
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-      {/* 说明 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">指标说明</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2 text-sm text-muted-foreground">
-          <p>
-            <strong>实收金额：</strong>真正进账的钱（现金+微信+支付宝），会员余额扣费不属于实收。
-          </p>
-          <p>
-            <strong>充值金额：</strong>今天卖了多少储值卡/次卡入账的钱。
-          </p>
-          <p>
-            <strong>消耗金额：</strong>会员用了多少余额或次卡，反映店里的实际服务量。
-          </p>
-        </CardContent>
-      </Card>
+          {/* 说明 */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">指标说明</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="rounded-lg bg-muted/50 p-4">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-chart-1" />
+                    <p className="font-medium">实收金额</p>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    真正进账的钱（现金+微信+支付宝），会员余额扣费不属于实收
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-chart-2" />
+                    <p className="font-medium">充值金额</p>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    卖了多少储值卡/次卡入账的钱
+                  </p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4">
+                  <div className="flex items-center gap-2">
+                    <div className="h-3 w-3 rounded-full bg-chart-3" />
+                    <p className="font-medium">消耗金额</p>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    会员用了多少余额或次卡，反映店里的实际服务量
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
