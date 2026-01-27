@@ -134,6 +134,16 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
           {/* 基本信息 */}
           <div className="grid gap-4">
             <div className="space-y-2">
+              <Label htmlFor="name">姓名/昵称 *</Label>
+              <Input
+                id="name"
+                placeholder="请输入姓名"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+              />
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="phone">手机号 *</Label>
               <Input
                 id="phone"
@@ -141,16 +151,6 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
                 value={phone}
                 onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
                 className="font-mono text-lg"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="name">姓名/昵称 *</Label>
-              <Input
-                id="name"
-                placeholder="请输入姓名"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
               />
             </div>
 
