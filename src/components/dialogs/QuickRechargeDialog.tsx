@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,9 +17,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { FormField } from "@/components/ui/form-field";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
-import { Search } from "lucide-react";
+import { Search, User, CreditCard, Wallet } from "lucide-react";
+import { matchMemberSearch } from "@/lib/pinyin";
 
 interface QuickRechargeDialogProps {
   open: boolean;
@@ -28,8 +34,7 @@ interface QuickRechargeDialogProps {
 export function QuickRechargeDialog({ open, onOpenChange }: QuickRechargeDialogProps) {
   const { toast } = useToast();
   const {
-    searchMembers,
-    getMemberByPhone,
+    members,
     rechargeMember,
     addCardToMember,
     cardTemplates,
@@ -38,87 +43,100 @@ export function QuickRechargeDialog({ open, onOpenChange }: QuickRechargeDialogP
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMemberId, setSelectedMemberId] = useState("");
-  const [searchResults, setSearchResults] = useState<ReturnType<typeof searchMembers>>([]);
   const [type, setType] = useState<"balance" | "card">("balance");
   const [rechargeAmount, setRechargeAmount] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"wechat" | "alipay" | "cash">("wechat");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleSearch = () => {
-    if (searchQuery.length < 2) return;
-    const results = searchMembers(searchQuery);
-    setSearchResults(results);
-  };
+  // 实时搜索
+  const searchResults = useMemo(() => {
+    if (searchQuery.length < 1) return [];
+    return members.filter((m) => matchMemberSearch(m.name, m.phone, searchQuery)).slice(0, 5);
+  }, [members, searchQuery]);
 
-  const selectedMember = searchResults.find((m) => m.id === selectedMemberId);
+  const selectedMember = members.find((m) => m.id === selectedMemberId);
+  const selectedCard = cardTemplates.find((t) => t.id === selectedTemplate);
 
   const resetForm = () => {
     setSearchQuery("");
     setSelectedMemberId("");
-    setSearchResults([]);
     setType("balance");
     setRechargeAmount("");
     setSelectedTemplate("");
     setPaymentMethod("wechat");
+    setErrors({});
   };
 
-  const handleSubmit = () => {
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
     if (!selectedMember) {
-      toast({
-        title: "请选择会员",
-        variant: "destructive",
-      });
-      return;
+      newErrors.member = "请选择会员";
     }
 
     if (type === "balance") {
       const amount = parseFloat(rechargeAmount);
-      if (!amount || amount <= 0) {
-        toast({
-          title: "请输入有效金额",
-          variant: "destructive",
-        });
-        return;
+      if (!rechargeAmount || amount <= 0) {
+        newErrors.amount = "请输入有效金额";
       }
-      rechargeMember(selectedMember.id, amount);
-      addTransaction({
-        memberId: selectedMember.id,
-        memberName: selectedMember.name,
-        type: "recharge",
-        amount,
-        paymentMethod,
-        description: `充值 ¥${amount}`,
-      });
-      toast({
-        title: "充值成功",
-        description: `已为 ${selectedMember.name} 充值 ¥${amount}`,
-      });
     } else {
-      const template = cardTemplates.find((t) => t.id === selectedTemplate);
-      if (!template) {
-        toast({
-          title: "请选择次卡",
-          variant: "destructive",
-        });
-        return;
+      if (!selectedTemplate) {
+        newErrors.card = "请选择次卡类型";
       }
-      addCardToMember(selectedMember.id, selectedTemplate);
-      addTransaction({
-        memberId: selectedMember.id,
-        memberName: selectedMember.name,
-        type: "recharge",
-        amount: template.price,
-        paymentMethod,
-        description: `购买 ${template.name}`,
-      });
-      toast({
-        title: "购卡成功",
-        description: `已为 ${selectedMember.name} 购买 ${template.name}`,
-      });
     }
 
-    resetForm();
-    onOpenChange(false);
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm() || !selectedMember) return;
+
+    setIsSubmitting(true);
+    try {
+      await new Promise((r) => setTimeout(r, 300));
+
+      if (type === "balance") {
+        const amount = parseFloat(rechargeAmount);
+        rechargeMember(selectedMember.id, amount);
+        addTransaction({
+          memberId: selectedMember.id,
+          memberName: selectedMember.name,
+          type: "recharge",
+          amount,
+          paymentMethod,
+          description: `充值 ¥${amount}`,
+        });
+        toast({
+          title: "充值成功",
+          description: `已为 ${selectedMember.name} 充值 ¥${amount}`,
+        });
+      } else {
+        const template = cardTemplates.find((t) => t.id === selectedTemplate);
+        if (template) {
+          addCardToMember(selectedMember.id, selectedTemplate);
+          addTransaction({
+            memberId: selectedMember.id,
+            memberName: selectedMember.name,
+            type: "recharge",
+            amount: template.price,
+            paymentMethod,
+            description: `购买 ${template.name}`,
+          });
+          toast({
+            title: "购卡成功",
+            description: `已为 ${selectedMember.name} 购买 ${template.name}`,
+          });
+        }
+      }
+
+      resetForm();
+      onOpenChange(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -126,61 +144,90 @@ export function QuickRechargeDialog({ open, onOpenChange }: QuickRechargeDialogP
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>会员充值</DialogTitle>
+          <DialogDescription>为会员充值余额或购买次卡</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* 搜索会员 */}
           <div className="space-y-2">
-            <Label>搜索会员</Label>
-            <div className="flex gap-2">
-              <Input
-                placeholder="输入手机号或姓名"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSearch()}
-              />
-              <Button variant="secondary" size="icon" onClick={handleSearch}>
-                <Search className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* 搜索结果 */}
-          {searchResults.length > 0 && (
-            <div className="space-y-2">
-              <Label>选择会员</Label>
-              <div className="max-h-40 space-y-2 overflow-auto">
-                {searchResults.map((member) => (
-                  <div
-                    key={member.id}
-                    onClick={() => setSelectedMemberId(member.id)}
-                    className={`cursor-pointer rounded-lg border p-3 transition-colors ${
-                      selectedMemberId === member.id
-                        ? "border-primary bg-primary/5"
-                        : "border-border hover:bg-muted/50"
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="font-medium">{member.name}</p>
-                        <p className="text-sm text-muted-foreground">{member.phone}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">¥{member.balance.toFixed(2)}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {member.cards.length}张次卡
-                        </p>
-                      </div>
-                    </div>
+            <Label className={errors.member ? "text-destructive" : ""}>
+              选择会员 <span className="text-destructive">*</span>
+            </Label>
+            
+            {selectedMember ? (
+              <div className="flex items-center justify-between rounded-lg border border-primary bg-primary/5 p-3">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                    <User className="h-5 w-5 text-primary" />
                   </div>
-                ))}
+                  <div>
+                    <p className="font-medium">{selectedMember.name}</p>
+                    <p className="text-sm text-muted-foreground">{selectedMember.phone}</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <p className="font-medium">¥{selectedMember.balance.toFixed(2)}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {selectedMember.cards.length}张次卡
+                  </p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedMemberId("");
+                    setSearchQuery("");
+                  }}
+                >
+                  更换
+                </Button>
               </div>
-            </div>
-          )}
+            ) : (
+              <>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="输入姓名拼音首字母或手机号搜索"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                {searchResults.length > 0 && (
+                  <div className="max-h-40 space-y-2 overflow-auto rounded-lg border border-border">
+                    {searchResults.map((member) => (
+                      <div
+                        key={member.id}
+                        onClick={() => {
+                          setSelectedMemberId(member.id);
+                          setSearchQuery("");
+                          setErrors({});
+                        }}
+                        className="cursor-pointer p-3 transition-colors hover:bg-muted/50"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-medium">{member.name}</p>
+                            <p className="text-sm text-muted-foreground">{member.phone}</p>
+                          </div>
+                          <p className="font-medium">¥{member.balance.toFixed(2)}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {errors.member && (
+                  <p className="text-sm text-destructive">{errors.member}</p>
+                )}
+              </>
+            )}
+          </div>
 
           {/* 充值类型 */}
           {selectedMember && (
             <>
+              <Separator />
+
               <div className="space-y-2">
                 <Label>充值类型</Label>
                 <RadioGroup
@@ -190,26 +237,33 @@ export function QuickRechargeDialog({ open, onOpenChange }: QuickRechargeDialogP
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="balance" id="r-balance" />
-                    <Label htmlFor="r-balance">余额充值</Label>
+                    <Label htmlFor="r-balance" className="flex cursor-pointer items-center gap-1">
+                      <Wallet className="h-4 w-4" />
+                      余额充值
+                    </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="card" id="r-card" />
-                    <Label htmlFor="r-card">购买次卡</Label>
+                    <Label htmlFor="r-card" className="flex cursor-pointer items-center gap-1">
+                      <CreditCard className="h-4 w-4" />
+                      购买次卡
+                    </Label>
                   </div>
                 </RadioGroup>
               </div>
 
               {type === "balance" ? (
                 <div className="space-y-2">
-                  <Label htmlFor="r-amount">充值金额</Label>
-                  <Input
-                    id="r-amount"
+                  <FormField
+                    label="充值金额"
+                    required
                     type="number"
-                    placeholder="请输入金额"
                     value={rechargeAmount}
                     onChange={(e) => setRechargeAmount(e.target.value)}
+                    placeholder="请输入金额"
+                    error={errors.amount}
                   />
-                  <div className="flex gap-2">
+                  <div className="flex flex-wrap gap-2">
                     {[100, 200, 300, 500, 1000].map((amount) => (
                       <Button
                         key={amount}
@@ -221,22 +275,57 @@ export function QuickRechargeDialog({ open, onOpenChange }: QuickRechargeDialogP
                       </Button>
                     ))}
                   </div>
+                  {rechargeAmount && parseFloat(rechargeAmount) > 0 && (
+                    <div className="rounded-lg bg-muted/50 p-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">当前余额</span>
+                        <span>¥{selectedMember.balance.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between font-medium text-chart-2">
+                        <span>充值后余额</span>
+                        <span>¥{(selectedMember.balance + parseFloat(rechargeAmount)).toFixed(2)}</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="space-y-2">
-                  <Label>选择次卡</Label>
+                  <Label className={errors.card ? "text-destructive" : ""}>
+                    选择次卡 <span className="text-destructive">*</span>
+                  </Label>
                   <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                    <SelectTrigger>
+                    <SelectTrigger className={errors.card ? "border-destructive" : ""}>
                       <SelectValue placeholder="请选择次卡类型" />
                     </SelectTrigger>
                     <SelectContent>
-                      {cardTemplates.map((template) => (
-                        <SelectItem key={template.id} value={template.id}>
-                          {template.name} - ¥{template.price} ({template.totalCount}次)
-                        </SelectItem>
-                      ))}
+                      {cardTemplates.length === 0 ? (
+                        <div className="p-2 text-center text-sm text-muted-foreground">
+                          暂无次卡模板
+                        </div>
+                      ) : (
+                        cardTemplates.map((template) => (
+                          <SelectItem key={template.id} value={template.id}>
+                            {template.name} - ¥{template.price} ({template.totalCount}次)
+                          </SelectItem>
+                        ))
+                      )}
                     </SelectContent>
                   </Select>
+                  {errors.card && (
+                    <p className="text-sm text-destructive">{errors.card}</p>
+                  )}
+                  {selectedCard && (
+                    <div className="rounded-lg bg-muted/50 p-3 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">次卡金额</span>
+                        <Badge variant="secondary">¥{selectedCard.price}</Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">可用次数</span>
+                        <span>{selectedCard.totalCount}次</span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -250,15 +339,15 @@ export function QuickRechargeDialog({ open, onOpenChange }: QuickRechargeDialogP
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="wechat" id="r-wechat" />
-                    <Label htmlFor="r-wechat">微信</Label>
+                    <Label htmlFor="r-wechat" className="cursor-pointer">微信</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="alipay" id="r-alipay" />
-                    <Label htmlFor="r-alipay">支付宝</Label>
+                    <Label htmlFor="r-alipay" className="cursor-pointer">支付宝</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="cash" id="r-cash" />
-                    <Label htmlFor="r-cash">现金</Label>
+                    <Label htmlFor="r-cash" className="cursor-pointer">现金</Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -266,13 +355,23 @@ export function QuickRechargeDialog({ open, onOpenChange }: QuickRechargeDialogP
           )}
 
           {/* 提交按钮 */}
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
               取消
             </Button>
-            <Button className="flex-1" onClick={handleSubmit} disabled={!selectedMember}>
+            <LoadingButton
+              className="flex-1"
+              onClick={handleSubmit}
+              loading={isSubmitting}
+              disabled={!selectedMember}
+            >
               确认充值
-            </Button>
+            </LoadingButton>
           </div>
         </div>
       </DialogContent>

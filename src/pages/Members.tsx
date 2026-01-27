@@ -1,9 +1,12 @@
 import { useState, useMemo } from "react";
-import { Search, UserPlus, Phone, CreditCard } from "lucide-react";
+import { Search, UserPlus, Phone, CreditCard, Wallet } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { PageHeader } from "@/components/ui/page-header";
+import { EmptyState } from "@/components/ui/empty-state";
+import { CardGridSkeleton } from "@/components/ui/data-table-skeleton";
 import { useStore } from "@/stores/useStore";
 import { QuickMemberDialog } from "@/components/dialogs/QuickMemberDialog";
 import { QuickRechargeDialog } from "@/components/dialogs/QuickRechargeDialog";
@@ -23,24 +26,27 @@ export default function Members() {
     return members.filter((m) => matchMemberSearch(m.name, m.phone, searchQuery));
   }, [members, searchQuery]);
 
+  // 计算总余额
+  const totalBalance = useMemo(() => {
+    return members.reduce((sum, m) => sum + m.balance, 0);
+  }, [members]);
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">会员管理</h1>
-          <p className="text-muted-foreground">共 {members.length} 位会员</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setRechargeDialogOpen(true)}>
-            会员充值
-          </Button>
-          <Button onClick={() => setMemberDialogOpen(true)}>
-            <UserPlus className="mr-2 h-4 w-4" />
-            快速开卡
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="会员管理"
+        description={`共 ${members.length} 位会员 · 总余额 ¥${totalBalance.toFixed(2)}`}
+      >
+        <Button variant="outline" onClick={() => setRechargeDialogOpen(true)}>
+          <Wallet className="mr-2 h-4 w-4" />
+          会员充值
+        </Button>
+        <Button onClick={() => setMemberDialogOpen(true)}>
+          <UserPlus className="mr-2 h-4 w-4" />
+          快速开卡
+        </Button>
+      </PageHeader>
 
       {/* Search */}
       <div className="relative">
@@ -51,33 +57,45 @@ export default function Members() {
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
         />
+        {searchQuery && (
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute right-1 top-1/2 h-8 -translate-y-1/2 px-2"
+            onClick={() => setSearchQuery("")}
+          >
+            清除
+          </Button>
+        )}
       </div>
 
       {/* Members List */}
       {filteredMembers.length === 0 ? (
-        <Card>
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <UserPlus className="mb-4 h-16 w-16 text-muted-foreground/50" />
-            <p className="text-lg font-medium">
-              {searchQuery ? "未找到匹配的会员" : "暂无会员"}
-            </p>
-            <p className="text-muted-foreground">
-              {searchQuery ? "请尝试其他搜索条件" : '点击"快速开卡"添加第一位会员'}
-            </p>
-          </CardContent>
-        </Card>
+        <EmptyState
+          icon={UserPlus}
+          title={searchQuery ? "未找到匹配的会员" : "暂无会员"}
+          description={searchQuery ? "请尝试其他搜索条件" : '点击"快速开卡"添加第一位会员'}
+          action={
+            !searchQuery ? (
+              <Button onClick={() => setMemberDialogOpen(true)}>
+                <UserPlus className="mr-2 h-4 w-4" />
+                快速开卡
+              </Button>
+            ) : undefined
+          }
+        />
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredMembers.map((member) => (
             <Card
               key={member.id}
-              className="cursor-pointer transition-shadow hover:shadow-md"
+              className="cursor-pointer transition-all hover:border-primary/50 hover:shadow-md"
               onClick={() => setSelectedMemberId(member.id)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary transition-colors group-hover:bg-primary/20">
                       {member.name.charAt(0)}
                     </div>
                     <div>

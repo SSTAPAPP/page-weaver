@@ -20,11 +20,19 @@ import {
   Clock,
   User,
   X,
+  Calendar,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
+import { EmptyState } from "@/components/ui/empty-state";
+import { LoadingButton } from "@/components/ui/loading-button";
 import {
   Sheet,
   SheetContent,
@@ -32,24 +40,27 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useStore } from "@/stores/useStore";
+import { useToast } from "@/hooks/use-toast";
 import { NewAppointmentDialog } from "@/components/dialogs/NewAppointmentDialog";
 import type { Appointment } from "@/types";
 
 const statusMap = {
-  pending: { label: "待确认", variant: "secondary" as const, color: "bg-chart-4" },
-  confirmed: { label: "已确认", variant: "default" as const, color: "bg-primary" },
-  cancelled: { label: "已取消", variant: "outline" as const, color: "bg-muted-foreground" },
-  completed: { label: "已完成", variant: "default" as const, color: "bg-chart-2" },
-  noshow: { label: "已爽约", variant: "destructive" as const, color: "bg-destructive" },
+  pending: { label: "待确认", variant: "secondary" as const, color: "bg-chart-4", icon: AlertCircle },
+  confirmed: { label: "已确认", variant: "default" as const, color: "bg-primary", icon: CheckCircle },
+  cancelled: { label: "已取消", variant: "outline" as const, color: "bg-muted-foreground", icon: XCircle },
+  completed: { label: "已完成", variant: "default" as const, color: "bg-chart-2", icon: CheckCircle },
+  noshow: { label: "已爽约", variant: "destructive" as const, color: "bg-destructive", icon: XCircle },
 };
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
 export default function Appointments() {
+  const { toast } = useToast();
   const { appointments, updateAppointment } = useStore();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
   // 获取当月日历格子（包括前后补齐的日期）
   const calendarDays = useMemo(() => {
@@ -105,46 +116,59 @@ export default function Appointments() {
     return appointmentsByDate.get(dateKey) || [];
   };
 
+  const handleUpdateStatus = async (id: string, status: Appointment["status"]) => {
+    setIsUpdating(id);
+    try {
+      await new Promise((r) => setTimeout(r, 300));
+      updateAppointment(id, { status });
+      toast({
+        title: "状态已更新",
+        description: `预约已${statusMap[status].label}`,
+      });
+    } finally {
+      setIsUpdating(null);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">预约管理</h1>
-          <p className="text-muted-foreground">管理客户预约</p>
-        </div>
+      <PageHeader
+        title="预约管理"
+        description="管理客户预约"
+      >
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />
           新增预约
         </Button>
-      </div>
+      </PageHeader>
 
       {/* 月度统计 */}
       <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">本月预约</p>
-            <p className="text-2xl font-bold">{monthStats.total}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">待确认</p>
-            <p className="text-2xl font-bold text-chart-4">{monthStats.pending}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">已确认</p>
-            <p className="text-2xl font-bold text-primary">{monthStats.confirmed}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">已完成</p>
-            <p className="text-2xl font-bold text-chart-2">{monthStats.completed}</p>
-          </CardContent>
-        </Card>
+        <StatCard
+          title="本月预约"
+          value={monthStats.total}
+          icon={Calendar}
+          iconColor="text-primary"
+        />
+        <StatCard
+          title="待确认"
+          value={monthStats.pending}
+          icon={AlertCircle}
+          iconColor="text-chart-4"
+        />
+        <StatCard
+          title="已确认"
+          value={monthStats.confirmed}
+          icon={CheckCircle}
+          iconColor="text-primary"
+        />
+        <StatCard
+          title="已完成"
+          value={monthStats.completed}
+          icon={CheckCircle}
+          iconColor="text-chart-2"
+        />
       </div>
 
       {/* 日历 */}
@@ -173,10 +197,12 @@ export default function Appointments() {
         <CardContent>
           {/* 星期标题 */}
           <div className="grid grid-cols-7 border-b border-border">
-            {WEEKDAYS.map((day) => (
+            {WEEKDAYS.map((day, i) => (
               <div
                 key={day}
-                className="py-2 text-center text-sm font-medium text-muted-foreground"
+                className={`py-2 text-center text-sm font-medium ${
+                  i === 0 || i === 6 ? "text-destructive/70" : "text-muted-foreground"
+                }`}
               >
                 {day}
               </div>
@@ -189,18 +215,19 @@ export default function Appointments() {
               const dayAppointments = getAppointmentsForDay(day);
               const isCurrentMonth = isSameMonth(day, currentMonth);
               const isSelected = selectedDate && isSameDay(day, selectedDate);
+              const pendingCount = dayAppointments.filter((a) => a.status === "pending").length;
 
               return (
                 <div
                   key={day.toISOString()}
                   onClick={() => setSelectedDate(day)}
-                  className={`min-h-[80px] cursor-pointer border-b border-r border-border p-1.5 transition-colors hover:bg-muted/50 ${
+                  className={`min-h-[80px] cursor-pointer border-b border-r border-border p-1.5 transition-all hover:bg-muted/50 ${
                     !isCurrentMonth ? "bg-muted/20" : ""
-                  } ${isSelected ? "bg-primary/10 ring-1 ring-primary" : ""}`}
+                  } ${isSelected ? "bg-primary/10 ring-2 ring-inset ring-primary" : ""}`}
                 >
                   <div className="flex items-center justify-between">
                     <span
-                      className={`flex h-6 w-6 items-center justify-center rounded-full text-sm ${
+                      className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium transition-colors ${
                         isToday(day)
                           ? "bg-primary text-primary-foreground"
                           : !isCurrentMonth
@@ -211,9 +238,16 @@ export default function Appointments() {
                       {format(day, "d")}
                     </span>
                     {dayAppointments.length > 0 && (
-                      <span className="text-xs text-muted-foreground">
-                        {dayAppointments.length}个
-                      </span>
+                      <div className="flex items-center gap-1">
+                        {pendingCount > 0 && (
+                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-chart-4 text-xs text-primary-foreground">
+                            {pendingCount}
+                          </span>
+                        )}
+                        <span className="text-xs text-muted-foreground">
+                          {dayAppointments.length}个
+                        </span>
+                      </div>
                     )}
                   </div>
                   
@@ -270,90 +304,91 @@ export default function Appointments() {
             </Button>
 
             {selectedDayAppointments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-                <Clock className="mb-2 h-12 w-12 opacity-50" />
-                <p>当天暂无预约</p>
-              </div>
+              <EmptyState
+                icon={Clock}
+                title="当天暂无预约"
+                description="点击上方按钮添加预约"
+              />
             ) : (
               <ScrollArea className="h-[calc(100vh-220px)]">
                 <div className="space-y-3 pr-4">
-                  {selectedDayAppointments.map((apt) => (
-                    <Card key={apt.id}>
-                      <CardContent className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="flex items-center gap-3">
-                            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                              <User className="h-5 w-5 text-primary" />
+                  {selectedDayAppointments.map((apt) => {
+                    const StatusIcon = statusMap[apt.status].icon;
+                    return (
+                      <Card key={apt.id} className="transition-shadow hover:shadow-md">
+                        <CardContent className="p-4">
+                          <div className="flex items-start justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                                <User className="h-5 w-5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="font-medium">{apt.memberName}</p>
+                                <p className="text-sm text-muted-foreground">
+                                  {apt.memberPhone}
+                                </p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium">{apt.memberName}</p>
-                              <p className="text-sm text-muted-foreground">
-                                {apt.memberPhone}
-                              </p>
+                            <Badge variant={statusMap[apt.status].variant}>
+                              <StatusIcon className="mr-1 h-3 w-3" />
+                              {statusMap[apt.status].label}
+                            </Badge>
+                          </div>
+
+                          <div className="mt-3 flex items-center gap-2 text-sm">
+                            <Clock className="h-4 w-4 text-muted-foreground" />
+                            <span className="font-medium">{apt.time}</span>
+                            <span className="text-muted-foreground">|</span>
+                            <span>{apt.serviceName}</span>
+                          </div>
+
+                          {/* 操作按钮 */}
+                          {apt.status === "pending" && (
+                            <div className="mt-4 flex gap-2">
+                              <LoadingButton
+                                size="sm"
+                                className="flex-1"
+                                loading={isUpdating === apt.id}
+                                onClick={() => handleUpdateStatus(apt.id, "confirmed")}
+                              >
+                                确认
+                              </LoadingButton>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="flex-1"
+                                disabled={isUpdating === apt.id}
+                                onClick={() => handleUpdateStatus(apt.id, "cancelled")}
+                              >
+                                取消
+                              </Button>
                             </div>
-                          </div>
-                          <Badge variant={statusMap[apt.status].variant}>
-                            {statusMap[apt.status].label}
-                          </Badge>
-                        </div>
-
-                        <div className="mt-3 flex items-center gap-2 text-sm">
-                          <Clock className="h-4 w-4 text-muted-foreground" />
-                          <span className="font-medium">{apt.time}</span>
-                          <span className="text-muted-foreground">|</span>
-                          <span>{apt.serviceName}</span>
-                        </div>
-
-                        {/* 操作按钮 */}
-                        {apt.status === "pending" && (
-                          <div className="mt-4 flex gap-2">
-                            <Button
-                              size="sm"
-                              className="flex-1"
-                              onClick={() =>
-                                updateAppointment(apt.id, { status: "confirmed" })
-                              }
-                            >
-                              确认
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="flex-1"
-                              onClick={() =>
-                                updateAppointment(apt.id, { status: "cancelled" })
-                              }
-                            >
-                              取消
-                            </Button>
-                          </div>
-                        )}
-                        {apt.status === "confirmed" && (
-                          <div className="mt-4 flex gap-2">
-                            <Button
-                              size="sm"
-                              className="flex-1"
-                              onClick={() =>
-                                updateAppointment(apt.id, { status: "completed" })
-                              }
-                            >
-                              完成服务
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="flex-1"
-                              onClick={() =>
-                                updateAppointment(apt.id, { status: "noshow" })
-                              }
-                            >
-                              标记爽约
-                            </Button>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  ))}
+                          )}
+                          {apt.status === "confirmed" && (
+                            <div className="mt-4 flex gap-2">
+                              <LoadingButton
+                                size="sm"
+                                className="flex-1"
+                                loading={isUpdating === apt.id}
+                                onClick={() => handleUpdateStatus(apt.id, "completed")}
+                              >
+                                完成服务
+                              </LoadingButton>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                className="flex-1"
+                                disabled={isUpdating === apt.id}
+                                onClick={() => handleUpdateStatus(apt.id, "noshow")}
+                              >
+                                标记爽约
+                              </Button>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    );
+                  })}
                 </div>
               </ScrollArea>
             )}

@@ -1,9 +1,10 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +17,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { LoadingButton } from "@/components/ui/loading-button";
+import { FormField } from "@/components/ui/form-field";
+import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
 
@@ -42,6 +47,12 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
   const [rechargeAmount, setRechargeAmount] = useState("");
   const [selectedTemplate, setSelectedTemplate] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<"wechat" | "alipay" | "cash">("wechat");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const selectedCard = useMemo(() => {
+    return cardTemplates.find((t) => t.id === selectedTemplate);
+  }, [cardTemplates, selectedTemplate]);
 
   const resetForm = () => {
     setPhone("");
@@ -51,76 +62,88 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
     setRechargeAmount("");
     setSelectedTemplate("");
     setPaymentMethod("wechat");
+    setErrors({});
   };
 
-  const handleSubmit = () => {
-    if (!phone || !name) {
-      toast({
-        title: "请填写必要信息",
-        description: "手机号和姓名为必填项",
-        variant: "destructive",
-      });
-      return;
+  const validateForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!name.trim()) {
+      newErrors.name = "请输入姓名";
     }
 
-    if (phone.length !== 11) {
-      toast({
-        title: "手机号格式错误",
-        description: "请输入11位手机号",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const existing = getMemberByPhone(phone);
-    if (existing) {
-      toast({
-        title: "会员已存在",
-        description: `手机号 ${phone} 已注册为会员 ${existing.name}`,
-        variant: "destructive",
-      });
-      return;
-    }
-
-    // 创建会员
-    const member = addMember({ phone, name, gender, balance: 0 });
-
-    // 处理开卡/充值
-    if (action === "recharge" && rechargeAmount) {
-      const amount = parseFloat(rechargeAmount);
-      if (amount > 0) {
-        rechargeMember(member.id, amount);
-        addTransaction({
-          memberId: member.id,
-          memberName: member.name,
-          type: "recharge",
-          amount,
-          paymentMethod,
-          description: `充值 ¥${amount}`,
-        });
-      }
-    } else if (action === "card" && selectedTemplate) {
-      const template = cardTemplates.find((t) => t.id === selectedTemplate);
-      if (template) {
-        addCardToMember(member.id, selectedTemplate);
-        addTransaction({
-          memberId: member.id,
-          memberName: member.name,
-          type: "recharge",
-          amount: template.price,
-          paymentMethod,
-          description: `购买 ${template.name}`,
-        });
+    if (!phone) {
+      newErrors.phone = "请输入手机号";
+    } else if (phone.length !== 11) {
+      newErrors.phone = "请输入11位手机号";
+    } else {
+      const existing = getMemberByPhone(phone);
+      if (existing) {
+        newErrors.phone = `手机号已注册为会员 ${existing.name}`;
       }
     }
 
-    toast({
-      title: "开卡成功",
-      description: `会员 ${name} 已成功注册`,
-    });
+    if (action === "recharge" && (!rechargeAmount || parseFloat(rechargeAmount) <= 0)) {
+      newErrors.amount = "请输入有效金额";
+    }
 
-    resetForm();
-    onOpenChange(false);
+    if (action === "card" && !selectedTemplate) {
+      newErrors.card = "请选择次卡类型";
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = async () => {
+    if (!validateForm()) return;
+
+    setIsSubmitting(true);
+    try {
+      await new Promise((r) => setTimeout(r, 300));
+
+      // 创建会员
+      const member = addMember({ phone, name: name.trim(), gender, balance: 0 });
+
+      // 处理开卡/充值
+      if (action === "recharge" && rechargeAmount) {
+        const amount = parseFloat(rechargeAmount);
+        if (amount > 0) {
+          rechargeMember(member.id, amount);
+          addTransaction({
+            memberId: member.id,
+            memberName: member.name,
+            type: "recharge",
+            amount,
+            paymentMethod,
+            description: `充值 ¥${amount}`,
+          });
+        }
+      } else if (action === "card" && selectedTemplate) {
+        const template = cardTemplates.find((t) => t.id === selectedTemplate);
+        if (template) {
+          addCardToMember(member.id, selectedTemplate);
+          addTransaction({
+            memberId: member.id,
+            memberName: member.name,
+            type: "recharge",
+            amount: template.price,
+            paymentMethod,
+            description: `购买 ${template.name}`,
+          });
+        }
+      }
+
+      toast({
+        title: "开卡成功",
+        description: `会员 ${name} 已成功注册`,
+      });
+
+      resetForm();
+      onOpenChange(false);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -128,31 +151,30 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>极速开卡</DialogTitle>
+          <DialogDescription>快速注册新会员</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {/* 基本信息 */}
-          <div className="grid gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">姓名/昵称 *</Label>
-              <Input
-                id="name"
-                placeholder="请输入姓名"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-              />
-            </div>
+          <div className="space-y-4">
+            <FormField
+              label="姓名/昵称"
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="请输入姓名"
+              error={errors.name}
+            />
 
-            <div className="space-y-2">
-              <Label htmlFor="phone">手机号 *</Label>
-              <Input
-                id="phone"
-                placeholder="请输入11位手机号"
-                value={phone}
-                onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
-                className="font-mono text-lg"
-              />
-            </div>
+            <FormField
+              label="手机号"
+              required
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/\D/g, "").slice(0, 11))}
+              placeholder="请输入11位手机号"
+              error={errors.phone}
+              className="font-mono text-lg"
+            />
 
             <div className="space-y-2">
               <Label>性别</Label>
@@ -163,15 +185,17 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="male" id="male" />
-                  <Label htmlFor="male">男</Label>
+                  <Label htmlFor="male" className="cursor-pointer">男</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="female" id="female" />
-                  <Label htmlFor="female">女</Label>
+                  <Label htmlFor="female" className="cursor-pointer">女</Label>
                 </div>
               </RadioGroup>
             </div>
           </div>
+
+          <Separator />
 
           {/* 开卡选项 */}
           <div className="space-y-3 rounded-lg border border-border p-4">
@@ -183,48 +207,81 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
             >
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="none" id="none" />
-                <Label htmlFor="none">仅注册会员</Label>
+                <Label htmlFor="none" className="cursor-pointer">仅注册会员</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="recharge" id="recharge" />
-                <Label htmlFor="recharge">注册并充值</Label>
+                <Label htmlFor="recharge" className="cursor-pointer">注册并充值</Label>
               </div>
               <div className="flex items-center space-x-2">
                 <RadioGroupItem value="card" id="card" />
-                <Label htmlFor="card">注册并购买次卡</Label>
+                <Label htmlFor="card" className="cursor-pointer">注册并购买次卡</Label>
               </div>
             </RadioGroup>
 
             {/* 充值金额 */}
             {action === "recharge" && (
               <div className="mt-3 space-y-2">
-                <Label htmlFor="amount">充值金额</Label>
-                <Input
-                  id="amount"
+                <FormField
+                  label="充值金额"
+                  required
                   type="number"
-                  placeholder="请输入金额"
                   value={rechargeAmount}
                   onChange={(e) => setRechargeAmount(e.target.value)}
+                  placeholder="请输入金额"
+                  error={errors.amount}
                 />
+                <div className="flex flex-wrap gap-2">
+                  {[100, 200, 300, 500].map((amount) => (
+                    <Button
+                      key={amount}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setRechargeAmount(amount.toString())}
+                    >
+                      ¥{amount}
+                    </Button>
+                  ))}
+                </div>
               </div>
             )}
 
             {/* 次卡选择 */}
             {action === "card" && (
               <div className="mt-3 space-y-2">
-                <Label>选择次卡</Label>
+                <Label className={errors.card ? "text-destructive" : ""}>
+                  选择次卡 <span className="text-destructive">*</span>
+                </Label>
                 <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                  <SelectTrigger>
+                  <SelectTrigger className={errors.card ? "border-destructive" : ""}>
                     <SelectValue placeholder="请选择次卡类型" />
                   </SelectTrigger>
                   <SelectContent>
-                    {cardTemplates.map((template) => (
-                      <SelectItem key={template.id} value={template.id}>
-                        {template.name} - ¥{template.price} ({template.totalCount}次)
-                      </SelectItem>
-                    ))}
+                    {cardTemplates.length === 0 ? (
+                      <div className="p-2 text-center text-sm text-muted-foreground">
+                        暂无次卡模板
+                      </div>
+                    ) : (
+                      cardTemplates.map((template) => (
+                        <SelectItem key={template.id} value={template.id}>
+                          {template.name} - ¥{template.price} ({template.totalCount}次)
+                        </SelectItem>
+                      ))
+                    )}
                   </SelectContent>
                 </Select>
+                {errors.card && (
+                  <p className="text-sm text-destructive">{errors.card}</p>
+                )}
+                {selectedCard && (
+                  <div className="rounded-lg bg-muted/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">次卡金额</span>
+                      <Badge variant="secondary">¥{selectedCard.price}</Badge>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -239,15 +296,15 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
                 >
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="wechat" id="wechat" />
-                    <Label htmlFor="wechat">微信</Label>
+                    <Label htmlFor="wechat" className="cursor-pointer">微信</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="alipay" id="alipay" />
-                    <Label htmlFor="alipay">支付宝</Label>
+                    <Label htmlFor="alipay" className="cursor-pointer">支付宝</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="cash" id="cash" />
-                    <Label htmlFor="cash">现金</Label>
+                    <Label htmlFor="cash" className="cursor-pointer">现金</Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -255,13 +312,22 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
           </div>
 
           {/* 提交按钮 */}
-          <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={() => onOpenChange(false)}>
+          <div className="flex gap-2 pt-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => onOpenChange(false)}
+              disabled={isSubmitting}
+            >
               取消
             </Button>
-            <Button className="flex-1" onClick={handleSubmit}>
+            <LoadingButton
+              className="flex-1"
+              onClick={handleSubmit}
+              loading={isSubmitting}
+            >
               确认开卡
-            </Button>
+            </LoadingButton>
           </div>
         </div>
       </DialogContent>
