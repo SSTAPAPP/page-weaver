@@ -14,6 +14,7 @@ interface Store {
   // 次卡
   addCardToMember: (memberId: string, templateId: string) => void;
   deductCard: (memberId: string, cardId: string) => void;
+  refundCard: (memberId: string, cardId: string) => void;
   
   // 充值
   rechargeMember: (memberId: string, amount: number) => void;
@@ -141,6 +142,22 @@ export const useStore = create<Store>()(
                   cards: m.cards.map((c) =>
                     c.id === cardId
                       ? { ...c, remainingCount: Math.max(0, c.remainingCount - 1) }
+                      : c
+                  ),
+                }
+              : m
+          ),
+        }));
+      },
+      refundCard: (memberId, cardId) => {
+        set((state) => ({
+          members: state.members.map((m) =>
+            m.id === memberId
+              ? {
+                  ...m,
+                  cards: m.cards.map((c) =>
+                    c.id === cardId
+                      ? { ...c, remainingCount: c.remainingCount + 1 }
                       : c
                   ),
                 }
@@ -300,13 +317,29 @@ export const useStore = create<Store>()(
           isToday(new Date(t.createdAt)) && !t.voided
         );
         
-        // 今日实收 = 现金/微信/支付宝支付（包括补差价）
-        const revenue = todayTransactions
+        // 今日实收 = 现金/微信/支付宝支付 + subTransactions中的补差价
+        let revenue = todayTransactions
           .filter((t) => 
-            (t.type === 'consume' || t.type === 'price_diff') && 
+            t.type === 'consume' && 
             t.paymentMethod !== 'balance' &&
             t.paymentMethod !== undefined
           )
+          .reduce((sum, t) => sum + t.amount, 0);
+        
+        // 加上subTransactions中的补差价（新逻辑）
+        todayTransactions.forEach((t) => {
+          if (t.subTransactions) {
+            t.subTransactions.forEach((sub) => {
+              if (sub.type === 'price_diff') {
+                revenue += sub.amount;
+              }
+            });
+          }
+        });
+        
+        // 兼容旧的price_diff交易记录
+        revenue += todayTransactions
+          .filter((t) => t.type === 'price_diff')
           .reduce((sum, t) => sum + t.amount, 0);
         
         // 今日充值

@@ -26,6 +26,7 @@ const typeMap = {
   consume: { label: "消费", icon: ArrowDownCircle, color: "text-destructive" },
   card_deduct: { label: "次卡扣除", icon: CreditCard, color: "text-chart-3" },
   refund: { label: "退款", icon: ArrowUpCircle, color: "text-chart-4" },
+  price_diff: { label: "补差价", icon: ArrowDownCircle, color: "text-chart-1" },
 };
 
 const paymentMethodMap: Record<string, string> = {
@@ -47,17 +48,17 @@ export function TransactionRefundDialog({
   onOpenChange,
 }: TransactionRefundDialogProps) {
   const { toast } = useToast();
-  const { adminPassword, rechargeMember, addTransaction, voidTransaction } = useStore();
+  const { adminPassword, rechargeMember, refundCard, addTransaction, voidTransaction } = useStore();
   const [password, setPassword] = useState("");
   const [isRefunding, setIsRefunding] = useState(false);
   const [passwordError, setPasswordError] = useState("");
 
   if (!transaction) return null;
 
-  const typeInfo = typeMap[transaction.type];
+  const typeInfo = typeMap[transaction.type] || typeMap.consume;
   const TypeIcon = typeInfo.icon;
   const isVoided = transaction.voided;
-  const canRefund = !isVoided && (transaction.type === "consume" || transaction.type === "card_deduct");
+  const canRefund = !isVoided && (transaction.type === "consume" || transaction.type === "card_deduct" || transaction.type === "price_diff");
 
   const handleRefund = async () => {
     if (password !== adminPassword) {
@@ -71,20 +72,41 @@ export function TransactionRefundDialog({
     try {
       await new Promise((r) => setTimeout(r, 500));
 
-      // 1. 如果是余额消费，退回余额
+      // 1. 处理余额退款
       if (transaction.type === "consume" && transaction.paymentMethod === "balance") {
         rechargeMember(transaction.memberId, transaction.amount);
       }
 
-      // 2. 作废原交易
+      // 2. 处理次卡退款 - 从subTransactions中获取cardId
+      if (transaction.subTransactions) {
+        transaction.subTransactions.forEach((sub) => {
+          if (sub.type === 'card' && sub.cardId) {
+            refundCard(transaction.memberId, sub.cardId);
+          }
+          if (sub.type === 'balance') {
+            rechargeMember(transaction.memberId, sub.amount);
+          }
+        });
+      }
+
+      // 3. 如果是card_deduct且没有subTransactions，尝试直接退款余额
+      if (transaction.type === "card_deduct" && !transaction.subTransactions) {
+        // 旧的card_deduct记录可能没有subTransactions
+        // 此时无法恢复次卡，只能提示
+      }
+
+      // 4. 作废原交易
       voidTransaction(transaction.id);
 
-      // 3. 添加退款记录
+      // 5. 添加退款记录
+      const refundAmount = transaction.amount + 
+        (transaction.subTransactions?.find(s => s.type === 'price_diff')?.amount || 0);
+      
       addTransaction({
         memberId: transaction.memberId,
         memberName: transaction.memberName,
         type: "refund",
-        amount: transaction.amount,
+        amount: refundAmount,
         description: `退款 - ${transaction.description}`,
         relatedTransactionId: transaction.id,
       });
@@ -166,6 +188,24 @@ export function TransactionRefundDialog({
               </span>
             </div>
           </div>
+          
+          {/* 显示合并的子交易明细 */}
+          {transaction.subTransactions && transaction.subTransactions.length > 0 && (
+            <div className="rounded-lg bg-muted/50 p-3 space-y-2">
+              <p className="text-sm font-medium text-muted-foreground">交易明细</p>
+              {transaction.subTransactions.map((sub, index) => (
+                <div key={index} className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {sub.type === 'balance' ? '余额支付' : sub.type === 'card' ? '次卡抵扣' : '补差价'}
+                    {sub.paymentMethod && ` (${paymentMethodMap[sub.paymentMethod]})`}
+                  </span>
+                  <span className={sub.type === 'price_diff' ? 'text-chart-1' : ''}>
+                    ¥{sub.amount.toFixed(2)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* 退款操作 */}
           {canRefund && (

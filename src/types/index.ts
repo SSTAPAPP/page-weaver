@@ -70,6 +70,7 @@ export interface Transaction {
     type: 'balance' | 'card' | 'price_diff';
     amount: number;
     paymentMethod?: string;
+    cardId?: string; // 次卡ID，用于退款时恢复次数
   }[];
 }
 
