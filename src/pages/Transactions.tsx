@@ -47,6 +47,9 @@ export default function Transactions() {
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
+      // 过滤掉旧的独立price_diff记录（新逻辑下已合并到主交易）
+      // 但保留用于向后兼容的显示
+      
       const matchesSearch =
         searchQuery === "" ||
         tx.memberName.toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -1,23 +1,22 @@
 import { useMemo, useState } from "react";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { TrendingUp, Wallet, CreditCard, Users, HelpCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { TrendingUp, Wallet, CreditCard, Users, HelpCircle, DollarSign, PiggyBank, Activity } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/ui/stat-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { useStore } from "@/stores/useStore";
 import {
   LineChart,
@@ -32,40 +31,45 @@ import {
   Legend,
 } from "recharts";
 
-const metricsDetails = [
+const metricsInfo = [
   {
     id: "revenue",
     title: "实收金额",
-    color: "bg-chart-1",
-    description: "统计通过现金、微信、支付宝等方式实际收到的金额。包括散客消费、会员补差价等真实进账。",
-    calculation: "实收 = 现金收款 + 微信收款 + 支付宝收款 + 补差价收入",
-    example: "例：会员A余额50元，消费80元，补差价30元现金 → 计入实收30元",
-    note: "会员使用储值余额消费不计入实收，因为余额是之前充值时已经收过的钱。",
+    icon: DollarSign,
+    color: "text-chart-1",
+    bgColor: "bg-chart-1/10",
+    brief: "真实进账现金流",
+    formula: "现金 + 微信 + 支付宝 + 补差价",
+    example: "余额50元消费80元，补差价30元现金 → 实收30元",
+    note: "余额消费不计入（已在充值时收过）",
   },
   {
     id: "recharge",
     title: "充值金额",
-    color: "bg-chart-2",
-    description: "统计售出储值卡和次卡的金额，属于预收款项，反映店铺的现金流入。",
-    calculation: "充值 = 储值卡销售额 + 次卡销售额",
-    example: "例：会员B充值500元储值卡 → 计入充值500元",
-    note: "充值金额在会员消费时会转化为消耗金额。",
+    icon: PiggyBank,
+    color: "text-chart-2",
+    bgColor: "bg-chart-2/10",
+    brief: "储值/次卡销售额",
+    formula: "储值卡销售 + 次卡销售",
+    example: "会员充值500元储值卡 → 充值500元",
+    note: "预收款项，体现客户信任度",
   },
   {
     id: "consumption",
     title: "消耗金额",
-    color: "bg-chart-3",
-    description: "统计会员使用余额或次卡消费的金额，反映店铺的实际服务量和会员活跃度。",
-    calculation: "消耗 = 余额消费 + 次卡消费（按服务原价计算）",
-    example: "例：会员C用余额支付38元洗剪吹 → 计入消耗38元",
-    note: "补差价部分不计入消耗，因为补差价是实际收款，应计入实收。",
+    icon: Activity,
+    color: "text-chart-3",
+    bgColor: "bg-chart-3/10",
+    brief: "余额/次卡核销值",
+    formula: "余额消费 + 次卡消费（按原价）",
+    example: "用余额支付38元洗剪吹 → 消耗38元",
+    note: "补差价不计入（已在实收统计）",
   },
 ];
 
 export default function Reports() {
   const { transactions, members, getTodayStats } = useStore();
   const todayStats = getTodayStats();
-  const [metricsOpen, setMetricsOpen] = useState(false);
 
   // 计算30天趋势数据
   const trendData = useMemo(() => {
@@ -80,13 +84,29 @@ export default function Reports() {
         return txDate >= dayStart && txDate <= dayEnd && !t.voided;
       });
 
-      // 实收 = 现金/微信/支付宝支付（包括补差价）
-      const revenue = dayTransactions
+      // 实收 = 现金/微信/支付宝支付 + subTransactions中的补差价
+      let revenue = dayTransactions
         .filter((t) => 
-          (t.type === "consume" || t.type === "price_diff") && 
+          t.type === "consume" && 
           t.paymentMethod !== "balance" &&
           t.paymentMethod !== undefined
         )
+        .reduce((sum, t) => sum + t.amount, 0);
+      
+      // 加上subTransactions中的补差价
+      dayTransactions.forEach((t) => {
+        if (t.subTransactions) {
+          t.subTransactions.forEach((sub) => {
+            if (sub.type === 'price_diff') {
+              revenue += sub.amount;
+            }
+          });
+        }
+      });
+      
+      // 兼容旧的price_diff交易
+      revenue += dayTransactions
+        .filter((t) => t.type === "price_diff")
         .reduce((sum, t) => sum + t.amount, 0);
 
       const recharge = dayTransactions
@@ -115,12 +135,28 @@ export default function Reports() {
   const totalStats = useMemo(() => {
     const validTransactions = transactions.filter(t => !t.voided);
     
-    const revenue = validTransactions
+    let revenue = validTransactions
       .filter((t) => 
-        (t.type === "consume" || t.type === "price_diff") && 
+        t.type === "consume" && 
         t.paymentMethod !== "balance" &&
         t.paymentMethod !== undefined
       )
+      .reduce((sum, t) => sum + t.amount, 0);
+    
+    // 加上subTransactions中的补差价
+    validTransactions.forEach((t) => {
+      if (t.subTransactions) {
+        t.subTransactions.forEach((sub) => {
+          if (sub.type === 'price_diff') {
+            revenue += sub.amount;
+          }
+        });
+      }
+    });
+    
+    // 兼容旧的price_diff交易
+    revenue += validTransactions
+      .filter((t) => t.type === "price_diff")
       .reduce((sum, t) => sum + t.amount, 0);
 
     const recharge = validTransactions
@@ -196,6 +232,58 @@ export default function Reports() {
         ))}
       </div>
 
+      {/* 指标说明 - 紧凑横向卡片 */}
+      <div className="grid gap-3 md:grid-cols-3">
+        {metricsInfo.map((metric) => {
+          const MetricIcon = metric.icon;
+          return (
+            <HoverCard key={metric.id} openDelay={200} closeDelay={100}>
+              <HoverCardTrigger asChild>
+                <Card className="cursor-pointer transition-all hover:shadow-md hover:border-primary/30">
+                  <CardContent className="flex items-center gap-3 p-4">
+                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${metric.bgColor}`}>
+                      <MetricIcon className={`h-5 w-5 ${metric.color}`} />
+                    </div>
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm">{metric.title}</p>
+                      <p className="text-xs text-muted-foreground truncate">{metric.brief}</p>
+                    </div>
+                    <HelpCircle className="h-4 w-4 text-muted-foreground/50 shrink-0 ml-auto" />
+                  </CardContent>
+                </Card>
+              </HoverCardTrigger>
+              <HoverCardContent className="w-80" side="bottom" align="start">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${metric.bgColor}`}>
+                      <MetricIcon className={`h-4 w-4 ${metric.color}`} />
+                    </div>
+                    <div>
+                      <p className="font-semibold">{metric.title}</p>
+                      <p className="text-xs text-muted-foreground">{metric.brief}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="rounded-md bg-muted/50 p-2">
+                      <p className="font-medium text-xs text-muted-foreground mb-1">计算公式</p>
+                      <p className="font-mono text-xs">{metric.formula}</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-xs text-muted-foreground mb-1">示例</p>
+                      <p className="text-xs">{metric.example}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground/80 italic flex items-start gap-1">
+                      <span>💡</span>
+                      <span>{metric.note}</span>
+                    </p>
+                  </div>
+                </div>
+              </HoverCardContent>
+            </HoverCard>
+          );
+        })}
+      </div>
+
       {!hasData ? (
         <EmptyState
           icon={TrendingUp}
@@ -213,7 +301,7 @@ export default function Reports() {
                   30天收入趋势
                   <Tooltip>
                     <TooltipTrigger>
-                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                      <HelpCircle className="h-4 w-4 text-muted-foreground/50" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>实收：现金/微信/支付宝+补差价</p>
@@ -279,7 +367,7 @@ export default function Reports() {
                   30天消耗趋势
                   <Tooltip>
                     <TooltipTrigger>
-                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
+                      <HelpCircle className="h-4 w-4 text-muted-foreground/50" />
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>消耗：余额+次卡实际服务金额</p>
@@ -326,59 +414,6 @@ export default function Reports() {
               </CardContent>
             </Card>
           </div>
-
-          {/* 指标说明 - 可折叠 */}
-          <Collapsible open={metricsOpen} onOpenChange={setMetricsOpen}>
-            <Card>
-              <CollapsibleTrigger asChild>
-                <CardHeader className="cursor-pointer pb-3 transition-colors hover:bg-muted/30">
-                  <CardTitle className="flex items-center justify-between text-base">
-                    <span className="flex items-center gap-2">
-                      <HelpCircle className="h-4 w-4 text-muted-foreground" />
-                      指标说明
-                    </span>
-                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
-                      {metricsOpen ? (
-                        <ChevronUp className="h-4 w-4" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </CardTitle>
-                </CardHeader>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <CardContent className="pt-0">
-                  <div className="space-y-4">
-                    {metricsDetails.map((metric) => (
-                      <div
-                        key={metric.id}
-                        className="rounded-lg border border-border p-4 transition-colors hover:bg-muted/30"
-                      >
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className={`h-3 w-3 rounded-full ${metric.color}`} />
-                          <p className="font-semibold">{metric.title}</p>
-                        </div>
-                        <div className="space-y-2 text-sm">
-                          <p className="text-muted-foreground">{metric.description}</p>
-                          <div className="rounded bg-muted/50 p-2">
-                            <p className="font-medium text-foreground">{metric.calculation}</p>
-                          </div>
-                          <p className="text-muted-foreground">
-                            <span className="font-medium text-foreground">示例：</span>
-                            {metric.example}
-                          </p>
-                          <p className="text-xs text-muted-foreground/80 italic">
-                            💡 {metric.note}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </CollapsibleContent>
-            </Card>
-          </Collapsible>
         </>
       )}
     </div>

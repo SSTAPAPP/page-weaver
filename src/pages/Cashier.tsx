@@ -125,7 +125,7 @@ export default function Cashier() {
       // 处理会员结账
       if (selectedMember) {
         const serviceNames = cart.map(c => c.service.name).join(", ");
-        const subTransactions: { type: 'balance' | 'card' | 'price_diff'; amount: number; paymentMethod?: string }[] = [];
+        const subTransactions: { type: 'balance' | 'card' | 'price_diff'; amount: number; paymentMethod?: string; cardId?: string }[] = [];
         
         // 处理次卡扣除
         cart.forEach((item) => {
@@ -134,6 +134,7 @@ export default function Cashier() {
             subTransactions.push({
               type: 'card',
               amount: item.service.price,
+              cardId: item.card.id, // 存储cardId用于退款
             });
           }
         });
@@ -172,17 +173,7 @@ export default function Cashier() {
           subTransactions,
         });
 
-        // 如果有补差价，单独记录一条price_diff用于统计今日实收
-        if (cashNeed > 0) {
-          addTransaction({
-            memberId: selectedMember.id,
-            memberName: selectedMember.name,
-            type: "price_diff",
-            amount: cashNeed,
-            paymentMethod,
-            description: `补差价 - ${serviceNames}`,
-          });
-        }
+        // 补差价信息已包含在主交易的subTransactions中，不再单独创建price_diff交易
 
         // 添加订单
         addOrder({
