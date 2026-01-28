@@ -19,6 +19,7 @@ interface Store {
   // 充值
   rechargeMember: (memberId: string, amount: number) => void;
   deductBalance: (memberId: string, amount: number) => void;
+  refundBalance: (memberId: string, amount: number) => void;
   
   // 次卡模板
   cardTemplates: CardTemplate[];
@@ -41,6 +42,7 @@ interface Store {
   transactions: Transaction[];
   addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt'>) => void;
   voidTransaction: (id: string) => void;
+  getRelatedTransactions: (transactionId: string) => Transaction[];
   
   // 订单
   orders: Order[];
@@ -166,7 +168,7 @@ export const useStore = create<Store>()(
         }));
       },
 
-      // 充值
+      // 充值 - 仅用于充值操作
       rechargeMember: (memberId, amount) => {
         set((state) => ({
           members: state.members.map((m) =>
@@ -174,10 +176,19 @@ export const useStore = create<Store>()(
           ),
         }));
       },
+      // 扣款
       deductBalance: (memberId, amount) => {
         set((state) => ({
           members: state.members.map((m) =>
             m.id === memberId ? { ...m, balance: Math.max(0, m.balance - amount) } : m
+          ),
+        }));
+      },
+      // 退款 - 专用于退款操作，独立于充值
+      refundBalance: (memberId, amount) => {
+        set((state) => ({
+          members: state.members.map((m) =>
+            m.id === memberId ? { ...m, balance: m.balance + amount } : m
           ),
         }));
       },
@@ -265,6 +276,19 @@ export const useStore = create<Store>()(
           ),
         }));
       },
+      // 获取关联交易（消费+退款）
+      getRelatedTransactions: (transactionId) => {
+        const { transactions } = get();
+        const mainTx = transactions.find(t => t.id === transactionId);
+        if (!mainTx) return [];
+        
+        // 查找所有关联此交易的退款记录
+        const relatedRefunds = transactions.filter(
+          t => t.relatedTransactionId === transactionId
+        );
+        
+        return [mainTx, ...relatedRefunds];
+      },
 
       // 订单
       orders: [],
@@ -310,7 +334,7 @@ export const useStore = create<Store>()(
         }));
       },
 
-      // 统计
+      // 统计 - 不统计已作废的交易和退款交易
       getTodayStats: () => {
         const { transactions, members, appointments } = get();
         const todayTransactions = transactions.filter((t) => 
@@ -318,6 +342,7 @@ export const useStore = create<Store>()(
         );
         
         // 今日实收 = 现金/微信/支付宝支付 + subTransactions中的补差价
+        // 注意：退款交易不计入实收
         let revenue = todayTransactions
           .filter((t) => 
             t.type === 'consume' && 
@@ -328,7 +353,7 @@ export const useStore = create<Store>()(
         
         // 加上subTransactions中的补差价（新逻辑）
         todayTransactions.forEach((t) => {
-          if (t.subTransactions) {
+          if (t.type !== 'refund' && t.subTransactions) {
             t.subTransactions.forEach((sub) => {
               if (sub.type === 'price_diff') {
                 revenue += sub.amount;
@@ -342,12 +367,13 @@ export const useStore = create<Store>()(
           .filter((t) => t.type === 'price_diff')
           .reduce((sum, t) => sum + t.amount, 0);
         
-        // 今日充值
+        // 今日充值（退款不影响充值统计，因为是预收款已收）
         const recharge = todayTransactions
           .filter((t) => t.type === 'recharge')
           .reduce((sum, t) => sum + t.amount, 0);
         
         // 今日消耗 = 储值卡/次卡消费（不包括补差价）
+        // 注意：退款会减少消耗
         const consumption = todayTransactions
           .filter((t) => 
             (t.type === 'consume' && t.paymentMethod === 'balance') || 
