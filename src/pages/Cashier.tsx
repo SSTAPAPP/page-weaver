@@ -122,17 +122,18 @@ export default function Cashier() {
     try {
       await new Promise((r) => setTimeout(r, 500));
 
-      // 处理次卡扣除（仅会员）
+      // 处理会员结账
       if (selectedMember) {
+        const serviceNames = cart.map(c => c.service.name).join(", ");
+        const subTransactions: { type: 'balance' | 'card' | 'price_diff'; amount: number; paymentMethod?: string }[] = [];
+        
+        // 处理次卡扣除
         cart.forEach((item) => {
           if (item.useCard && item.card) {
             deductCard(selectedMember.id, item.card.id);
-            addTransaction({
-              memberId: selectedMember.id,
-              memberName: selectedMember.name,
-              type: "card_deduct",
+            subTransactions.push({
+              type: 'card',
               amount: item.service.price,
-              description: `${item.service.name} (次卡扣除)`,
             });
           }
         });
@@ -140,25 +141,46 @@ export default function Cashier() {
         // 处理余额扣除
         if (balanceDeduct > 0) {
           deductBalance(selectedMember.id, balanceDeduct);
-          addTransaction({
-            memberId: selectedMember.id,
-            memberName: selectedMember.name,
-            type: "consume",
+          subTransactions.push({
+            type: 'balance',
             amount: balanceDeduct,
-            paymentMethod: "balance",
-            description: `余额支付 ¥${balanceDeduct}`,
           });
         }
 
-        // 处理现金/在线支付
+        // 处理补差价
+        if (cashNeed > 0) {
+          subTransactions.push({
+            type: 'price_diff',
+            amount: cashNeed,
+            paymentMethod,
+          });
+        }
+
+        // 创建合并的交易记录
+        const mainTransactionType = cardDeductTotal > 0 ? "card_deduct" : "consume";
+        const mainDescription = cashNeed > 0 
+          ? `${serviceNames} (含补差价¥${cashNeed})`
+          : serviceNames;
+        
+        addTransaction({
+          memberId: selectedMember.id,
+          memberName: selectedMember.name,
+          type: mainTransactionType,
+          amount: cardDeductTotal + balanceDeduct, // 消耗金额（不含补差价）
+          paymentMethod: balanceDeduct > 0 ? "balance" : undefined,
+          description: mainDescription,
+          subTransactions,
+        });
+
+        // 如果有补差价，单独记录一条price_diff用于统计今日实收
         if (cashNeed > 0) {
           addTransaction({
             memberId: selectedMember.id,
             memberName: selectedMember.name,
-            type: "consume",
+            type: "price_diff",
             amount: cashNeed,
             paymentMethod,
-            description: `${paymentMethod === "wechat" ? "微信" : paymentMethod === "alipay" ? "支付宝" : "现金"}支付 ¥${cashNeed}`,
+            description: `补差价 - ${serviceNames}`,
           });
         }
 

@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { DataTableSkeleton } from "@/components/ui/data-table-skeleton";
 import {
   Select,
   SelectContent,
@@ -17,15 +16,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useStore } from "@/stores/useStore";
+import { TransactionRefundDialog } from "@/components/dialogs/TransactionRefundDialog";
+import type { Transaction } from "@/types";
 
 const typeMap = {
   recharge: { label: "充值", icon: ArrowUpCircle, color: "text-chart-2", bgColor: "bg-chart-2/10" },
   consume: { label: "消费", icon: ArrowDownCircle, color: "text-destructive", bgColor: "bg-destructive/10" },
   card_deduct: { label: "次卡扣除", icon: CreditCard, color: "text-chart-3", bgColor: "bg-chart-3/10" },
   refund: { label: "退款", icon: ArrowUpCircle, color: "text-chart-4", bgColor: "bg-chart-4/10" },
+  price_diff: { label: "补差价", icon: ArrowDownCircle, color: "text-chart-1", bgColor: "bg-chart-1/10" },
 };
 
-const paymentMethodMap = {
+const paymentMethodMap: Record<string, string> = {
   balance: "余额",
   wechat: "微信",
   alipay: "支付宝",
@@ -40,6 +42,8 @@ export default function Transactions() {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
+  const [refundDialogOpen, setRefundDialogOpen] = useState(false);
 
   const filteredTransactions = useMemo(() => {
     return transactions.filter((tx) => {
@@ -78,6 +82,11 @@ export default function Transactions() {
 
   const hasFilters = searchQuery !== "" || typeFilter !== "all";
 
+  const handleTransactionClick = (tx: Transaction) => {
+    setSelectedTransaction(tx);
+    setRefundDialogOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -110,6 +119,7 @@ export default function Transactions() {
                 <SelectItem value="consume">消费</SelectItem>
                 <SelectItem value="card_deduct">次卡扣除</SelectItem>
                 <SelectItem value="refund">退款</SelectItem>
+                <SelectItem value="price_diff">补差价</SelectItem>
               </SelectContent>
             </Select>
             {hasFilters && (
@@ -139,13 +149,15 @@ export default function Transactions() {
         <>
           <div className="space-y-3">
             {paginatedTransactions.map((tx) => {
-              const typeInfo = typeMap[tx.type];
+              const typeInfo = typeMap[tx.type] || typeMap.consume;
               const TypeIcon = typeInfo.icon;
+              const isVoided = tx.voided;
 
               return (
                 <Card
                   key={tx.id}
-                  className="transition-colors hover:bg-muted/30"
+                  className={`cursor-pointer transition-colors hover:bg-muted/30 ${isVoided ? "opacity-60" : ""}`}
+                  onClick={() => handleTransactionClick(tx)}
                 >
                   <CardContent className="flex items-center justify-between p-4">
                     <div className="flex items-center gap-4">
@@ -156,10 +168,17 @@ export default function Transactions() {
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <p className="font-medium">{tx.description}</p>
-                          <Badge variant="secondary" className="text-xs">
+                          <p className={`font-medium ${isVoided ? "line-through text-muted-foreground" : ""}`}>
+                            {tx.description}
+                          </p>
+                          <Badge variant={isVoided ? "outline" : "secondary"} className="text-xs">
                             {typeInfo.label}
                           </Badge>
+                          {isVoided && (
+                            <Badge variant="destructive" className="text-xs">
+                              已作废
+                            </Badge>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                           <span>{tx.memberName}</span>
@@ -174,13 +193,26 @@ export default function Transactions() {
                             </>
                           )}
                         </div>
+                        {/* 显示合并的子交易 */}
+                        {tx.subTransactions && tx.subTransactions.length > 0 && (
+                          <div className="mt-1 flex flex-wrap gap-1">
+                            {tx.subTransactions.map((sub, index) => (
+                              <Badge key={index} variant="outline" className="text-xs">
+                                {sub.type === 'balance' ? '余额' : sub.type === 'card' ? '次卡' : '补差价'}
+                                ¥{sub.amount}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <div
                       className={`text-lg font-semibold ${
-                        tx.type === "recharge" || tx.type === "refund"
-                          ? "text-chart-2"
-                          : "text-destructive"
+                        isVoided 
+                          ? "line-through text-muted-foreground" 
+                          : tx.type === "recharge" || tx.type === "refund"
+                            ? "text-chart-2"
+                            : "text-destructive"
                       }`}
                     >
                       {tx.type === "recharge" || tx.type === "refund" ? "+" : "-"}¥
@@ -232,6 +264,13 @@ export default function Transactions() {
           )}
         </>
       )}
+
+      {/* Refund Dialog */}
+      <TransactionRefundDialog
+        transaction={selectedTransaction}
+        open={refundDialogOpen}
+        onOpenChange={setRefundDialogOpen}
+      />
     </div>
   );
 }

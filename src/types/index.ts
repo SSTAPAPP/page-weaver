@@ -57,11 +57,20 @@ export interface Transaction {
   id: string;
   memberId: string;
   memberName: string;
-  type: 'recharge' | 'consume' | 'card_deduct' | 'refund';
+  type: 'recharge' | 'consume' | 'card_deduct' | 'refund' | 'price_diff';
   amount: number;
   paymentMethod?: 'balance' | 'wechat' | 'alipay' | 'cash';
   description: string;
   createdAt: Date;
+  // 退款相关
+  voided?: boolean;
+  relatedTransactionId?: string;
+  // 合并交易（储值卡/次卡+补差价）
+  subTransactions?: {
+    type: 'balance' | 'card' | 'price_diff';
+    amount: number;
+    paymentMethod?: string;
+  }[];
 }
 
 // 订单
@@ -87,4 +96,11 @@ export interface OrderPayment {
   method: 'balance' | 'wechat' | 'alipay' | 'cash' | 'card';
   amount: number;
   cardId?: string;
+}
+
+// 店铺信息
+export interface ShopInfo {
+  name: string;
+  address: string;
+  phone: string;
 }
