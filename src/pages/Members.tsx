@@ -6,11 +6,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { CardGridSkeleton } from "@/components/ui/data-table-skeleton";
 import { useStore } from "@/stores/useStore";
 import { QuickMemberDialog } from "@/components/dialogs/QuickMemberDialog";
 import { QuickRechargeDialog } from "@/components/dialogs/QuickRechargeDialog";
-import { MemberDetailSheet } from "@/components/sheets/MemberDetailSheet";
+import { MemberDetailDialog } from "@/components/dialogs/MemberDetailDialog";
 import { matchMemberSearch } from "@/lib/pinyin";
 
 export default function Members() {
@@ -152,7 +151,7 @@ export default function Members() {
       {/* Dialogs */}
       <QuickMemberDialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen} />
       <QuickRechargeDialog open={rechargeDialogOpen} onOpenChange={setRechargeDialogOpen} />
-      <MemberDetailSheet
+      <MemberDetailDialog
         memberId={selectedMemberId}
         open={!!selectedMemberId}
         onOpenChange={(open) => !open && setSelectedMemberId(null)}

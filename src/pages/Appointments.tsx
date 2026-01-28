@@ -17,50 +17,35 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Clock,
-  User,
-  X,
   Calendar,
   CheckCircle,
-  XCircle,
   AlertCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
-import { EmptyState } from "@/components/ui/empty-state";
-import { LoadingButton } from "@/components/ui/loading-button";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from "@/components/ui/sheet";
 import { useStore } from "@/stores/useStore";
-import { useToast } from "@/hooks/use-toast";
 import { NewAppointmentDialog } from "@/components/dialogs/NewAppointmentDialog";
+import { AppointmentDetailDialog } from "@/components/dialogs/AppointmentDetailDialog";
 import type { Appointment } from "@/types";
 
 const statusMap = {
-  pending: { label: "待确认", variant: "secondary" as const, color: "bg-chart-4", icon: AlertCircle },
-  confirmed: { label: "已确认", variant: "default" as const, color: "bg-primary", icon: CheckCircle },
-  cancelled: { label: "已取消", variant: "outline" as const, color: "bg-muted-foreground", icon: XCircle },
-  completed: { label: "已完成", variant: "default" as const, color: "bg-chart-2", icon: CheckCircle },
-  noshow: { label: "已爽约", variant: "destructive" as const, color: "bg-destructive", icon: XCircle },
+  pending: { label: "待确认", color: "bg-chart-4" },
+  confirmed: { label: "已确认", color: "bg-primary" },
+  cancelled: { label: "已取消", color: "bg-muted-foreground" },
+  completed: { label: "已完成", color: "bg-chart-2" },
+  noshow: { label: "已爽约", color: "bg-destructive" },
 };
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
 export default function Appointments() {
-  const { toast } = useToast();
-  const { appointments, updateAppointment } = useStore();
+  const { appointments } = useStore();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [isUpdating, setIsUpdating] = useState<string | null>(null);
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
   // 获取当月日历格子（包括前后补齐的日期）
   const calendarDays = useMemo(() => {
@@ -116,18 +101,14 @@ export default function Appointments() {
     return appointmentsByDate.get(dateKey) || [];
   };
 
-  const handleUpdateStatus = async (id: string, status: Appointment["status"]) => {
-    setIsUpdating(id);
-    try {
-      await new Promise((r) => setTimeout(r, 300));
-      updateAppointment(id, { status });
-      toast({
-        title: "状态已更新",
-        description: `预约已${statusMap[status].label}`,
-      });
-    } finally {
-      setIsUpdating(null);
-    }
+  const handleDateClick = (day: Date) => {
+    setSelectedDate(day);
+    setDetailDialogOpen(true);
+  };
+
+  const handleAddAppointment = () => {
+    setDetailDialogOpen(false);
+    setDialogOpen(true);
   };
 
   return (
@@ -220,7 +201,7 @@ export default function Appointments() {
               return (
                 <div
                   key={day.toISOString()}
-                  onClick={() => setSelectedDate(day)}
+                  onClick={() => handleDateClick(day)}
                   className={`min-h-[80px] cursor-pointer border-b border-r border-border p-1.5 transition-all hover:bg-muted/50 ${
                     !isCurrentMonth ? "bg-muted/20" : ""
                   } ${isSelected ? "bg-primary/10 ring-2 ring-inset ring-primary" : ""}`}
@@ -274,127 +255,14 @@ export default function Appointments() {
         </CardContent>
       </Card>
 
-      {/* 选中日期的预约详情 Sheet */}
-      <Sheet open={!!selectedDate} onOpenChange={(open) => !open && setSelectedDate(null)}>
-        <SheetContent className="sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle className="flex items-center justify-between">
-              <span>
-                {selectedDate && format(selectedDate, "M月d日 EEEE", { locale: zhCN })}
-              </span>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSelectedDate(null)}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </SheetTitle>
-          </SheetHeader>
-
-          <div className="mt-4 space-y-4">
-            <Button
-              className="w-full"
-              onClick={() => {
-                setDialogOpen(true);
-              }}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              添加预约
-            </Button>
-
-            {selectedDayAppointments.length === 0 ? (
-              <EmptyState
-                icon={Clock}
-                title="当天暂无预约"
-                description="点击上方按钮添加预约"
-              />
-            ) : (
-              <ScrollArea className="h-[calc(100vh-220px)]">
-                <div className="space-y-3 pr-4">
-                  {selectedDayAppointments.map((apt) => {
-                    const StatusIcon = statusMap[apt.status].icon;
-                    return (
-                      <Card key={apt.id} className="transition-shadow hover:shadow-md">
-                        <CardContent className="p-4">
-                          <div className="flex items-start justify-between">
-                            <div className="flex items-center gap-3">
-                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-                                <User className="h-5 w-5 text-primary" />
-                              </div>
-                              <div>
-                                <p className="font-medium">{apt.memberName}</p>
-                                <p className="text-sm text-muted-foreground">
-                                  {apt.memberPhone}
-                                </p>
-                              </div>
-                            </div>
-                            <Badge variant={statusMap[apt.status].variant}>
-                              <StatusIcon className="mr-1 h-3 w-3" />
-                              {statusMap[apt.status].label}
-                            </Badge>
-                          </div>
-
-                          <div className="mt-3 flex items-center gap-2 text-sm">
-                            <Clock className="h-4 w-4 text-muted-foreground" />
-                            <span className="font-medium">{apt.time}</span>
-                            <span className="text-muted-foreground">|</span>
-                            <span>{apt.serviceName}</span>
-                          </div>
-
-                          {/* 操作按钮 */}
-                          {apt.status === "pending" && (
-                            <div className="mt-4 flex gap-2">
-                              <LoadingButton
-                                size="sm"
-                                className="flex-1"
-                                loading={isUpdating === apt.id}
-                                onClick={() => handleUpdateStatus(apt.id, "confirmed")}
-                              >
-                                确认
-                              </LoadingButton>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="flex-1"
-                                disabled={isUpdating === apt.id}
-                                onClick={() => handleUpdateStatus(apt.id, "cancelled")}
-                              >
-                                取消
-                              </Button>
-                            </div>
-                          )}
-                          {apt.status === "confirmed" && (
-                            <div className="mt-4 flex gap-2">
-                              <LoadingButton
-                                size="sm"
-                                className="flex-1"
-                                loading={isUpdating === apt.id}
-                                onClick={() => handleUpdateStatus(apt.id, "completed")}
-                              >
-                                完成服务
-                              </LoadingButton>
-                              <Button
-                                size="sm"
-                                variant="destructive"
-                                className="flex-1"
-                                disabled={isUpdating === apt.id}
-                                onClick={() => handleUpdateStatus(apt.id, "noshow")}
-                              >
-                                标记爽约
-                              </Button>
-                            </div>
-                          )}
-                        </CardContent>
-                      </Card>
-                    );
-                  })}
-                </div>
-              </ScrollArea>
-            )}
-          </div>
-        </SheetContent>
-      </Sheet>
+      {/* 预约详情弹窗 */}
+      <AppointmentDetailDialog
+        selectedDate={selectedDate}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+        onAddAppointment={handleAddAppointment}
+        appointments={selectedDayAppointments}
+      />
 
       <NewAppointmentDialog
         open={dialogOpen}

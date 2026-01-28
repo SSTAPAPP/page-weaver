@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Member, MemberCard, CardTemplate, Service, Appointment, Transaction, Order } from '@/types';
+import { Member, MemberCard, CardTemplate, Service, Appointment, Transaction, Order, ShopInfo } from '@/types';
 
 interface Store {
   // 会员
@@ -39,6 +39,7 @@ interface Store {
   // 交易流水
   transactions: Transaction[];
   addTransaction: (transaction: Omit<Transaction, 'id' | 'createdAt'>) => void;
+  voidTransaction: (id: string) => void;
   
   // 订单
   orders: Order[];
@@ -48,8 +49,16 @@ interface Store {
   adminPassword: string;
   setAdminPassword: (password: string) => void;
   
+  // 店铺信息
+  shopInfo: ShopInfo;
+  setShopInfo: (info: Partial<ShopInfo>) => void;
+  
   // 删除会员
   deleteMember: (id: string) => void;
+  
+  // UI状态
+  hiddenSections: string[];
+  toggleSectionVisibility: (sectionId: string) => void;
   
   // 统计
   getTodayStats: () => {
@@ -232,6 +241,13 @@ export const useStore = create<Store>()(
           ],
         }));
       },
+      voidTransaction: (id) => {
+        set((state) => ({
+          transactions: state.transactions.map((t) =>
+            t.id === id ? { ...t, voided: true } : t
+          ),
+        }));
+      },
 
       // 订单
       orders: [],
@@ -248,28 +264,62 @@ export const useStore = create<Store>()(
       adminPassword: '123456',
       setAdminPassword: (password) => set({ adminPassword: password }),
       
+      // 店铺信息
+      shopInfo: {
+        name: '我的理发店',
+        address: '',
+        phone: '',
+      },
+      setShopInfo: (info) => {
+        set((state) => ({
+          shopInfo: { ...state.shopInfo, ...info },
+        }));
+      },
+      
       // 删除会员
       deleteMember: (id) => {
         set((state) => ({
           members: state.members.filter((m) => m.id !== id),
         }));
       },
+      
+      // UI状态
+      hiddenSections: [],
+      toggleSectionVisibility: (sectionId) => {
+        set((state) => ({
+          hiddenSections: state.hiddenSections.includes(sectionId)
+            ? state.hiddenSections.filter((s) => s !== sectionId)
+            : [...state.hiddenSections, sectionId],
+        }));
+      },
 
       // 统计
       getTodayStats: () => {
         const { transactions, members, appointments } = get();
-        const todayTransactions = transactions.filter((t) => isToday(new Date(t.createdAt)));
+        const todayTransactions = transactions.filter((t) => 
+          isToday(new Date(t.createdAt)) && !t.voided
+        );
         
+        // 今日实收 = 现金/微信/支付宝支付（包括补差价）
         const revenue = todayTransactions
-          .filter((t) => t.type === 'consume' && t.paymentMethod !== 'balance')
+          .filter((t) => 
+            (t.type === 'consume' || t.type === 'price_diff') && 
+            t.paymentMethod !== 'balance' &&
+            t.paymentMethod !== undefined
+          )
           .reduce((sum, t) => sum + t.amount, 0);
         
+        // 今日充值
         const recharge = todayTransactions
           .filter((t) => t.type === 'recharge')
           .reduce((sum, t) => sum + t.amount, 0);
         
+        // 今日消耗 = 储值卡/次卡消费（不包括补差价）
         const consumption = todayTransactions
-          .filter((t) => t.type === 'consume' || t.type === 'card_deduct')
+          .filter((t) => 
+            (t.type === 'consume' && t.paymentMethod === 'balance') || 
+            t.type === 'card_deduct'
+          )
           .reduce((sum, t) => sum + t.amount, 0);
         
         const newMembers = members.filter((m) => isToday(new Date(m.createdAt))).length;

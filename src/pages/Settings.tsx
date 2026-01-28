@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Download, Lock, Save, Eye, EyeOff, Shield, Database, AlertTriangle } from "lucide-react";
+import { Download, Save, Eye, EyeOff, Shield, Database, AlertTriangle, Moon, Sun, Type, Store, MapPin, Phone } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,12 +10,33 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { FormField } from "@/components/ui/form-field";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
+import { useTheme } from "@/hooks/useTheme";
+
+const fontSizeLabels = {
+  xs: "较小",
+  sm: "小",
+  base: "标准",
+  lg: "大",
+  xl: "较大",
+};
+
+type FontSize = "xs" | "sm" | "base" | "lg" | "xl";
 
 export default function Settings() {
   const { toast } = useToast();
-  const { members, transactions, adminPassword, setAdminPassword } = useStore();
+  const { members, transactions, adminPassword, setAdminPassword, shopInfo, setShopInfo } = useStore();
+  const { theme, setTheme, fontSize, setFontSize } = useTheme();
   
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -24,6 +45,12 @@ export default function Settings() {
   const [isExporting, setIsExporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  
+  // 店铺信息编辑状态
+  const [editShopName, setEditShopName] = useState(shopInfo.name);
+  const [editShopAddress, setEditShopAddress] = useState(shopInfo.address);
+  const [editShopPhone, setEditShopPhone] = useState(shopInfo.phone);
+  const [isSavingShop, setIsSavingShop] = useState(false);
 
   const handleExportMembers = async () => {
     if (members.length === 0) {
@@ -120,6 +147,26 @@ export default function Settings() {
     }
   };
 
+  const handleSaveShopInfo = async () => {
+    setIsSavingShop(true);
+    try {
+      await new Promise((r) => setTimeout(r, 300));
+      setShopInfo({
+        name: editShopName,
+        address: editShopAddress,
+        phone: editShopPhone,
+      });
+      toast({
+        title: "保存成功",
+        description: "店铺信息已更新",
+      });
+    } finally {
+      setIsSavingShop(false);
+    }
+  };
+
+  const fontSizeValue = ["xs", "sm", "base", "lg", "xl"].indexOf(fontSize);
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -129,6 +176,147 @@ export default function Settings() {
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
+        {/* 店铺信息 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Store className="h-5 w-5" />
+              店铺信息
+            </CardTitle>
+            <CardDescription>设置您的店铺基本信息</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="shop-name" className="flex items-center gap-2">
+                <Store className="h-4 w-4 text-muted-foreground" />
+                店铺名称
+              </Label>
+              <Input
+                id="shop-name"
+                value={editShopName}
+                onChange={(e) => setEditShopName(e.target.value)}
+                placeholder="请输入店铺名称"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="shop-address" className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-muted-foreground" />
+                店铺地址
+              </Label>
+              <Input
+                id="shop-address"
+                value={editShopAddress}
+                onChange={(e) => setEditShopAddress(e.target.value)}
+                placeholder="请输入店铺地址"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="shop-phone" className="flex items-center gap-2">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                联系电话
+              </Label>
+              <Input
+                id="shop-phone"
+                value={editShopPhone}
+                onChange={(e) => setEditShopPhone(e.target.value)}
+                placeholder="请输入联系电话"
+              />
+            </div>
+            <LoadingButton 
+              onClick={handleSaveShopInfo} 
+              loading={isSavingShop}
+              className="w-full"
+            >
+              <Save className="mr-2 h-4 w-4" />
+              保存店铺信息
+            </LoadingButton>
+          </CardContent>
+        </Card>
+
+        {/* 外观设置 */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Moon className="h-5 w-5" />
+              外观设置
+            </CardTitle>
+            <CardDescription>自定义界面显示效果</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* 深色模式 */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="flex items-center gap-2">
+                  {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
+                  深色模式
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  切换明暗主题
+                </p>
+              </div>
+              <Select value={theme} onValueChange={(v) => setTheme(v as "light" | "dark" | "system")}>
+                <SelectTrigger className="w-28">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="light">浅色</SelectItem>
+                  <SelectItem value="dark">深色</SelectItem>
+                  <SelectItem value="system">跟随系统</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Separator />
+
+            {/* 字体大小 */}
+            <div className="space-y-4">
+              <div className="space-y-0.5">
+                <Label className="flex items-center gap-2">
+                  <Type className="h-4 w-4" />
+                  字体大小
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  当前：{fontSizeLabels[fontSize]}
+                </p>
+              </div>
+              <div className="flex items-center gap-4">
+                <span className="text-xs text-muted-foreground">A</span>
+                <Slider
+                  value={[fontSizeValue]}
+                  onValueChange={(v) => setFontSize(["xs", "sm", "base", "lg", "xl"][v[0]] as FontSize)}
+                  max={4}
+                  step={1}
+                  className="flex-1"
+                />
+                <span className="text-lg text-muted-foreground">A</span>
+              </div>
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>较小</span>
+                <span>小</span>
+                <span>标准</span>
+                <span>大</span>
+                <span>较大</span>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* 数据存储 */}
+            <div className="flex items-center justify-between">
+              <div className="space-y-0.5">
+                <Label className="flex items-center gap-2">
+                  <Database className="h-4 w-4" />
+                  数据存储
+                </Label>
+                <p className="text-sm text-muted-foreground">
+                  当前使用浏览器本地存储
+                </p>
+              </div>
+              <Badge variant="secondary">本地存储</Badge>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* 数据导出 */}
         <Card>
           <CardHeader>
@@ -247,7 +435,7 @@ export default function Settings() {
           <CardTitle className="text-base">系统信息</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-4">
             <div className="rounded-lg bg-muted/50 p-4">
               <p className="text-sm text-muted-foreground">版本</p>
               <p className="font-medium">v1.0.0</p>
@@ -259,6 +447,10 @@ export default function Settings() {
             <div className="rounded-lg bg-muted/50 p-4">
               <p className="text-sm text-muted-foreground">会员总数</p>
               <p className="font-medium">{members.length} 位</p>
+            </div>
+            <div className="rounded-lg bg-muted/50 p-4">
+              <p className="text-sm text-muted-foreground">交易记录</p>
+              <p className="font-medium">{transactions.length} 条</p>
             </div>
           </div>
         </CardContent>
