@@ -11,18 +11,16 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  HelpCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { StatCard } from "@/components/ui/stat-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+  HoverCard,
+  HoverCardContent,
+  HoverCardTrigger,
+} from "@/components/ui/hover-card";
 import { useStore } from "@/stores/useStore";
 import { QuickMemberDialog } from "@/components/dialogs/QuickMemberDialog";
 import { QuickRechargeDialog } from "@/components/dialogs/QuickRechargeDialog";
@@ -30,23 +28,102 @@ import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
-const metricsExplanation = {
-  revenue: {
-    title: "今日实收",
-    description: "统计当天通过现金、微信、支付宝等方式收到的真实金额，包括补差价收入",
-    example: "例：会员余额50元，消费80元，补差价30元现金 → 实收30元",
+const metricsInfo: Record<string, { title: string; brief: string; formula: string; example: string; note: string }> = {
+  "今日实收": {
+    title: "实收金额",
+    brief: "真实进账现金流",
+    formula: "现金 + 微信 + 支付宝 + 补差价",
+    example: "余额50元消费80元，补差价30元现金 → 实收30元",
+    note: "余额消费不计入（已在充值时收过）",
   },
-  recharge: {
-    title: "今日充值",
-    description: "统计当天售出的储值卡和次卡金额，属于预收款",
-    example: "例：会员充值500元 → 充值500元",
+  "今日充值": {
+    title: "充值金额",
+    brief: "储值/次卡销售额",
+    formula: "储值卡销售 + 次卡销售",
+    example: "会员充值500元储值卡 → 充值500元",
+    note: "预收款项，体现客户信任度",
   },
-  consumption: {
-    title: "今日消耗",
-    description: "统计当天会员使用余额或次卡消费的金额，反映实际服务量",
-    example: "例：会员用余额支付38元洗剪吹 → 消耗38元",
+  "今日消耗": {
+    title: "消耗金额",
+    brief: "余额/次卡核销值",
+    formula: "余额消费 + 次卡消费（按原价）",
+    example: "用余额支付38元洗剪吹 → 消耗38元",
+    note: "补差价不计入（已在实收统计）",
   },
 };
+
+interface StatCardWithTooltipProps {
+  title: string;
+  value: string;
+  description: string;
+  icon: React.ElementType;
+  color: string;
+  hidden?: boolean;
+}
+
+function StatCardWithTooltip({ title, value, description, icon: Icon, color, hidden }: StatCardWithTooltipProps) {
+  const metricInfo = metricsInfo[title];
+  
+  const cardContent = (
+    <Card className="relative overflow-hidden transition-shadow hover:shadow-md cursor-pointer group">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+          {title}
+        </p>
+        <Icon className={`h-4 w-4 ${color}`} />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{hidden ? "****" : value}</div>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </CardContent>
+      {metricInfo && (
+        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      )}
+    </Card>
+  );
+  
+  if (metricInfo) {
+    return (
+      <HoverCard openDelay={100} closeDelay={50}>
+        <HoverCardTrigger asChild>
+          {cardContent}
+        </HoverCardTrigger>
+        <HoverCardContent className="w-80" side="bottom" align="start">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                title === "今日实收" ? "bg-chart-1/10" : 
+                title === "今日充值" ? "bg-chart-2/10" : "bg-chart-3/10"
+              }`}>
+                <Icon className={`h-4 w-4 ${color}`} />
+              </div>
+              <div>
+                <p className="font-semibold">{metricInfo.title}</p>
+                <p className="text-xs text-muted-foreground">{metricInfo.brief}</p>
+              </div>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="rounded-md bg-muted/50 p-2">
+                <p className="font-medium text-xs text-muted-foreground mb-1">计算公式</p>
+                <p className="font-mono text-xs">{metricInfo.formula}</p>
+              </div>
+              <div>
+                <p className="font-medium text-xs text-muted-foreground mb-1">示例</p>
+                <p className="text-xs">{metricInfo.example}</p>
+              </div>
+              <p className="text-xs text-muted-foreground/80 italic flex items-start gap-1">
+                <span>💡</span>
+                <span>{metricInfo.note}</span>
+              </p>
+            </div>
+          </div>
+        </HoverCardContent>
+      </HoverCard>
+    );
+  }
+
+  return cardContent;
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -140,27 +217,9 @@ export default function Dashboard() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-foreground">仪表盘</h1>
-            <p className="text-muted-foreground">今日经营数据一览</p>
-          </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-6 w-6 opacity-40 hover:opacity-100">
-                <HelpCircle className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right" className="max-w-sm space-y-3 p-4">
-              {Object.values(metricsExplanation).map((metric) => (
-                <div key={metric.title} className="space-y-1">
-                  <p className="font-medium">{metric.title}</p>
-                  <p className="text-sm text-muted-foreground">{metric.description}</p>
-                  <p className="text-xs text-muted-foreground/80">{metric.example}</p>
-                </div>
-              ))}
-            </TooltipContent>
-          </Tooltip>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">仪表盘</h1>
+          <p className="text-muted-foreground">今日经营数据一览 · 鼠标移至卡片查看指标说明</p>
         </div>
         <div className="hidden items-center gap-2 sm:flex">
           <Badge variant="outline" className="font-normal">
@@ -183,13 +242,14 @@ export default function Dashboard() {
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
           {statCards.map((stat) => (
-            <StatCard
+            <StatCardWithTooltip
               key={stat.title}
               title={stat.title}
-              value={isHidden("stats") ? "****" : stat.value}
+              value={stat.value}
               description={stat.description}
               icon={stat.icon}
-              iconColor={stat.color}
+              color={stat.color}
+              hidden={isHidden("stats")}
             />
           ))}
         </div>

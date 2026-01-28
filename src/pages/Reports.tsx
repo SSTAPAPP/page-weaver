@@ -1,9 +1,8 @@
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { TrendingUp, Wallet, CreditCard, Users, HelpCircle, DollarSign, PiggyBank, Activity } from "lucide-react";
+import { TrendingUp, Wallet, CreditCard, Users, DollarSign, PiggyBank, Activity } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { StatCard } from "@/components/ui/stat-card";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
@@ -31,41 +30,106 @@ import {
   Legend,
 } from "recharts";
 
-const metricsInfo = [
-  {
-    id: "revenue",
+const metricsInfo: Record<string, { title: string; brief: string; formula: string; example: string; note: string }> = {
+  "今日实收": {
     title: "实收金额",
-    icon: DollarSign,
-    color: "text-chart-1",
-    bgColor: "bg-chart-1/10",
     brief: "真实进账现金流",
     formula: "现金 + 微信 + 支付宝 + 补差价",
     example: "余额50元消费80元，补差价30元现金 → 实收30元",
     note: "余额消费不计入（已在充值时收过）",
   },
-  {
-    id: "recharge",
+  "今日充值": {
     title: "充值金额",
-    icon: PiggyBank,
-    color: "text-chart-2",
-    bgColor: "bg-chart-2/10",
     brief: "储值/次卡销售额",
     formula: "储值卡销售 + 次卡销售",
     example: "会员充值500元储值卡 → 充值500元",
     note: "预收款项，体现客户信任度",
   },
-  {
-    id: "consumption",
+  "今日消耗": {
     title: "消耗金额",
-    icon: Activity,
-    color: "text-chart-3",
-    bgColor: "bg-chart-3/10",
     brief: "余额/次卡核销值",
     formula: "余额消费 + 次卡消费（按原价）",
     example: "用余额支付38元洗剪吹 → 消耗38元",
     note: "补差价不计入（已在实收统计）",
   },
-];
+};
+
+interface StatCardWithTooltipProps {
+  title: string;
+  value: string;
+  total: string;
+  icon: React.ElementType;
+  color: string;
+}
+
+function StatCardWithTooltip({ title, value, total, icon: Icon, color }: StatCardWithTooltipProps) {
+  const metricInfo = metricsInfo[title];
+  
+  if (metricInfo) {
+    return (
+      <HoverCard openDelay={100} closeDelay={50}>
+        <HoverCardTrigger asChild>
+          <Card className="relative overflow-hidden transition-shadow hover:shadow-md cursor-pointer group">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                {title}
+              </p>
+              <Icon className={`h-4 w-4 ${color}`} />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{value}</div>
+              <p className="text-xs text-muted-foreground">{total}</p>
+            </CardContent>
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+          </Card>
+        </HoverCardTrigger>
+        <HoverCardContent className="w-80" side="bottom" align="start">
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
+                title === "今日实收" ? "bg-chart-1/10" : 
+                title === "今日充值" ? "bg-chart-2/10" : "bg-chart-3/10"
+              }`}>
+                <Icon className={`h-4 w-4 ${color}`} />
+              </div>
+              <div>
+                <p className="font-semibold">{metricInfo.title}</p>
+                <p className="text-xs text-muted-foreground">{metricInfo.brief}</p>
+              </div>
+            </div>
+            <div className="space-y-2 text-sm">
+              <div className="rounded-md bg-muted/50 p-2">
+                <p className="font-medium text-xs text-muted-foreground mb-1">计算公式</p>
+                <p className="font-mono text-xs">{metricInfo.formula}</p>
+              </div>
+              <div>
+                <p className="font-medium text-xs text-muted-foreground mb-1">示例</p>
+                <p className="text-xs">{metricInfo.example}</p>
+              </div>
+              <p className="text-xs text-muted-foreground/80 italic flex items-start gap-1">
+                <span>💡</span>
+                <span>{metricInfo.note}</span>
+              </p>
+            </div>
+          </div>
+        </HoverCardContent>
+      </HoverCard>
+    );
+  }
+
+  return (
+    <Card className="relative overflow-hidden transition-shadow hover:shadow-md">
+      <CardHeader className="flex flex-row items-center justify-between pb-2">
+        <p className="text-sm font-medium text-muted-foreground">{title}</p>
+        <Icon className={`h-4 w-4 ${color}`} />
+      </CardHeader>
+      <CardContent>
+        <div className="text-2xl font-bold">{value}</div>
+        <p className="text-xs text-muted-foreground">{total}</p>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function Reports() {
   const { transactions, members, getTodayStats } = useStore();
@@ -84,7 +148,6 @@ export default function Reports() {
         return txDate >= dayStart && txDate <= dayEnd && !t.voided;
       });
 
-      // 实收 = 现金/微信/支付宝支付 + subTransactions中的补差价
       let revenue = dayTransactions
         .filter((t) => 
           t.type === "consume" && 
@@ -93,9 +156,8 @@ export default function Reports() {
         )
         .reduce((sum, t) => sum + t.amount, 0);
       
-      // 加上subTransactions中的补差价
       dayTransactions.forEach((t) => {
-        if (t.subTransactions) {
+        if (t.type !== 'refund' && t.subTransactions) {
           t.subTransactions.forEach((sub) => {
             if (sub.type === 'price_diff') {
               revenue += sub.amount;
@@ -104,7 +166,6 @@ export default function Reports() {
         }
       });
       
-      // 兼容旧的price_diff交易
       revenue += dayTransactions
         .filter((t) => t.type === "price_diff")
         .reduce((sum, t) => sum + t.amount, 0);
@@ -113,7 +174,6 @@ export default function Reports() {
         .filter((t) => t.type === "recharge")
         .reduce((sum, t) => sum + t.amount, 0);
 
-      // 消耗 = 储值卡/次卡消费（不包括补差价）
       const consumption = dayTransactions
         .filter((t) => 
           (t.type === "consume" && t.paymentMethod === "balance") || 
@@ -143,9 +203,8 @@ export default function Reports() {
       )
       .reduce((sum, t) => sum + t.amount, 0);
     
-    // 加上subTransactions中的补差价
     validTransactions.forEach((t) => {
-      if (t.subTransactions) {
+      if (t.type !== 'refund' && t.subTransactions) {
         t.subTransactions.forEach((sub) => {
           if (sub.type === 'price_diff') {
             revenue += sub.amount;
@@ -154,7 +213,6 @@ export default function Reports() {
       }
     });
     
-    // 兼容旧的price_diff交易
     revenue += validTransactions
       .filter((t) => t.type === "price_diff")
       .reduce((sum, t) => sum + t.amount, 0);
@@ -211,77 +269,25 @@ export default function Reports() {
       {/* Header */}
       <PageHeader
         title="数据报表"
-        description="经营数据分析"
+        description="经营数据分析 · 鼠标移至卡片查看指标说明"
       >
         <Badge variant="outline" className="font-normal">
           近30天
         </Badge>
       </PageHeader>
 
-      {/* Stats Cards */}
+      {/* Stats Cards - 带hover指标说明 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (
-          <StatCard
+          <StatCardWithTooltip
             key={stat.title}
             title={stat.title}
             value={stat.value}
-            description={stat.total}
+            total={stat.total}
             icon={stat.icon}
-            iconColor={stat.color}
+            color={stat.color}
           />
         ))}
-      </div>
-
-      {/* 指标说明 - 紧凑横向卡片 */}
-      <div className="grid gap-3 md:grid-cols-3">
-        {metricsInfo.map((metric) => {
-          const MetricIcon = metric.icon;
-          return (
-            <HoverCard key={metric.id} openDelay={200} closeDelay={100}>
-              <HoverCardTrigger asChild>
-                <Card className="cursor-pointer transition-all hover:shadow-md hover:border-primary/30">
-                  <CardContent className="flex items-center gap-3 p-4">
-                    <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${metric.bgColor}`}>
-                      <MetricIcon className={`h-5 w-5 ${metric.color}`} />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="font-medium text-sm">{metric.title}</p>
-                      <p className="text-xs text-muted-foreground truncate">{metric.brief}</p>
-                    </div>
-                    <HelpCircle className="h-4 w-4 text-muted-foreground/50 shrink-0 ml-auto" />
-                  </CardContent>
-                </Card>
-              </HoverCardTrigger>
-              <HoverCardContent className="w-80" side="bottom" align="start">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${metric.bgColor}`}>
-                      <MetricIcon className={`h-4 w-4 ${metric.color}`} />
-                    </div>
-                    <div>
-                      <p className="font-semibold">{metric.title}</p>
-                      <p className="text-xs text-muted-foreground">{metric.brief}</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="rounded-md bg-muted/50 p-2">
-                      <p className="font-medium text-xs text-muted-foreground mb-1">计算公式</p>
-                      <p className="font-mono text-xs">{metric.formula}</p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-xs text-muted-foreground mb-1">示例</p>
-                      <p className="text-xs">{metric.example}</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground/80 italic flex items-start gap-1">
-                      <span>💡</span>
-                      <span>{metric.note}</span>
-                    </p>
-                  </div>
-                </div>
-              </HoverCardContent>
-            </HoverCard>
-          );
-        })}
       </div>
 
       {!hasData ? (
@@ -299,15 +305,6 @@ export default function Reports() {
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-base">
                   30天收入趋势
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <HelpCircle className="h-4 w-4 text-muted-foreground/50" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>实收：现金/微信/支付宝+补差价</p>
-                      <p>充值：储值卡/次卡入账</p>
-                    </TooltipContent>
-                  </Tooltip>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -365,15 +362,6 @@ export default function Reports() {
               <CardHeader className="pb-2">
                 <CardTitle className="flex items-center gap-2 text-base">
                   30天消耗趋势
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <HelpCircle className="h-4 w-4 text-muted-foreground/50" />
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>消耗：余额+次卡实际服务金额</p>
-                      <p>不含补差价部分</p>
-                    </TooltipContent>
-                  </Tooltip>
                 </CardTitle>
               </CardHeader>
               <CardContent>

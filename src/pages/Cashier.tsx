@@ -23,6 +23,13 @@ interface CartItem {
   card?: MemberCard;
 }
 
+interface CardUsageInfo {
+  cardName: string;
+  originalCount: number;
+  consumedCount: number;
+  remainingCount: number;
+}
+
 export default function Cashier() {
   const { toast } = useToast();
   const {
@@ -32,6 +39,7 @@ export default function Cashier() {
     deductCard,
     addTransaction,
     addOrder,
+    getMember,
   } = useStore();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -109,6 +117,32 @@ export default function Cashier() {
 
   const { cardDeductTotal, balanceDeduct, cashNeed, total } = calculatePayment();
 
+  // 计算次卡使用明细
+  const cardUsageInfo = useMemo((): CardUsageInfo[] => {
+    if (!selectedMember) return [];
+    
+    // 按卡ID分组统计使用次数
+    const cardUsageMap = new Map<string, { card: MemberCard; count: number }>();
+    
+    cart.forEach((item) => {
+      if (item.useCard && item.card) {
+        const existing = cardUsageMap.get(item.card.id);
+        if (existing) {
+          existing.count += 1;
+        } else {
+          cardUsageMap.set(item.card.id, { card: item.card, count: 1 });
+        }
+      }
+    });
+    
+    return Array.from(cardUsageMap.values()).map(({ card, count }) => ({
+      cardName: card.templateName,
+      originalCount: card.remainingCount,
+      consumedCount: count,
+      remainingCount: card.remainingCount - count,
+    }));
+  }, [cart, selectedMember]);
+
   const handleCheckoutClick = () => {
     if (cart.length === 0) {
       toast({ title: "请添加服务项目", variant: "destructive" });
@@ -134,7 +168,7 @@ export default function Cashier() {
             subTransactions.push({
               type: 'card',
               amount: item.service.price,
-              cardId: item.card.id, // 存储cardId用于退款
+              cardId: item.card.id,
             });
           }
         });
@@ -167,13 +201,11 @@ export default function Cashier() {
           memberId: selectedMember.id,
           memberName: selectedMember.name,
           type: mainTransactionType,
-          amount: cardDeductTotal + balanceDeduct, // 消耗金额（不含补差价）
+          amount: cardDeductTotal + balanceDeduct,
           paymentMethod: balanceDeduct > 0 ? "balance" : undefined,
           description: mainDescription,
           subTransactions,
         });
-
-        // 补差价信息已包含在主交易的subTransactions中，不再单独创建price_diff交易
 
         // 添加订单
         addOrder({
@@ -194,7 +226,7 @@ export default function Cashier() {
           ],
         });
       } else {
-        // 散客结账 - 只记录交易和订单
+        // 散客结账
         addTransaction({
           memberId: "walk-in",
           memberName: "散客",
@@ -546,12 +578,14 @@ export default function Cashier() {
           name: item.service.name,
           price: item.service.price,
           useCard: item.useCard,
+          cardName: item.card?.templateName,
         }))}
         cardDeductTotal={cardDeductTotal}
         balanceDeduct={balanceDeduct}
         cashNeed={cashNeed}
         total={total}
         paymentMethod={paymentMethod}
+        cardUsageInfo={cardUsageInfo}
       />
     </div>
   );
