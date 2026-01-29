@@ -18,8 +18,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, Calendar, CreditCard, Wallet, Pencil, Trash2, Save, X, History } from "lucide-react";
-import { AdminPasswordDialog } from "@/components/dialogs/AdminPasswordDialog";
+import { Phone, Calendar, CreditCard, Wallet, Pencil, Trash2, Save, X, History, ArrowUpCircle, ArrowDownCircle, Link2 } from "lucide-react";
+import { MemberDeleteWithRefundDialog } from "@/components/dialogs/MemberDeleteWithRefundDialog";
+
+// Transaction type mapping for consistent display
+const typeMap = {
+  recharge: { label: "充值", color: "bg-chart-2/10 text-chart-2 border-chart-2/20" },
+  consume: { label: "消费", color: "bg-destructive/10 text-destructive border-destructive/20" },
+  card_deduct: { label: "次卡", color: "bg-chart-3/10 text-chart-3 border-chart-3/20" },
+  refund: { label: "退款", color: "bg-chart-4/10 text-chart-4 border-chart-4/20" },
+  price_diff: { label: "补差价", color: "bg-chart-1/10 text-chart-1 border-chart-1/20" },
+};
 
 interface MemberDetailDialogProps {
   memberId: string | null;
@@ -29,7 +38,7 @@ interface MemberDetailDialogProps {
 
 export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetailDialogProps) {
   const { toast } = useToast();
-  const { getMember, updateMember, deleteMember, transactions } = useStore();
+  const { getMember, updateMember, transactions } = useStore();
   const member = memberId ? getMember(memberId) : null;
 
   const [isEditing, setIsEditing] = useState(false);
@@ -75,14 +84,12 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
     setIsEditing(false);
   };
 
-  const handleDeleteMember = () => {
-    deleteMember(member.id);
-    toast({ title: "删除成功", description: "会员已删除" });
+  const handleClose = () => {
+    setIsEditing(false);
     onOpenChange(false);
   };
 
-  const handleClose = () => {
-    setIsEditing(false);
+  const handleMemberDeleted = () => {
     onOpenChange(false);
   };
 
@@ -236,26 +243,59 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                     </div>
                   ) : (
                     <div className="space-y-2 max-h-[180px] overflow-auto">
-                      {memberTransactions.map((tx) => (
-                        <div
-                          key={tx.id}
-                          className="flex items-center justify-between rounded-lg border border-border p-2.5 text-sm"
-                        >
-                          <div>
-                            <p className="font-medium truncate max-w-[180px]">{tx.description}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(tx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
-                            </p>
-                          </div>
-                          <span
-                            className={`font-semibold ${
-                              tx.type === "recharge" || tx.type === "refund" ? "text-chart-2" : "text-destructive"
+                      {memberTransactions.map((tx) => {
+                        const typeInfo = typeMap[tx.type] || typeMap.consume;
+                        const isVoided = tx.voided;
+                        const isPositive = tx.type === "recharge" || tx.type === "refund";
+
+                        return (
+                          <div
+                            key={tx.id}
+                            className={`flex items-center justify-between rounded-lg border border-border p-2.5 text-sm ${
+                              isVoided ? "opacity-50" : ""
                             }`}
                           >
-                            {tx.type === "recharge" || tx.type === "refund" ? "+" : "-"}¥{tx.amount.toFixed(2)}
-                          </span>
-                        </div>
-                      ))}
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <p className={`font-medium truncate ${isVoided ? "line-through text-muted-foreground" : ""}`}>
+                                  {tx.description}
+                                </p>
+                                <Badge 
+                                  variant="outline" 
+                                  className={`text-xs shrink-0 ${isVoided ? "bg-muted text-muted-foreground border-muted" : typeInfo.color}`}
+                                >
+                                  {typeInfo.label}
+                                </Badge>
+                                {isVoided && (
+                                  <Badge variant="destructive" className="text-xs shrink-0">
+                                    已作废
+                                  </Badge>
+                                )}
+                                {tx.relatedTransactionId && (
+                                  <Badge variant="outline" className="text-xs shrink-0 text-chart-4 border-chart-4/30">
+                                    <Link2 className="h-2.5 w-2.5 mr-0.5" />
+                                    关联
+                                  </Badge>
+                                )}
+                              </div>
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {format(new Date(tx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
+                              </p>
+                            </div>
+                            <span
+                              className={`font-semibold shrink-0 ml-2 ${
+                                isVoided 
+                                  ? "line-through text-muted-foreground" 
+                                  : isPositive 
+                                    ? "text-chart-2" 
+                                    : "text-destructive"
+                              }`}
+                            >
+                              {isPositive ? "+" : "-"}¥{tx.amount.toFixed(2)}
+                            </span>
+                          </div>
+                        );
+                      })}
                     </div>
                   )}
                 </TabsContent>
@@ -296,13 +336,12 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
         </DialogContent>
       </Dialog>
 
-      {/* 删除确认弹窗 */}
-      <AdminPasswordDialog
+      {/* 删除确认弹窗 - 使用带退款计算的新弹窗 */}
+      <MemberDeleteWithRefundDialog
+        member={member}
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
-        onConfirm={handleDeleteMember}
-        title="删除会员"
-        description={`确定要删除会员"${member.name}"吗？此操作不可恢复。请输入管理员密码确认。`}
+        onDeleted={handleMemberDeleted}
       />
     </>
   );
