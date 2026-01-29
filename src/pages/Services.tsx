@@ -8,7 +8,6 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { FormField } from "@/components/ui/form-field";
-import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import {
   Dialog,
   DialogContent,
@@ -16,12 +15,12 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
+import { AdminPasswordDialog } from "@/components/dialogs/AdminPasswordDialog";
 
 export default function Services() {
   const { toast } = useToast();
@@ -38,7 +37,7 @@ export default function Services() {
 
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [cardDialogOpen, setCardDialogOpen] = useState(false);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [adminPasswordDialogOpen, setAdminPasswordDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: "service" | "card"; id: string; name: string } | null>(null);
   const [editingService, setEditingService] = useState<typeof services[0] | null>(null);
   const [editingCard, setEditingCard] = useState<typeof cardTemplates[0] | null>(null);
@@ -184,7 +183,11 @@ export default function Services() {
     }
     
     setDeleteTarget(null);
-    setDeleteDialogOpen(false);
+  };
+
+  const handleRequestDelete = (type: "service" | "card", id: string, name: string) => {
+    setDeleteTarget({ type, id, name });
+    setAdminPasswordDialogOpen(true);
   };
 
   const categories = [...new Set(services.map((s) => s.category))];
@@ -271,10 +274,7 @@ export default function Services() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => {
-                                setDeleteTarget({ type: "service", id: service.id, name: service.name });
-                                setDeleteDialogOpen(true);
-                              }}
+                              onClick={() => handleRequestDelete("service", service.id, service.name)}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
@@ -339,10 +339,7 @@ export default function Services() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          onClick={() => {
-                            setDeleteTarget({ type: "card", id: template.id, name: template.name });
-                            setDeleteDialogOpen(true);
-                          }}
+                          onClick={() => handleRequestDelete("card", template.id, template.name)}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
@@ -525,15 +522,13 @@ export default function Services() {
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation Dialog */}
-      <ConfirmDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        title={`删除${deleteTarget?.type === "service" ? "服务" : "次卡模板"}`}
-        description={`确定要删除"${deleteTarget?.name}"吗？此操作不可恢复。`}
-        confirmText="删除"
+      {/* Admin Password Dialog for Delete */}
+      <AdminPasswordDialog
+        open={adminPasswordDialogOpen}
+        onOpenChange={setAdminPasswordDialogOpen}
         onConfirm={handleDelete}
-        variant="destructive"
+        title={`删除${deleteTarget?.type === "service" ? "服务" : "次卡模板"}`}
+        description={`确定要删除"${deleteTarget?.name}"吗？此操作不可恢复。请输入管理员密码确认。`}
       />
     </div>
   );

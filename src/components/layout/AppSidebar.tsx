@@ -34,7 +34,7 @@ export function AppSidebar() {
   return (
     <aside
       className={cn(
-        "flex h-screen flex-col border-r border-border bg-sidebar transition-all duration-300",
+        "flex h-screen flex-col border-r border-border bg-sidebar transition-all duration-300 relative",
         collapsed ? "w-16" : "w-60"
       )}
     >
@@ -42,17 +42,22 @@ export function AppSidebar() {
       <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
         {!collapsed && (
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
-              <Scissors className="h-4 w-4 text-primary-foreground" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground">
+              <span className="text-lg font-black text-background">F</span>
             </div>
-            <span className="font-semibold text-sidebar-foreground">理发店管理</span>
+            <span className="font-bold text-sidebar-foreground text-lg">FFk</span>
+          </div>
+        )}
+        {collapsed && (
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground mx-auto">
+            <span className="text-lg font-black text-background">F</span>
           </div>
         )}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
-          className="h-8 w-8 shrink-0"
+          className={cn("h-8 w-8 shrink-0", collapsed && "absolute right-1 top-4")}
         >
           {collapsed ? (
             <ChevronRight className="h-4 w-4" />
