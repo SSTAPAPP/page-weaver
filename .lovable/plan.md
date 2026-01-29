@@ -1,188 +1,199 @@
 
-
-# Implementation Plan
+# FFk - Final Delivery Implementation Plan
 
 ## Overview
-This plan addresses four main issues:
-1. Refund card uses when a card_deduct transaction is refunded
-2. Fix the price_diff transaction error and merge it into main transaction
-3. Redesign the member detail dialog layout to fix button overlap issues
-4. Redesign the reports page metric indicators section
+This plan addresses 5 specific issues plus comprehensive improvements to deliver a production-ready barber shop management system.
 
 ---
 
-## 1. Card Refund Logic Enhancement
+## Issue 1: Member Detail Transaction Display Synchronization
 
-**Problem**: When a `card_deduct` transaction is refunded, the card uses are not being restored.
-
-**Solution**: 
-- Add a `refundCard` function to the store that increments the remaining count
-- Store `cardId` information in the transaction's `subTransactions` for refund reference
-- Update `TransactionRefundDialog` to call `refundCard` when refunding card_deduct transactions
-
-### Files to Modify:
-- `src/stores/useStore.ts` - Add `refundCard` function
-- `src/types/index.ts` - Add `cardId` to subTransactions type
-- `src/pages/Cashier.tsx` - Store cardId in subTransactions when using card
-- `src/components/dialogs/TransactionRefundDialog.tsx` - Call refundCard on refund
-
----
-
-## 2. Merge Price Diff Transaction & Fix Error
-
-**Problem**: 
-- Clicking on `price_diff` transaction causes white screen (missing in typeMap)
-- Price diff creates separate transaction instead of being merged
+**Problem**: Transaction records in member detail dialog don't match the visual style of the Transactions page (voided transactions should show strikethrough, gray badges, lower opacity).
 
 **Solution**:
-- Remove the separate `price_diff` transaction creation in Cashier.tsx
-- Keep price_diff info only in `subTransactions` of the main transaction
-- Add `price_diff` to the typeMap in TransactionRefundDialog
-- Filter out `price_diff` type from the transaction list display (they only exist in subTransactions now)
-- Handle refund logic to also void related price_diff records
+- Update `MemberDetailDialog.tsx` transaction list to include:
+  - Type badges (color-coded by transaction type)
+  - Strikethrough text for voided transactions
+  - "已作废" red badge for voided records
+  - Gray muted styling with reduced opacity (50%)
+  - Colored amounts (+green for recharge/refund, -red for consumption)
 
-### Files to Modify:
-- `src/pages/Cashier.tsx` - Remove separate price_diff transaction creation
-- `src/components/dialogs/TransactionRefundDialog.tsx` - Add price_diff to typeMap
-- `src/pages/Transactions.tsx` - Filter price_diff from display or handle gracefully
-- `src/stores/useStore.ts` - Update statistics to use subTransactions for revenue calculation
-
----
-
-## 3. Member Detail Dialog UI Redesign
-
-**Problem**: Edit/Delete buttons overlap the close X button in the dialog header.
-
-**Solution**:
-- Move action buttons from header to footer area
-- Make the member info card more compact
-- Use a cleaner layout with proper spacing
-
-### Design Changes:
-- Header: Title + Description only (let DialogContent handle the X button)
-- Member card: Reduce padding, use horizontal layout
-- Footer: Place Edit/Delete/Save/Cancel buttons at the bottom
-
-### File to Modify:
+**Files to Modify**:
 - `src/components/dialogs/MemberDetailDialog.tsx`
 
 ---
 
-## 4. Reports Metric Indicators Redesign
+## Issue 2: Admin Password for All Sensitive Operations
 
-**Problem**: Current collapsible metric explanation section needs to be more professional and compact.
+**Problem**: Some sensitive operations (delete service, delete card template, etc.) don't require admin password verification.
 
 **Solution**:
-- Use a horizontal card layout instead of vertical stack
-- Add color-coded icons
-- Make descriptions more concise
-- Use tooltip for detailed examples
+- Wrap all delete operations with `AdminPasswordDialog`:
+  - Delete service in Services.tsx
+  - Delete card template in Services.tsx
+  - Any future destructive operations
 
-### Design Changes:
-- Grid layout with 3 compact metric cards
-- Each card shows: icon, title, brief description
-- Hover to see detailed formula and example
-
-### File to Modify:
-- `src/pages/Reports.tsx`
+**Files to Modify**:
+- `src/pages/Services.tsx` - Add AdminPasswordDialog for delete service and delete card template
 
 ---
 
-## Technical Details
+## Issue 3: Member Deletion with Card Refund Workflow
 
-### Store Changes (useStore.ts)
+**Problem**: Deleting a member should first calculate and show card refund details (prorated based on usage).
 
+**Solution**:
+Create a new `MemberDeleteWithRefundDialog` component that:
+1. Calculates refund for each card:
+   - Formula: `refundAmount = (remainingCount / totalCount) * originalPrice`
+2. Shows itemized refund breakdown:
+   - Card name, original price, total uses, used count, remaining count
+   - Individual refund calculation formula
+   - Total refund amount
+3. Adds refund to member balance (or logs for cash refund)
+4. Creates a refund transaction for each card
+5. Proceeds to delete member after confirmation
+
+**Files to Create**:
+- `src/components/dialogs/MemberDeleteWithRefundDialog.tsx`
+
+**Files to Modify**:
+- `src/components/dialogs/MemberDetailDialog.tsx` - Use new dialog instead of AdminPasswordDialog for deletion
+- `src/stores/useStore.ts` - Add function to get card template by ID
+
+---
+
+## Issue 4: Settings Page Redesign (Left-Right Split Layout)
+
+**Problem**: Current settings page uses a simple grid layout. Need a professional left-sidebar navigation with right content area.
+
+**Solution**:
+Redesign Settings page with:
+- Left sidebar: Collapsible category navigation (Store Info, Appearance, Security, Data)
+- Right content: Dynamic content area based on selected category
+- Manual save button for each section
+- Local storage with browser localStorage (already implemented)
+
+**Layout Structure**:
 ```text
-New function:
-refundCard(memberId: string, cardId: string): void
-  - Find the member and card
-  - Increment remainingCount by 1
-  
-Update getTodayStats():
-  - Revenue calculation should look at subTransactions with type 'price_diff'
-  - Or keep separate price_diff transactions but handle them properly
++------------------+-----------------------------+
+|  Settings Nav    |   Content Area              |
+|  [Store Info]    |   (Based on selection)      |
+|  [Appearance]    |                             |
+|  [Security]      |                             |
+|  [Data Export]   |                             |
++------------------+-----------------------------+
 ```
 
-### Transaction Type Updates (types/index.ts)
+**Files to Modify**:
+- `src/pages/Settings.tsx` - Complete redesign with left-right split
 
-```text
-Update subTransactions interface:
-{
-  type: 'balance' | 'card' | 'price_diff';
-  amount: number;
-  paymentMethod?: string;
-  cardId?: string;  // Add this for card refund
-}
-```
+---
 
-### Cashier.tsx Changes
+## Issue 5: Custom Favicon and App Name (FFk)
 
-```text
-1. Store cardId in subTransactions when using card:
-   subTransactions.push({
-     type: 'card',
-     amount: item.service.price,
-     cardId: item.card.id,  // Add this
-   });
+**Problem**: Need custom black "F" icon for favicon and logo, app name "FFk".
 
-2. Remove the separate price_diff transaction creation (lines 176-185)
-   - Keep price_diff only in subTransactions array
-   - Main transaction's subTransactions will contain all payment details
-```
+**Solution**:
+1. Create SVG favicon with black "F" letter design
+2. Update `index.html` title and meta tags to "FFk"
+3. Update `AppSidebar.tsx` logo to display "F" icon and "FFk" text
+4. Create new favicon as SVG file in public folder
 
-### TransactionRefundDialog.tsx Changes
+**Files to Create**:
+- `public/favicon.svg` - Black F letter icon
 
-```text
-1. Add price_diff to typeMap:
-   price_diff: { label: "补差价", icon: ArrowDownCircle, color: "text-chart-1" }
+**Files to Modify**:
+- `index.html` - Update title, og:title, and favicon link
+- `src/components/layout/AppSidebar.tsx` - Update logo display
 
-2. Update handleRefund():
-   - If transaction has subTransactions with type 'card', call refundCard for each
-   - If subTransactions has 'balance', refund the balance amount
-   
-3. Update refund description to show proper refund details
-```
+---
 
-### MemberDetailDialog.tsx Redesign
+## Additional Improvements Identified
 
-```text
-New layout structure:
-- DialogHeader: Title only (no buttons)
-- DialogContent: ScrollArea with
-  - Compact member info card (avatar + basic info inline)
-  - Balance & Cards stats row
-  - Tabs for cards/transactions
-- DialogFooter: Action buttons (Edit/Delete or Save/Cancel)
-```
+### A. Type Safety and Error Prevention
+- Ensure all transaction type mappings are complete
+- Add null checks for edge cases
 
-### Reports.tsx Metric Section
+### B. Visual Consistency
+- Ensure all badges, colors, and spacing are consistent
+- Verify hover/active states work correctly
 
-```text
-Replace current collapsible with:
-- Horizontal grid of 3 metric cards
-- Each card: colored icon + title + short description
-- Tooltip on hover for detailed explanation
-- Smaller overall footprint
-```
+### C. Data Validation
+- Add form validation where missing
+- Ensure error states display correctly
 
 ---
 
 ## Implementation Order
 
-1. **Store & Types** - Add refundCard function and update types
-2. **Cashier.tsx** - Update to store cardId and remove separate price_diff transaction
-3. **TransactionRefundDialog.tsx** - Fix typeMap and implement full refund logic
-4. **Transactions.tsx** - Handle edge cases for legacy price_diff transactions
-5. **MemberDetailDialog.tsx** - Redesign layout
-6. **Reports.tsx** - Redesign metric indicators
+1. **Issue 5**: Favicon and branding (foundation change)
+2. **Issue 4**: Settings redesign (major UI update)
+3. **Issue 2**: Admin password for sensitive ops (security)
+4. **Issue 3**: Member delete with refund workflow (complex logic)
+5. **Issue 1**: Transaction display sync (visual polish)
 
 ---
 
-## Expected Outcome
+## Technical Details
 
-- Card refunds will properly restore remaining uses
-- No more white screen when clicking transactions with price_diff
-- Merged transaction records show all payment details in one entry
-- Member detail dialog has proper button placement without overlap
-- Reports page has cleaner, more professional metric explanations
+### Member Delete With Refund Calculation
 
+```text
+For each member card:
+  template = getCardTemplateById(card.templateId)
+  usedCount = template.totalCount - card.remainingCount
+  refundRatio = card.remainingCount / template.totalCount
+  refundAmount = template.price * refundRatio
+
+Display format:
+  Card: 洗剪吹10次卡
+  Original: ¥280 | Total: 10次 | Used: 3次 | Remaining: 7次
+  Refund: ¥280 × (7/10) = ¥196
+```
+
+### Settings Page Structure
+
+```text
+Categories:
+1. 店铺信息 (shopInfo)
+   - Store name, address, phone
+   
+2. 外观设置 (appearance)
+   - Theme (light/dark/system)
+   - Font size (5 levels)
+   
+3. 安全设置 (security)
+   - Admin password change
+   
+4. 数据管理 (data)
+   - Export members CSV
+   - Export transactions (future)
+   - Storage info
+   - System info
+```
+
+### Favicon SVG Design
+
+```text
+Simple black "F" letter on transparent/white background
+- Bold sans-serif font
+- Rounded corners
+- Modern professional look
+```
+
+---
+
+## Verification Checklist
+
+After implementation:
+- [ ] All delete operations require admin password
+- [ ] Member deletion shows card refund breakdown
+- [ ] Transaction list in member detail matches Transactions page style
+- [ ] Settings page has split layout with collapsible navigation
+- [ ] Favicon displays "F" icon correctly
+- [ ] App title shows "FFk" in browser tab
+- [ ] Logo shows "F" icon with "FFk" text in sidebar
+- [ ] All forms validate correctly
+- [ ] No console errors or warnings
+- [ ] Responsive layout works on mobile
