@@ -210,8 +210,8 @@ export default function Dashboard() {
     },
   ];
 
-  // 最近交易
-  const recentTransactions = transactions.filter(t => !t.voided).slice(0, 5);
+  // 最近交易 - 显示包括已退款的订单，退款订单加删除线
+  const recentTransactions = transactions.slice(0, 5);
 
   return (
     <div className="space-y-6">
@@ -385,18 +385,26 @@ export default function Dashboard() {
                 {recentTransactions.map((tx) => (
                   <div
                     key={tx.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
+                    className={`flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/50 ${
+                      tx.voided ? "opacity-50" : ""
+                    }`}
                   >
-                    <div>
-                      <p className="font-medium">
-                        {isHidden("transactions") ? "****" : tx.description}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className={`font-medium truncate ${tx.voided ? "line-through" : ""}`}>
+                          {isHidden("transactions") ? "****" : tx.description}
+                        </p>
+                        {tx.voided && (
+                          <Badge variant="destructive" className="text-xs shrink-0">已作废</Badge>
+                        )}
+                      </div>
+                      <p className={`text-sm text-muted-foreground ${tx.voided ? "line-through" : ""}`}>
                         {isHidden("transactions") ? "***" : tx.memberName} • {format(new Date(tx.createdAt), "HH:mm")}
                       </p>
                     </div>
                     <span
-                      className={`font-semibold ${
+                      className={`font-semibold shrink-0 ml-2 ${
+                        tx.voided ? "line-through text-muted-foreground" :
                         tx.type === "recharge" || tx.type === "refund" ? "text-chart-2" : "text-destructive"
                       }`}
                     >
