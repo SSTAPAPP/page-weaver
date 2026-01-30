@@ -57,10 +57,10 @@ export function NewAppointmentDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // 实时搜索
+  // 实时搜索 - 增加结果数量限制
   const searchResults = useMemo(() => {
     if (searchQuery.length < 1) return [];
-    return members.filter((m) => matchMemberSearch(m.name, m.phone, searchQuery)).slice(0, 5);
+    return members.filter((m) => matchMemberSearch(m.name, m.phone, searchQuery)).slice(0, 10);
   }, [members, searchQuery]);
 
   const resetForm = () => {
@@ -116,13 +116,13 @@ export function NewAppointmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-hidden flex flex-col">
         <DialogHeader>
           <DialogTitle>新增预约</DialogTitle>
           <DialogDescription>为会员创建新的预约</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 flex-1 overflow-auto">
           {/* 搜索会员 */}
           <div className="space-y-2">
             <Label className={errors.member ? "text-destructive" : ""}>
@@ -152,14 +152,14 @@ export function NewAppointmentDialog({
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="输入姓名拼音首字母或手机号搜索"
+                    placeholder="输入姓名或手机号搜索"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
                   />
                 </div>
                 {searchResults.length > 0 && (
-                  <ScrollArea className="max-h-32 rounded-lg border border-border">
+                  <div className="max-h-[120px] space-y-1 overflow-auto rounded-lg border border-border">
                     {searchResults.map((member) => (
                       <div
                         key={member.id}
@@ -174,7 +174,7 @@ export function NewAppointmentDialog({
                         <p className="text-sm text-muted-foreground">{member.phone}</p>
                       </div>
                     ))}
-                  </ScrollArea>
+                  </div>
                 )}
                 {errors.member && (
                   <p className="text-sm text-destructive">{errors.member}</p>

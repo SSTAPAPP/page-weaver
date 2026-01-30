@@ -1,10 +1,10 @@
 import { useState } from "react";
 import { 
-  Download, Save, Eye, EyeOff, Shield, Database, AlertTriangle, 
+  Download, Save, Eye, EyeOff, Database, AlertTriangle, 
   Moon, Sun, Type, Store, MapPin, Phone, ChevronRight,
   Building, Palette, Lock, HardDrive
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,6 +27,7 @@ import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
+import { hashPassword, isHashed } from "@/lib/crypto";
 
 const fontSizeLabels = {
   xs: "较小",
@@ -115,13 +116,24 @@ export default function Settings() {
     }
   };
 
-  const validatePasswordForm = () => {
+  const validatePasswordForm = async () => {
     const newErrors: Record<string, string> = {};
     
     if (!currentPassword) {
       newErrors.current = "请输入当前密码";
-    } else if (currentPassword !== adminPassword) {
-      newErrors.current = "当前密码不正确";
+    } else {
+      // Check current password with hash
+      const inputHash = await hashPassword(currentPassword);
+      if (isHashed(adminPassword)) {
+        if (inputHash !== adminPassword) {
+          newErrors.current = "当前密码不正确";
+        }
+      } else {
+        // Legacy plain text
+        if (currentPassword !== adminPassword) {
+          newErrors.current = "当前密码不正确";
+        }
+      }
     }
     
     if (!newPassword) {
@@ -141,13 +153,17 @@ export default function Settings() {
   };
 
   const handleChangePassword = async () => {
-    if (!validatePasswordForm()) return;
+    const isValid = await validatePasswordForm();
+    if (!isValid) return;
 
     setIsSaving(true);
     try {
-      await new Promise((r) => setTimeout(r, 500));
+      await new Promise((r) => setTimeout(r, 300));
       
-      setAdminPassword(newPassword);
+      // Hash the new password before storing
+      const hashedPassword = await hashPassword(newPassword);
+      setAdminPassword(hashedPassword);
+      
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");

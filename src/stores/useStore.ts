@@ -9,6 +9,7 @@ interface Store {
   updateMember: (id: string, data: Partial<Member>) => void;
   getMember: (id: string) => Member | undefined;
   getMemberByPhone: (phone: string) => Member | undefined;
+  isPhoneUnique: (phone: string, excludeMemberId?: string) => boolean;
   searchMembers: (query: string) => Member[];
   
   // 次卡
@@ -48,7 +49,7 @@ interface Store {
   orders: Order[];
   addOrder: (order: Omit<Order, 'id' | 'createdAt'>) => void;
   
-  // 设置
+  // 设置 - password is now stored as hash
   adminPassword: string;
   setAdminPassword: (password: string) => void;
   
@@ -73,7 +74,17 @@ interface Store {
   };
 }
 
-const generateId = () => Math.random().toString(36).substring(2, 9);
+// Improved ID generator with timestamp + random to reduce collision risk
+const generateId = () => {
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).substring(2, 7);
+  return `${timestamp}-${random}`;
+};
+
+// Generate unique walk-in ID for each transaction
+export const generateWalkInId = () => {
+  return `walk-in-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
+};
 
 const isToday = (date: Date) => {
   const today = new Date();
@@ -107,6 +118,10 @@ export const useStore = create<Store>()(
       },
       getMember: (id) => get().members.find((m) => m.id === id),
       getMemberByPhone: (phone) => get().members.find((m) => m.phone === phone),
+      // Check if phone is unique (optionally excluding a specific member for edit scenarios)
+      isPhoneUnique: (phone, excludeMemberId) => {
+        return !get().members.some((m) => m.phone === phone && m.id !== excludeMemberId);
+      },
       searchMembers: (query) => {
         const q = query.toLowerCase();
         return get().members.filter(
@@ -127,6 +142,9 @@ export const useStore = create<Store>()(
           remainingCount: template.totalCount,
           services: template.serviceIds,
           createdAt: new Date(),
+          // Store original values for accurate refund if template is deleted later
+          originalPrice: template.price,
+          originalTotalCount: template.totalCount,
         };
         
         set((state) => ({
@@ -301,8 +319,8 @@ export const useStore = create<Store>()(
         }));
       },
 
-      // 设置
-      adminPassword: '123456',
+      // 设置 - Note: Password is now stored as hash
+      adminPassword: '123456', // Will be migrated to hash on first use
       setAdminPassword: (password) => set({ adminPassword: password }),
       
       // 店铺信息

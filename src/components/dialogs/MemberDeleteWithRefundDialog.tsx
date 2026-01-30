@@ -17,6 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, CreditCard, Calculator, Trash2 } from "lucide-react";
+import { hashPassword, isHashed } from "@/lib/crypto";
 import type { Member, MemberCard } from "@/types";
 
 interface CardRefundDetail {
@@ -43,18 +44,22 @@ export function MemberDeleteWithRefundDialog({
   onDeleted,
 }: MemberDeleteWithRefundDialogProps) {
   const { toast } = useToast();
-  const { adminPassword, deleteMember, cardTemplates, addTransaction } = useStore();
+  const { adminPassword, setAdminPassword, deleteMember, cardTemplates, addTransaction } = useStore();
   const [password, setPassword] = useState("");
   const [step, setStep] = useState<"refund" | "confirm">("refund");
+  const [isVerifying, setIsVerifying] = useState(false);
 
   // 计算每张次卡的退款详情
+  // 改进：使用卡片存储的 originalPrice 和 originalTotalCount 作为备用值
   const refundDetails = useMemo<CardRefundDetail[]>(() => {
     if (!member) return [];
     
     return member.cards.map((card) => {
       const template = cardTemplates.find((t) => t.id === card.templateId);
-      const originalPrice = template?.price || 0;
-      const totalCount = template?.totalCount || card.remainingCount;
+      
+      // Use stored original values as fallback if template is deleted
+      const originalPrice = template?.price ?? card.originalPrice ?? 0;
+      const totalCount = template?.totalCount ?? card.originalTotalCount ?? card.remainingCount;
       const usedCount = totalCount - card.remainingCount;
       const refundRatio = totalCount > 0 ? card.remainingCount / totalCount : 0;
       const refundAmount = originalPrice * refundRatio;
@@ -84,44 +89,67 @@ export function MemberDeleteWithRefundDialog({
     setStep("confirm");
   };
 
-  const handleConfirmDelete = () => {
-    if (password !== adminPassword) {
+  const handleConfirmDelete = async () => {
+    if (isVerifying) return;
+    setIsVerifying(true);
+
+    try {
+      // Hash the input password
+      const inputHash = await hashPassword(password);
+      
+      // Check if stored password is already hashed
+      let passwordValid = false;
+      if (isHashed(adminPassword)) {
+        passwordValid = inputHash === adminPassword;
+      } else {
+        // Legacy: plain text comparison
+        if (password === adminPassword) {
+          // Migrate to hashed password
+          setAdminPassword(inputHash);
+          passwordValid = true;
+        }
+      }
+
+      if (!passwordValid) {
+        toast({
+          title: "密码错误",
+          description: "管理员密码不正确，请重试",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      if (!member) return;
+
+      // 创建退款交易记录（如果有需要退款的金额）
+      if (totalRefund > 0) {
+        addTransaction({
+          memberId: member.id,
+          memberName: member.name,
+          type: "refund",
+          amount: totalRefund,
+          description: `会员注销退款 (余额¥${member.balance.toFixed(2)} + 次卡折现¥${totalCardRefund.toFixed(2)})`,
+        });
+      }
+
+      // 删除会员
+      deleteMember(member.id);
+
       toast({
-        title: "密码错误",
-        description: "管理员密码不正确，请重试",
-        variant: "destructive",
+        title: "操作成功",
+        description: totalRefund > 0 
+          ? `已退款 ¥${totalRefund.toFixed(2)}，会员已删除`
+          : "会员已删除",
       });
-      return;
+
+      // 重置状态
+      setPassword("");
+      setStep("refund");
+      onOpenChange(false);
+      onDeleted();
+    } finally {
+      setIsVerifying(false);
     }
-
-    if (!member) return;
-
-    // 创建退款交易记录（如果有需要退款的金额）
-    if (totalRefund > 0) {
-      addTransaction({
-        memberId: member.id,
-        memberName: member.name,
-        type: "refund",
-        amount: totalRefund,
-        description: `会员注销退款 (余额¥${member.balance.toFixed(2)} + 次卡折现¥${totalCardRefund.toFixed(2)})`,
-      });
-    }
-
-    // 删除会员
-    deleteMember(member.id);
-
-    toast({
-      title: "操作成功",
-      description: totalRefund > 0 
-        ? `已退款 ¥${totalRefund.toFixed(2)}，会员已删除`
-        : "会员已删除",
-    });
-
-    // 重置状态
-    setPassword("");
-    setStep("refund");
-    onOpenChange(false);
-    onDeleted();
   };
 
   const handleClose = () => {
@@ -260,6 +288,7 @@ export function MemberDeleteWithRefundDialog({
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="请输入管理员密码"
                   onKeyDown={(e) => e.key === "Enter" && handleConfirmDelete()}
+                  disabled={isVerifying}
                 />
               </div>
             </div>
@@ -278,12 +307,12 @@ export function MemberDeleteWithRefundDialog({
             </>
           ) : (
             <>
-              <Button variant="outline" onClick={() => setStep("refund")}>
+              <Button variant="outline" onClick={() => setStep("refund")} disabled={isVerifying}>
                 返回
               </Button>
-              <Button variant="destructive" onClick={handleConfirmDelete}>
+              <Button variant="destructive" onClick={handleConfirmDelete} disabled={isVerifying}>
                 <Trash2 className="h-4 w-4 mr-2" />
-                确认删除
+                {isVerifying ? "验证中..." : "确认删除"}
               </Button>
             </>
           )}

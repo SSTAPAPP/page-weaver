@@ -18,6 +18,9 @@ export interface MemberCard {
   remainingCount: number;
   services: string[];
   createdAt: Date;
+  // Store original values for accurate refund calculation if template is deleted
+  originalPrice: number;
+  originalTotalCount: number;
 }
 
 // 次卡模板
