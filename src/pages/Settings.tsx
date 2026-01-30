@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { 
   Download, Save, Eye, EyeOff, Database, AlertTriangle, 
   Moon, Sun, Type, Store, MapPin, Phone, ChevronRight,
-  Building, Palette, Lock, HardDrive
+  Building, Palette, Lock, HardDrive, Cloud, CloudOff, 
+  History, FileSpreadsheet, FileText, Trash2, Printer
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import { LoadingButton } from "@/components/ui/loading-button";
 import { FormField } from "@/components/ui/form-field";
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
@@ -28,6 +30,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { hashPassword, isHashed } from "@/lib/crypto";
+import { getStorageUsage, exportToCSV, printReport } from "@/lib/print";
+import { format } from "date-fns";
+import { zhCN } from "date-fns/locale";
 
 const fontSizeLabels = {
   xs: "较小",
@@ -44,13 +49,25 @@ type SettingsCategory = "shop" | "appearance" | "security" | "data";
 const categories = [
   { id: "shop" as const, label: "店铺信息", icon: Building, description: "基本信息设置" },
   { id: "appearance" as const, label: "外观设置", icon: Palette, description: "主题与显示" },
-  { id: "security" as const, label: "安全设置", icon: Lock, description: "密码管理" },
-  { id: "data" as const, label: "数据管理", icon: HardDrive, description: "导出与存储" },
+  { id: "security" as const, label: "安全设置", icon: Lock, description: "密码与日志" },
+  { id: "data" as const, label: "数据管理", icon: HardDrive, description: "导出与同步" },
 ];
+
+const auditCategoryLabels: Record<string, string> = {
+  member: "会员",
+  transaction: "交易",
+  service: "服务",
+  card: "次卡",
+  system: "系统",
+  security: "安全",
+};
 
 export default function Settings() {
   const { toast } = useToast();
-  const { members, transactions, adminPassword, setAdminPassword, shopInfo, setShopInfo } = useStore();
+  const { 
+    members, transactions, adminPassword, setAdminPassword, shopInfo, setShopInfo,
+    auditLogs, clearAuditLogs, syncConfig, setSyncConfig
+  } = useStore();
   const { theme, setTheme, fontSize, setFontSize } = useTheme();
   
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>("shop");
@@ -59,14 +76,22 @@ export default function Settings() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPasswords, setShowPasswords] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
+  const [isExportingTx, setIsExportingTx] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [exportFormat, setExportFormat] = useState<"csv" | "excel" | "pdf">("csv");
   
   // 店铺信息编辑状态
   const [editShopName, setEditShopName] = useState(shopInfo.name);
   const [editShopAddress, setEditShopAddress] = useState(shopInfo.address);
   const [editShopPhone, setEditShopPhone] = useState(shopInfo.phone);
   const [isSavingShop, setIsSavingShop] = useState(false);
+  
+  // 云端同步配置
+  const [syncApiUrl, setSyncApiUrl] = useState(syncConfig.apiUrl);
+
+  // 存储使用情况
+  const storageUsage = useMemo(() => getStorageUsage(), [members, transactions]);
 
   const handleExportMembers = async () => {
     if (members.length === 0) {
@@ -91,28 +116,67 @@ export default function Settings() {
         注册时间: new Date(m.createdAt).toLocaleDateString("zh-CN"),
       }));
 
-      const headers = Object.keys(exportData[0] || {});
-      const csvContent = [
-        headers.join(","),
-        ...exportData.map((row) =>
-          headers.map((h) => `"${row[h as keyof typeof row] ?? ""}"`).join(",")
-        ),
-      ].join("\n");
-
-      const blob = new Blob(["\uFEFF" + csvContent], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `会员数据_${new Date().toLocaleDateString("zh-CN")}.csv`;
-      link.click();
-      URL.revokeObjectURL(url);
-
-      toast({
-        title: "导出成功",
-        description: `已导出 ${members.length} 条会员数据`,
-      });
+      if (exportFormat === "pdf") {
+        // PDF通过打印实现
+        printReport();
+        toast({
+          title: "打印预览已打开",
+          description: "请在打印对话框中选择【另存为PDF】",
+        });
+      } else {
+        // CSV/Excel格式
+        const filename = `会员数据_${new Date().toLocaleDateString("zh-CN")}.csv`;
+        exportToCSV(exportData, filename);
+        toast({
+          title: "导出成功",
+          description: `已导出 ${members.length} 条会员数据`,
+        });
+      }
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportTransactions = async () => {
+    if (transactions.length === 0) {
+      toast({
+        title: "无数据可导出",
+        description: "暂无交易记录",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsExportingTx(true);
+    try {
+      await new Promise((r) => setTimeout(r, 500));
+      
+      const typeLabels: Record<string, string> = {
+        recharge: "充值",
+        consume: "消费",
+        card_deduct: "次卡消费",
+        refund: "退款",
+        price_diff: "补差价",
+      };
+
+      const exportData = transactions.map((t) => ({
+        时间: new Date(t.createdAt).toLocaleString("zh-CN"),
+        会员: t.memberName,
+        类型: typeLabels[t.type] || t.type,
+        金额: t.amount.toFixed(2),
+        描述: t.description,
+        状态: t.voided ? "已作废" : "正常",
+      }));
+
+      const filename = `交易记录_${new Date().toLocaleDateString("zh-CN")}.csv`;
+      exportToCSV(exportData, filename);
+      
+      toast({
+        title: "导出成功",
+        description: `已导出 ${transactions.length} 条交易记录`,
+      });
+    } finally {
+      setIsExportingTx(false);
     }
   };
 
@@ -194,6 +258,14 @@ export default function Settings() {
     } finally {
       setIsSavingShop(false);
     }
+  };
+
+  const handleSaveSyncConfig = () => {
+    setSyncConfig({ apiUrl: syncApiUrl });
+    toast({
+      title: "保存成功",
+      description: "同步配置已更新",
+    });
   };
 
   const fontSizeValue = ["xs", "sm", "base", "lg", "xl"].indexOf(fontSize);
@@ -328,9 +400,11 @@ export default function Settings() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold mb-1">安全设置</h3>
-              <p className="text-sm text-muted-foreground">管理员密码用于敏感操作验证</p>
+              <p className="text-sm text-muted-foreground">管理员密码与操作日志</p>
             </div>
             <Separator />
+            
+            {/* 密码设置 */}
             <div className="space-y-4 max-w-md">
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
@@ -390,6 +464,67 @@ export default function Settings() {
                 </LoadingButton>
               </div>
             </div>
+
+            <Separator />
+
+            {/* 操作日志 */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <Label className="flex items-center gap-2">
+                  <History className="h-4 w-4" />
+                  操作日志
+                </Label>
+                {auditLogs.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => {
+                      clearAuditLogs();
+                      toast({ title: "日志已清空" });
+                    }}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    清空日志
+                  </Button>
+                )}
+              </div>
+              
+              <div className="rounded-lg border border-border">
+                {auditLogs.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-center">
+                    <History className="mb-2 h-8 w-8 text-muted-foreground/50" />
+                    <p className="text-sm text-muted-foreground">暂无操作记录</p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[300px]">
+                    <div className="divide-y divide-border">
+                      {auditLogs.slice(0, 100).map((log) => (
+                        <div key={log.id} className="p-3 hover:bg-muted/30 transition-colors">
+                          <div className="flex items-start justify-between gap-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge variant="secondary" className="text-xs">
+                                  {auditCategoryLabels[log.category] || log.category}
+                                </Badge>
+                                <span className="text-xs text-muted-foreground">
+                                  {format(new Date(log.timestamp), "MM-dd HH:mm:ss", { locale: zhCN })}
+                                </span>
+                              </div>
+                              <p className="text-sm font-medium truncate">{log.action}</p>
+                              <p className="text-xs text-muted-foreground truncate">{log.details}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                共 {auditLogs.length} 条记录（最多保留1000条）
+              </p>
+            </div>
           </div>
         );
 
@@ -398,90 +533,197 @@ export default function Settings() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold mb-1">数据管理</h3>
-              <p className="text-sm text-muted-foreground">导出数据与存储信息</p>
+              <p className="text-sm text-muted-foreground">导出数据与云端同步</p>
             </div>
             <Separator />
-            <div className="space-y-4">
-              {/* 数据导出 */}
+            
+            {/* 数据导出 */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
+                <Download className="h-4 w-4" />
+                数据导出
+              </Label>
+              
+              {/* 导出格式选择 */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-sm text-muted-foreground">导出格式：</span>
+                <Select value={exportFormat} onValueChange={(v) => setExportFormat(v as "csv" | "excel" | "pdf")}>
+                  <SelectTrigger className="w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="csv">
+                      <div className="flex items-center gap-2">
+                        <FileSpreadsheet className="h-4 w-4" />
+                        CSV
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="excel">
+                      <div className="flex items-center gap-2">
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Excel
+                      </div>
+                    </SelectItem>
+                    <SelectItem value="pdf">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-4 w-4" />
+                        PDF
+                      </div>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
               <div className="space-y-3">
-                <Label className="flex items-center gap-2">
-                  <Download className="h-4 w-4" />
-                  数据导出
-                </Label>
+                <div className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/30">
+                  <div>
+                    <p className="font-medium">会员数据</p>
+                    <p className="text-sm text-muted-foreground">
+                      共 {members.length} 条记录
+                    </p>
+                  </div>
+                  <LoadingButton
+                    onClick={handleExportMembers}
+                    loading={isExporting}
+                    disabled={members.length === 0}
+                    size="sm"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    导出
+                  </LoadingButton>
+                </div>
+
+                <div className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/30">
+                  <div>
+                    <p className="font-medium">交易记录</p>
+                    <p className="text-sm text-muted-foreground">
+                      共 {transactions.length} 条记录
+                    </p>
+                  </div>
+                  <LoadingButton
+                    onClick={handleExportTransactions}
+                    loading={isExportingTx}
+                    disabled={transactions.length === 0}
+                    size="sm"
+                  >
+                    <Download className="mr-2 h-4 w-4" />
+                    导出
+                  </LoadingButton>
+                </div>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* 云端同步 */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
+                {syncConfig.enabled ? <Cloud className="h-4 w-4" /> : <CloudOff className="h-4 w-4" />}
+                云端同步
+              </Label>
+              <div className="rounded-lg border border-border p-4 bg-muted/30">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="font-medium">同步状态</p>
+                    <p className="text-sm text-muted-foreground">
+                      {syncConfig.enabled ? "已启用" : "未启用"}
+                    </p>
+                  </div>
+                  <Badge variant={syncConfig.enabled ? "default" : "secondary"}>
+                    {syncConfig.enabled ? "已连接" : "本地存储"}
+                  </Badge>
+                </div>
+                
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/30">
-                    <div>
-                      <p className="font-medium">会员数据</p>
-                      <p className="text-sm text-muted-foreground">
-                        共 {members.length} 条记录
-                      </p>
-                    </div>
-                    <LoadingButton
-                      onClick={handleExportMembers}
-                      loading={isExporting}
-                      disabled={members.length === 0}
+                  <div className="space-y-2">
+                    <Label htmlFor="sync-api" className="text-sm">API 接口地址</Label>
+                    <Input
+                      id="sync-api"
+                      value={syncApiUrl}
+                      onChange={(e) => setSyncApiUrl(e.target.value)}
+                      placeholder="https://api.example.com/sync"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
                       size="sm"
+                      onClick={handleSaveSyncConfig}
                     >
-                      <Download className="mr-2 h-4 w-4" />
-                      导出CSV
-                    </LoadingButton>
-                  </div>
-
-                  <div className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/30">
-                    <div>
-                      <p className="font-medium">交易记录</p>
-                      <p className="text-sm text-muted-foreground">
-                        共 {transactions.length} 条记录
-                      </p>
-                    </div>
-                    <Badge variant="secondary">即将支持</Badge>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* 存储信息 */}
-              <div className="space-y-3">
-                <Label className="flex items-center gap-2">
-                  <Database className="h-4 w-4" />
-                  存储信息
-                </Label>
-                <div className="rounded-lg border border-border p-4 bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">数据存储位置</p>
-                      <p className="text-sm text-muted-foreground">
-                        当前使用浏览器本地存储（localStorage）
-                      </p>
-                    </div>
-                    <Badge variant="secondary">本地存储</Badge>
+                      <Save className="mr-2 h-4 w-4" />
+                      保存配置
+                    </Button>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      disabled={!syncApiUrl}
+                      onClick={() => {
+                        toast({
+                          title: "功能开发中",
+                          description: "云端同步功能即将上线，敬请期待",
+                        });
+                      }}
+                    >
+                      测试连接
+                    </Button>
                   </div>
                 </div>
+                
+                <Alert className="mt-3">
+                  <Cloud className="h-4 w-4" />
+                  <AlertDescription>
+                    云端同步功能需要配合后端API使用，支持数据实时同步和离线模式。
+                  </AlertDescription>
+                </Alert>
               </div>
+            </div>
 
-              <Separator />
+            <Separator />
 
-              {/* 系统信息 */}
-              <div className="space-y-3">
-                <Label>系统信息</Label>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-lg bg-muted/50 p-4">
-                    <p className="text-sm text-muted-foreground">版本</p>
-                    <p className="font-medium">v1.0.0</p>
+            {/* 存储信息 */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
+                <Database className="h-4 w-4" />
+                存储信息
+              </Label>
+              <div className="rounded-lg border border-border p-4 bg-muted/30 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">本地存储使用量</p>
+                    <p className="text-sm text-muted-foreground">
+                      {storageUsage.usedKB} KB / {storageUsage.maxMB} MB
+                    </p>
                   </div>
-                  <div className="rounded-lg bg-muted/50 p-4">
-                    <p className="text-sm text-muted-foreground">数据存储</p>
-                    <p className="font-medium">本地浏览器</p>
-                  </div>
-                  <div className="rounded-lg bg-muted/50 p-4">
-                    <p className="text-sm text-muted-foreground">会员总数</p>
-                    <p className="font-medium">{members.length} 位</p>
-                  </div>
-                  <div className="rounded-lg bg-muted/50 p-4">
-                    <p className="text-sm text-muted-foreground">交易记录</p>
-                    <p className="font-medium">{transactions.length} 条</p>
-                  </div>
+                  <span className="text-sm font-medium">{storageUsage.percentage}%</span>
+                </div>
+                <Progress value={storageUsage.percentage} className="h-2" />
+                <p className="text-xs text-muted-foreground">
+                  支持存储约 {Math.floor((storageUsage.maxMB * 1024 - parseFloat(storageUsage.usedKB)) / 0.5)} 位会员数据
+                </p>
+              </div>
+            </div>
+
+            <Separator />
+
+            {/* 系统信息 */}
+            <div className="space-y-3">
+              <Label>系统信息</Label>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-lg bg-muted/50 p-4">
+                  <p className="text-sm text-muted-foreground">版本</p>
+                  <p className="font-medium">v1.0.0</p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4">
+                  <p className="text-sm text-muted-foreground">数据存储</p>
+                  <p className="font-medium">本地浏览器</p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4">
+                  <p className="text-sm text-muted-foreground">会员总数</p>
+                  <p className="font-medium">{members.length} 位</p>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-4">
+                  <p className="text-sm text-muted-foreground">交易记录</p>
+                  <p className="font-medium">{transactions.length} 条</p>
                 </div>
               </div>
             </div>

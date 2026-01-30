@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Member, MemberCard, CardTemplate, Service, Appointment, Transaction, Order, ShopInfo } from '@/types';
+import { Member, MemberCard, CardTemplate, Service, Appointment, Transaction, Order, ShopInfo, AuditLogEntry, SyncConfig } from '@/types';
 
 interface Store {
   // 会员
@@ -63,6 +63,15 @@ interface Store {
   // UI状态
   hiddenSections: string[];
   toggleSectionVisibility: (sectionId: string) => void;
+  
+  // 审计日志
+  auditLogs: AuditLogEntry[];
+  addAuditLog: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
+  clearAuditLogs: () => void;
+  
+  // 云端同步配置
+  syncConfig: SyncConfig;
+  setSyncConfig: (config: Partial<SyncConfig>) => void;
   
   // 统计
   getTodayStats: () => {
@@ -349,6 +358,33 @@ export const useStore = create<Store>()(
           hiddenSections: state.hiddenSections.includes(sectionId)
             ? state.hiddenSections.filter((s) => s !== sectionId)
             : [...state.hiddenSections, sectionId],
+        }));
+      },
+      
+      // 审计日志 - 限制最多1000条
+      auditLogs: [],
+      addAuditLog: (entry) => {
+        set((state) => {
+          const newLog: AuditLogEntry = {
+            ...entry,
+            id: generateId(),
+            timestamp: new Date(),
+          };
+          const logs = [newLog, ...state.auditLogs].slice(0, 1000);
+          return { auditLogs: logs };
+        });
+      },
+      clearAuditLogs: () => set({ auditLogs: [] }),
+      
+      // 云端同步配置
+      syncConfig: {
+        enabled: false,
+        apiUrl: '',
+        syncStatus: 'idle',
+      },
+      setSyncConfig: (config) => {
+        set((state) => ({
+          syncConfig: { ...state.syncConfig, ...config },
         }));
       },
 

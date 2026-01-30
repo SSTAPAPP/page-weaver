@@ -1,22 +1,19 @@
 import { useMemo } from "react";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { TrendingUp, Wallet, CreditCard, Users, DollarSign, PiggyBank, Activity } from "lucide-react";
+import { TrendingUp, Wallet, CreditCard, Users, Printer } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { useStore } from "@/stores/useStore";
+import { printReport } from "@/lib/print";
 import {
   LineChart,
   Line,
@@ -265,12 +262,16 @@ export default function Reports() {
   const hasData = transactions.length > 0;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 print-report">
       {/* Header */}
       <PageHeader
         title="数据报表"
         description="经营数据分析 · 鼠标移至卡片查看指标说明"
       >
+        <Button variant="outline" onClick={printReport} className="no-print">
+          <Printer className="mr-2 h-4 w-4" />
+          打印报表
+        </Button>
         <Badge variant="outline" className="font-normal">
           近30天
         </Badge>
