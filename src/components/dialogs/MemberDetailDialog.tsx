@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import {
@@ -20,15 +20,22 @@ import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
 import { Phone, Calendar, CreditCard, Wallet, Pencil, Trash2, Save, X, History, ArrowUpCircle, ArrowDownCircle, Link2 } from "lucide-react";
 import { MemberDeleteWithRefundDialog } from "@/components/dialogs/MemberDeleteWithRefundDialog";
+import type { Transaction } from "@/types";
 
 // Transaction type mapping for consistent display
 const typeMap = {
-  recharge: { label: "充值", color: "bg-chart-2/10 text-chart-2 border-chart-2/20" },
-  consume: { label: "消费", color: "bg-destructive/10 text-destructive border-destructive/20" },
-  card_deduct: { label: "次卡", color: "bg-chart-3/10 text-chart-3 border-chart-3/20" },
-  refund: { label: "退款", color: "bg-chart-4/10 text-chart-4 border-chart-4/20" },
-  price_diff: { label: "补差价", color: "bg-chart-1/10 text-chart-1 border-chart-1/20" },
+  recharge: { label: "充值", icon: ArrowUpCircle, color: "text-chart-2", bgColor: "bg-chart-2/10", borderColor: "border-chart-2/20" },
+  consume: { label: "消费", icon: ArrowDownCircle, color: "text-destructive", bgColor: "bg-destructive/10", borderColor: "border-destructive/20" },
+  card_deduct: { label: "次卡", icon: CreditCard, color: "text-chart-3", bgColor: "bg-chart-3/10", borderColor: "border-chart-3/20" },
+  refund: { label: "退款", icon: ArrowUpCircle, color: "text-chart-4", bgColor: "bg-chart-4/10", borderColor: "border-chart-4/20" },
+  price_diff: { label: "补差价", icon: ArrowDownCircle, color: "text-chart-1", bgColor: "bg-chart-1/10", borderColor: "border-chart-1/20" },
 };
+
+// Grouped transaction type for member detail view
+interface GroupedTransaction {
+  mainTransaction: Transaction;
+  refundTransaction?: Transaction;
+}
 
 interface MemberDetailDialogProps {
   memberId: string | null;
@@ -38,39 +45,90 @@ interface MemberDetailDialogProps {
 
 export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetailDialogProps) {
   const { toast } = useToast();
-  const { getMember, updateMember, transactions } = useStore();
-  const member = memberId ? getMember(memberId) : null;
-
+  const { getMember, updateMember, transactions, isPhoneUnique } = useStore();
+  
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editGender, setEditGender] = useState<"male" | "female">("male");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [phoneError, setPhoneError] = useState("");
 
-  if (!member) return null;
+  const member = memberId ? getMember(memberId) : null;
 
-  const memberTransactions = transactions
-    .filter((t) => t.memberId === member.id)
-    .slice(0, 20);
+  // Get member transactions and group them like the main Transactions page
+  const memberTransactions = useMemo(() => {
+    if (!member) return [];
+    return transactions.filter((t) => t.memberId === member.id);
+  }, [transactions, member]);
+  
+  // Group transactions: consumption with related refund
+  const groupedTransactions = useMemo(() => {
+    const groups: GroupedTransaction[] = [];
+    const processedIds = new Set<string>();
+    
+    // Build refund map
+    const refundMap = new Map<string, Transaction>();
+    memberTransactions.forEach((tx) => {
+      if (tx.type === 'refund' && tx.relatedTransactionId) {
+        refundMap.set(tx.relatedTransactionId, tx);
+      }
+    });
+    
+    memberTransactions.forEach((tx) => {
+      if (processedIds.has(tx.id)) return;
+      
+      // Skip refunds with related transactions (they'll be shown as sub-records)
+      if (tx.type === 'refund' && tx.relatedTransactionId) {
+        processedIds.add(tx.id);
+        return;
+      }
+      
+      // For non-refund transactions, check if there's a related refund
+      const refundTx = refundMap.get(tx.id);
+      groups.push({
+        mainTransaction: tx,
+        refundTransaction: refundTx,
+      });
+      processedIds.add(tx.id);
+      if (refundTx) {
+        processedIds.add(refundTx.id);
+      }
+    });
+    
+    return groups.slice(0, 20); // Limit to 20 groups
+  }, [memberTransactions]);
 
   const handleStartEdit = () => {
+    if (!member) return;
     setEditName(member.name);
     setEditPhone(member.phone);
     setEditGender(member.gender);
+    setPhoneError("");
     setIsEditing(true);
   };
 
   const handleCancelEdit = () => {
     setIsEditing(false);
+    setPhoneError("");
   };
 
   const handleSaveEdit = () => {
+    if (!member) return;
+    
     if (!editName.trim()) {
       toast({ title: "请输入姓名", variant: "destructive" });
       return;
     }
     if (!editPhone.trim() || editPhone.length !== 11) {
       toast({ title: "请输入正确的手机号", variant: "destructive" });
+      return;
+    }
+
+    // Check phone uniqueness (exclude current member)
+    if (editPhone !== member.phone && !isPhoneUnique(editPhone, member.id)) {
+      setPhoneError("该手机号已被其他会员使用");
+      toast({ title: "手机号重复", description: "该手机号已被其他会员使用", variant: "destructive" });
       return;
     }
 
@@ -82,16 +140,21 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
 
     toast({ title: "修改成功", description: "会员信息已更新" });
     setIsEditing(false);
+    setPhoneError("");
   };
 
   const handleClose = () => {
     setIsEditing(false);
+    setPhoneError("");
     onOpenChange(false);
   };
 
   const handleMemberDeleted = () => {
     onOpenChange(false);
   };
+
+  // Early return after all hooks
+  if (!member) return null;
 
   return (
     <>
@@ -125,11 +188,17 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                       <Input
                         id="edit-phone"
                         value={editPhone}
-                        onChange={(e) => setEditPhone(e.target.value)}
+                        onChange={(e) => {
+                          setEditPhone(e.target.value);
+                          setPhoneError("");
+                        }}
                         placeholder="请输入手机号"
                         maxLength={11}
-                        className="h-9"
+                        className={`h-9 ${phoneError ? "border-destructive" : ""}`}
                       />
+                      {phoneError && (
+                        <p className="text-xs text-destructive">{phoneError}</p>
+                      )}
                     </div>
                   </div>
                   <div className="space-y-1.5">
@@ -236,63 +305,93 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                 </TabsContent>
                 
                 <TabsContent value="transactions" className="mt-3">
-                  {memberTransactions.length === 0 ? (
+                  {groupedTransactions.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-6 text-center">
                       <History className="mb-2 h-10 w-10 text-muted-foreground/30" />
                       <p className="text-sm text-muted-foreground">暂无交易记录</p>
                     </div>
                   ) : (
-                    <div className="space-y-2 max-h-[180px] overflow-auto">
-                      {memberTransactions.map((tx) => {
+                    <div className="space-y-2 max-h-[220px] overflow-auto">
+                      {groupedTransactions.map((group) => {
+                        const tx = group.mainTransaction;
+                        const refundTx = group.refundTransaction;
                         const typeInfo = typeMap[tx.type] || typeMap.consume;
+                        const TypeIcon = typeInfo.icon;
                         const isVoided = tx.voided;
                         const isPositive = tx.type === "recharge" || tx.type === "refund";
+                        const hasRefund = !!refundTx;
 
                         return (
                           <div
                             key={tx.id}
-                            className={`flex items-center justify-between rounded-lg border border-border p-2.5 text-sm ${
-                              isVoided ? "opacity-50" : ""
-                            }`}
+                            className={`rounded-lg border border-border overflow-hidden ${isVoided ? "opacity-50" : ""}`}
                           >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <p className={`font-medium truncate ${isVoided ? "line-through text-muted-foreground" : ""}`}>
-                                  {tx.description}
-                                </p>
-                                <Badge 
-                                  variant="outline" 
-                                  className={`text-xs shrink-0 ${isVoided ? "bg-muted text-muted-foreground border-muted" : typeInfo.color}`}
-                                >
-                                  {typeInfo.label}
-                                </Badge>
-                                {isVoided && (
-                                  <Badge variant="destructive" className="text-xs shrink-0">
-                                    已作废
-                                  </Badge>
-                                )}
-                                {tx.relatedTransactionId && (
-                                  <Badge variant="outline" className="text-xs shrink-0 text-chart-4 border-chart-4/30">
-                                    <Link2 className="h-2.5 w-2.5 mr-0.5" />
-                                    关联
-                                  </Badge>
-                                )}
+                            {/* Main transaction */}
+                            <div className="flex items-center justify-between p-2.5 text-sm">
+                              <div className="flex items-center gap-2 flex-1 min-w-0">
+                                <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${typeInfo.bgColor}`}>
+                                  <TypeIcon className={`h-3.5 w-3.5 ${typeInfo.color}`} />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <p className={`font-medium truncate ${isVoided ? "line-through text-muted-foreground" : ""}`}>
+                                      {tx.description}
+                                    </p>
+                                    <Badge 
+                                      variant="outline" 
+                                      className={`text-xs shrink-0 ${isVoided ? "bg-muted text-muted-foreground border-muted" : `${typeInfo.bgColor} ${typeInfo.color} ${typeInfo.borderColor}`}`}
+                                    >
+                                      {typeInfo.label}
+                                    </Badge>
+                                    {isVoided && (
+                                      <Badge variant="destructive" className="text-xs shrink-0">
+                                        已作废
+                                      </Badge>
+                                    )}
+                                    {hasRefund && !isVoided && (
+                                      <Badge variant="outline" className="text-xs shrink-0 text-chart-4 border-chart-4/30">
+                                        <Link2 className="h-2.5 w-2.5 mr-0.5" />
+                                        已退款
+                                      </Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-0.5">
+                                    {format(new Date(tx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
+                                  </p>
+                                </div>
                               </div>
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                {format(new Date(tx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
-                              </p>
+                              <span
+                                className={`font-semibold shrink-0 ml-2 ${
+                                  isVoided 
+                                    ? "line-through text-muted-foreground" 
+                                    : isPositive 
+                                      ? "text-chart-2" 
+                                      : "text-destructive"
+                                }`}
+                              >
+                                {isPositive ? "+" : "-"}¥{tx.amount.toFixed(2)}
+                              </span>
                             </div>
-                            <span
-                              className={`font-semibold shrink-0 ml-2 ${
-                                isVoided 
-                                  ? "line-through text-muted-foreground" 
-                                  : isPositive 
-                                    ? "text-chart-2" 
-                                    : "text-destructive"
-                              }`}
-                            >
-                              {isPositive ? "+" : "-"}¥{tx.amount.toFixed(2)}
-                            </span>
+                            
+                            {/* Related refund transaction */}
+                            {refundTx && (
+                              <div className="flex items-center justify-between px-2.5 py-2 border-t border-dashed border-border bg-chart-4/5">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-chart-4/10 ml-0.5">
+                                    <ArrowUpCircle className="h-3 w-3 text-chart-4" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-medium">退款记录</p>
+                                    <p className="text-xs text-muted-foreground">
+                                      {format(new Date(refundTx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
+                                    </p>
+                                  </div>
+                                </div>
+                                <span className="text-xs font-semibold text-chart-4">
+                                  +¥{refundTx.amount.toFixed(2)}
+                                </span>
+                              </div>
+                            )}
                           </div>
                         );
                       })}

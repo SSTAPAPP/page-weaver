@@ -35,7 +35,7 @@ const paymentMethodMap: Record<string, string> = {
 };
 
 const PAGE_SIZE = 8;
-const MAX_PAGES = 5;
+// Removed MAX_PAGES limit to show all transactions
 
 // 将交易进行分组：消费和对应退款合并显示
 interface GroupedTransaction {
@@ -50,6 +50,7 @@ export default function Transactions() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
+  const [jumpToPage, setJumpToPage] = useState("");
 
   // 对交易进行分组处理
   const groupedTransactions = useMemo(() => {
@@ -114,8 +115,8 @@ export default function Transactions() {
     setCurrentPage(1);
   }, [searchQuery, typeFilter]);
 
-  // 分页逻辑
-  const totalPages = Math.min(Math.ceil(filteredGroups.length / PAGE_SIZE), MAX_PAGES);
+  // 分页逻辑 - 无最大页数限制
+  const totalPages = Math.ceil(filteredGroups.length / PAGE_SIZE);
   const startIndex = (currentPage - 1) * PAGE_SIZE;
   const endIndex = startIndex + PAGE_SIZE;
   const paginatedGroups = filteredGroups.slice(startIndex, endIndex);
@@ -123,6 +124,14 @@ export default function Transactions() {
   const goToPage = (page: number) => {
     if (page >= 1 && page <= totalPages) {
       setCurrentPage(page);
+    }
+  };
+
+  const handleJumpToPage = () => {
+    const page = parseInt(jumpToPage);
+    if (!isNaN(page) && page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      setJumpToPage("");
     }
   };
 
@@ -138,12 +147,44 @@ export default function Transactions() {
     setRefundDialogOpen(true);
   };
 
+  // 生成页码显示（最多显示5个页码）
+  const getPageNumbers = () => {
+    const pages: number[] = [];
+    const maxVisible = 5;
+    
+    if (totalPages <= maxVisible) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      const half = Math.floor(maxVisible / 2);
+      let start = currentPage - half;
+      let end = currentPage + half;
+      
+      if (start < 1) {
+        start = 1;
+        end = maxVisible;
+      }
+      
+      if (end > totalPages) {
+        end = totalPages;
+        start = totalPages - maxVisible + 1;
+      }
+      
+      for (let i = start; i <= end; i++) {
+        pages.push(i);
+      }
+    }
+    
+    return pages;
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
       <PageHeader
         title="交易流水"
-        description={`共 ${filteredGroups.length} 条记录${filteredGroups.length > PAGE_SIZE * MAX_PAGES ? `（显示前 ${PAGE_SIZE * MAX_PAGES} 条）` : ""}`}
+        description={`共 ${filteredGroups.length} 条记录，显示 ${startIndex + 1}-${Math.min(endIndex, filteredGroups.length)} 条`}
       />
 
       {/* Filters */}
@@ -152,7 +193,7 @@ export default function Transactions() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="搜索会员或描述..."
+              placeholder="输入姓名或手机号搜索"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -217,42 +258,42 @@ export default function Transactions() {
                       className="flex items-center justify-between p-4 cursor-pointer"
                       onClick={() => handleTransactionClick(tx)}
                     >
-                      <div className="flex items-center gap-4">
+                      <div className="flex items-center gap-4 min-w-0 flex-1">
                         <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-full ${typeInfo.bgColor}`}
+                          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${typeInfo.bgColor}`}
                         >
                           <TypeIcon className={`h-5 w-5 ${typeInfo.color}`} />
                         </div>
-                        <div>
+                        <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
-                            <p className={`font-medium ${isVoided ? "line-through text-muted-foreground" : ""}`}>
+                            <p className={`font-medium truncate ${isVoided ? "line-through text-muted-foreground" : ""}`}>
                               {tx.description}
                             </p>
-                            <Badge variant={isVoided ? "outline" : "secondary"} className="text-xs">
+                            <Badge variant={isVoided ? "outline" : "secondary"} className="text-xs shrink-0">
                               {typeInfo.label}
                             </Badge>
                             {isVoided && (
-                              <Badge variant="destructive" className="text-xs">
+                              <Badge variant="destructive" className="text-xs shrink-0">
                                 已作废
                               </Badge>
                             )}
                             {hasRefund && (
-                              <Badge variant="outline" className="text-xs text-chart-4 border-chart-4/30">
+                              <Badge variant="outline" className="text-xs text-chart-4 border-chart-4/30 shrink-0">
                                 <Link2 className="h-3 w-3 mr-1" />
                                 已退款
                               </Badge>
                             )}
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span>{tx.memberName}</span>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                            <span className="truncate">{tx.memberName}</span>
                             <span>•</span>
-                            <span>
+                            <span className="shrink-0">
                               {format(new Date(tx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
                             </span>
                             {tx.paymentMethod && (
                               <>
                                 <span>•</span>
-                                <span>{paymentMethodMap[tx.paymentMethod]}</span>
+                                <span className="shrink-0">{paymentMethodMap[tx.paymentMethod]}</span>
                               </>
                             )}
                           </div>
@@ -270,7 +311,7 @@ export default function Transactions() {
                         </div>
                       </div>
                       <div
-                        className={`text-lg font-semibold ${
+                        className={`text-lg font-semibold shrink-0 ml-4 ${
                           isVoided 
                             ? "line-through text-muted-foreground" 
                             : tx.type === "recharge" || tx.type === "refund"
@@ -316,42 +357,65 @@ export default function Transactions() {
             })}
           </div>
 
-          {/* Pagination */}
+          {/* Pagination - Enhanced with jump to page */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => goToPage(currentPage - 1)}
-                disabled={currentPage === 1}
-                className="gap-1"
-              >
-                <ChevronLeft className="h-4 w-4" />
-                上一页
-              </Button>
-              <div className="flex items-center gap-1">
-                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                  <Button
-                    key={page}
-                    variant={currentPage === page ? "default" : "outline"}
-                    size="sm"
-                    className="w-10"
-                    onClick={() => goToPage(page)}
-                  >
-                    {page}
-                  </Button>
-                ))}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(currentPage - 1)}
+                  disabled={currentPage === 1}
+                  className="gap-1"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  上一页
+                </Button>
+                <div className="flex items-center gap-1">
+                  {getPageNumbers().map((page) => (
+                    <Button
+                      key={page}
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      className="w-10"
+                      onClick={() => goToPage(page)}
+                    >
+                      {page}
+                    </Button>
+                  ))}
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => goToPage(currentPage + 1)}
+                  disabled={currentPage === totalPages}
+                  className="gap-1"
+                >
+                  下一页
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => goToPage(currentPage + 1)}
-                disabled={currentPage === totalPages}
-                className="gap-1"
-              >
-                下一页
-                <ChevronRight className="h-4 w-4" />
-              </Button>
+              
+              {/* Jump to page */}
+              {totalPages > 5 && (
+                <div className="flex items-center gap-2 text-sm">
+                  <span className="text-muted-foreground">跳转至</span>
+                  <Input
+                    type="number"
+                    min={1}
+                    max={totalPages}
+                    value={jumpToPage}
+                    onChange={(e) => setJumpToPage(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleJumpToPage()}
+                    className="w-16 h-8"
+                    placeholder={currentPage.toString()}
+                  />
+                  <span className="text-muted-foreground">/ {totalPages} 页</span>
+                  <Button variant="outline" size="sm" onClick={handleJumpToPage}>
+                    确定
+                  </Button>
+                </div>
+              )}
             </div>
           )}
         </>

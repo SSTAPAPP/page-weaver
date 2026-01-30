@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { LoadingButton } from "@/components/ui/loading-button";
-import { useStore } from "@/stores/useStore";
+import { useStore, generateWalkInId } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
 import { Member, Service, MemberCard } from "@/types";
 import { matchMemberSearch } from "@/lib/pinyin";
@@ -51,10 +51,10 @@ export default function Cashier() {
 
   const isWalkIn = !selectedMember;
 
-  // 实时搜索会员
+  // 实时搜索会员 - 增加结果数量限制到10条并支持滚动
   const searchResults = useMemo(() => {
     if (searchQuery.length < 1) return [];
-    return members.filter((m) => matchMemberSearch(m.name, m.phone, searchQuery)).slice(0, 5);
+    return members.filter((m) => matchMemberSearch(m.name, m.phone, searchQuery)).slice(0, 10);
   }, [members, searchQuery]);
 
   const selectMember = (member: Member) => {
@@ -63,10 +63,22 @@ export default function Cashier() {
     setCart([]);
   };
 
+  // 计算购物车中每张卡的使用次数
+  const getCardUsageInCart = (cardId: string) => {
+    return cart.filter(item => item.useCard && item.card?.id === cardId).length;
+  };
+
+  // 获取卡的有效剩余次数（考虑购物车中的使用）
+  const getEffectiveRemainingCount = (card: MemberCard) => {
+    const usedInCart = getCardUsageInCart(card.id);
+    return card.remainingCount - usedInCart;
+  };
+
   const addToCart = (service: Service) => {
     // 检查是否有对应服务的次卡（仅会员）
+    // 改进：检查卡的有效剩余次数（扣除购物车中已使用的次数）
     const availableCard = selectedMember?.cards.find(
-      (card) => card.services.includes(service.id) && card.remainingCount > 0
+      (card) => card.services.includes(service.id) && getEffectiveRemainingCount(card) > 0
     );
 
     setCart([
@@ -117,7 +129,7 @@ export default function Cashier() {
 
   const { cardDeductTotal, balanceDeduct, cashNeed, total } = calculatePayment();
 
-  // 计算次卡使用明细
+  // 计算次卡使用明细 - 改进：显示有效剩余次数
   const cardUsageInfo = useMemo((): CardUsageInfo[] => {
     if (!selectedMember) return [];
     
@@ -226,9 +238,11 @@ export default function Cashier() {
           ],
         });
       } else {
-        // 散客结账
+        // 散客结账 - 使用唯一ID
+        const walkInId = generateWalkInId();
+        
         addTransaction({
-          memberId: "walk-in",
+          memberId: walkInId,
           memberName: "散客",
           type: "consume",
           amount: total,
@@ -237,7 +251,7 @@ export default function Cashier() {
         });
 
         addOrder({
-          memberId: "walk-in",
+          memberId: walkInId,
           memberName: "散客",
           services: cart.map((item) => ({
             serviceId: item.service.id,
@@ -320,14 +334,14 @@ export default function Cashier() {
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input
-                      placeholder="输入姓名拼音首字母/手机号搜索会员"
+                      placeholder="输入姓名或手机号搜索"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10"
                     />
                   </div>
                   {searchResults.length > 0 && (
-                    <div className="max-h-48 space-y-1 overflow-auto rounded-lg border border-border">
+                    <div className="max-h-[200px] space-y-1 overflow-auto rounded-lg border border-border">
                       {searchResults.map((member) => (
                         <div
                           key={member.id}
@@ -369,8 +383,9 @@ export default function Cashier() {
                       <p className="mb-2 text-sm font-medium text-muted-foreground">{category}</p>
                       <div className="grid gap-2 sm:grid-cols-2">
                         {categoryServices.map((service) => {
+                          // 改进：检查有效剩余次数
                           const hasCard = selectedMember?.cards.some(
-                            (card) => card.services.includes(service.id) && card.remainingCount > 0
+                            (card) => card.services.includes(service.id) && getEffectiveRemainingCount(card) > 0
                           );
                           return (
                             <div
@@ -437,44 +452,53 @@ export default function Cashier() {
                     </Alert>
                   )}
 
-                  <div className="space-y-2">
-                    {cart.map((item, index) => (
-                      <div
-                        key={index}
-                        className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/30"
-                      >
-                        <div className="flex-1">
-                          <p className="font-medium">{item.service.name}</p>
-                          {item.card && item.useCard ? (
-                            <Badge variant="secondary" className="mt-1 text-xs">
-                              <CreditCard className="mr-1 h-3 w-3" />
-                              次卡抵扣 (剩{item.card.remainingCount}次)
-                            </Badge>
-                          ) : (
-                            <p className="text-sm text-muted-foreground">
-                              ¥{item.service.price}
-                            </p>
-                          )}
-                          {item.card && !isWalkIn && (
-                            <Button
-                              variant="link"
-                              size="sm"
-                              className="h-auto p-0 text-xs"
-                              onClick={() => toggleCardUse(index)}
-                            >
-                              {item.useCard ? "改为现金" : "使用次卡"}
-                            </Button>
-                          )}
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeFromCart(index)}
+                  <div className="space-y-2 max-h-[300px] overflow-auto">
+                    {cart.map((item, index) => {
+                      // 计算此项对应卡的有效剩余次数
+                      const effectiveRemaining = item.card 
+                        ? item.card.remainingCount - cart.slice(0, index + 1).filter(
+                            c => c.useCard && c.card?.id === item.card?.id
+                          ).length
+                        : 0;
+                      
+                      return (
+                        <div
+                          key={index}
+                          className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/30"
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
-                      </div>
-                    ))}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium truncate">{item.service.name}</p>
+                            {item.card && item.useCard ? (
+                              <Badge variant="secondary" className="mt-1 text-xs">
+                                <CreditCard className="mr-1 h-3 w-3" />
+                                次卡抵扣 (剩{effectiveRemaining}次)
+                              </Badge>
+                            ) : (
+                              <p className="text-sm text-muted-foreground">
+                                ¥{item.service.price}
+                              </p>
+                            )}
+                            {item.card && !isWalkIn && (
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs"
+                                onClick={() => toggleCardUse(index)}
+                              >
+                                {item.useCard ? "改为现金" : "使用次卡"}
+                              </Button>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeFromCart(index)}
+                          >
+                            <Trash2 className="h-4 w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <Separator />

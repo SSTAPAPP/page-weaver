@@ -18,6 +18,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
+import { hashPassword, isHashed } from "@/lib/crypto";
 import { 
   ArrowUpCircle, 
   ArrowDownCircle, 
@@ -27,7 +28,8 @@ import {
   ArrowRight,
   Wallet,
   Banknote,
-  Link2
+  Link2,
+  HandCoins
 } from "lucide-react";
 import type { Transaction } from "@/types";
 
@@ -58,7 +60,7 @@ export function TransactionRefundDialog({
   onOpenChange,
 }: TransactionRefundDialogProps) {
   const { toast } = useToast();
-  const { adminPassword, refundBalance, refundCard, addTransaction, voidTransaction, getRelatedTransactions } = useStore();
+  const { adminPassword, setAdminPassword, refundBalance, refundCard, addTransaction, voidTransaction, getRelatedTransactions } = useStore();
   const [password, setPassword] = useState("");
   const [isRefunding, setIsRefunding] = useState(false);
   const [passwordError, setPasswordError] = useState("");
@@ -75,17 +77,37 @@ export function TransactionRefundDialog({
   const relatedTransactions = getRelatedTransactions(transaction.id);
   const refundTransaction = relatedTransactions.find(t => t.type === 'refund' && t.relatedTransactionId === transaction.id);
 
-  const handleRefund = async () => {
-    if (password !== adminPassword) {
-      setPasswordError("管理员密码不正确");
-      return;
-    }
+  // 检查是否有需要手动退还的补差价
+  const priceDiffSub = transaction.subTransactions?.find(s => s.type === 'price_diff');
+  const hasManualRefund = !!priceDiffSub;
 
+  const handleRefund = async () => {
     setIsRefunding(true);
     setPasswordError("");
 
     try {
-      await new Promise((r) => setTimeout(r, 500));
+      // Hash the input password
+      const inputHash = await hashPassword(password);
+      
+      // Check if stored password is already hashed
+      let passwordValid = false;
+      if (isHashed(adminPassword)) {
+        passwordValid = inputHash === adminPassword;
+      } else {
+        // Legacy: plain text comparison
+        if (password === adminPassword) {
+          // Migrate to hashed password
+          setAdminPassword(inputHash);
+          passwordValid = true;
+        }
+      }
+
+      if (!passwordValid) {
+        setPasswordError("管理员密码不正确");
+        return;
+      }
+
+      await new Promise((r) => setTimeout(r, 300));
 
       let totalRefundAmount = transaction.amount;
       const fundTrail: string[] = [];
@@ -102,7 +124,7 @@ export function TransactionRefundDialog({
             fundTrail.push(`余额退回 ¥${sub.amount}`);
           }
           if (sub.type === 'price_diff') {
-            fundTrail.push(`补差价 ¥${sub.amount} (需手动退还${paymentMethodMap[sub.paymentMethod || 'cash']})`);
+            fundTrail.push(`⚠️ 补差价 ¥${sub.amount} 需手动退还 (${paymentMethodMap[sub.paymentMethod || 'cash']})`);
           }
         });
       } else {
@@ -111,7 +133,7 @@ export function TransactionRefundDialog({
           refundBalance(transaction.memberId, transaction.amount);
           fundTrail.push(`余额退回 ¥${transaction.amount}`);
         } else if (transaction.paymentMethod && transaction.paymentMethod !== 'balance') {
-          fundTrail.push(`需手动退还${paymentMethodMap[transaction.paymentMethod]} ¥${transaction.amount}`);
+          fundTrail.push(`⚠️ 需手动退还${paymentMethodMap[transaction.paymentMethod]} ¥${transaction.amount}`);
         }
       }
 
@@ -123,12 +145,16 @@ export function TransactionRefundDialog({
       voidTransaction(transaction.id);
 
       // 4. 添加退款记录（关联原交易ID）
+      const manualRefundNote = hasManualRefund 
+        ? ` [需手动退还${paymentMethodMap[priceDiffSub?.paymentMethod || 'cash']}¥${priceDiffSub?.amount}]`
+        : '';
+      
       addTransaction({
         memberId: transaction.memberId,
         memberName: transaction.memberName,
         type: "refund",
         amount: totalRefundAmount,
-        description: `退款 - ${transaction.description}`,
+        description: `退款 - ${transaction.description}${manualRefundNote}`,
         relatedTransactionId: transaction.id,
         subTransactions: transaction.subTransactions?.map(sub => ({
           ...sub,
@@ -238,7 +264,7 @@ export function TransactionRefundDialog({
                         {isBalance && <Wallet className="h-4 w-4 text-chart-2" />}
                         {isPriceDiff && <Banknote className="h-4 w-4 text-chart-1" />}
                       </div>
-                      <div className="flex-1">
+                      <div className="flex-1 min-w-0">
                         <p className="font-medium">
                           {isCard ? '次卡抵扣' : isBalance ? '余额支付' : '补差价'}
                         </p>
@@ -248,8 +274,8 @@ export function TransactionRefundDialog({
                           {isPriceDiff && `${paymentMethodMap[sub.paymentMethod || 'cash']}支付`}
                         </p>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                      <span className={`font-semibold ${isPriceDiff ? 'text-chart-1' : ''}`}>
+                      <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
+                      <span className={`font-semibold shrink-0 ${isPriceDiff ? 'text-chart-1' : ''}`}>
                         ¥{sub.amount.toFixed(2)}
                       </span>
                     </div>
@@ -257,6 +283,20 @@ export function TransactionRefundDialog({
                 })}
               </div>
             </div>
+          )}
+
+          {/* 手动退款提醒 - 更明显的显示 */}
+          {hasManualRefund && canRefund && (
+            <Alert className="border-chart-1/30 bg-chart-1/5">
+              <HandCoins className="h-4 w-4 text-chart-1" />
+              <AlertDescription className="text-sm">
+                <strong>需手动退还：</strong>
+                {paymentMethodMap[priceDiffSub?.paymentMethod || 'cash']} ¥{priceDiffSub?.amount.toFixed(2)}
+                <p className="text-xs text-muted-foreground mt-1">
+                  补差价部分系统无法自动处理，请完成退款后手动将现金/微信/支付宝款项退还给会员。
+                </p>
+              </AlertDescription>
+            </Alert>
           )}
 
           {/* 关联退款记录 */}
@@ -303,6 +343,7 @@ export function TransactionRefundDialog({
                   }}
                   placeholder="请输入管理员密码"
                   onKeyDown={(e) => e.key === "Enter" && handleRefund()}
+                  disabled={isRefunding}
                 />
                 {passwordError && (
                   <p className="text-sm text-destructive">{passwordError}</p>
@@ -313,9 +354,9 @@ export function TransactionRefundDialog({
                     退款后将作废此交易。
                     {transaction.subTransactions?.some(s => s.type === 'card') && " 次卡次数将自动退回。"}
                     {transaction.subTransactions?.some(s => s.type === 'balance') && " 余额将退回会员账户。"}
-                    {transaction.subTransactions?.some(s => s.type === 'price_diff') && " 补差价部分请手动退还。"}
+                    {transaction.subTransactions?.some(s => s.type === 'price_diff') && " ⚠️ 补差价部分请手动退还。"}
                     {!transaction.subTransactions && transaction.paymentMethod === 'balance' && " 余额将退回会员账户。"}
-                    {!transaction.subTransactions && transaction.paymentMethod && transaction.paymentMethod !== 'balance' && " 请手动退还现金/在线支付。"}
+                    {!transaction.subTransactions && transaction.paymentMethod && transaction.paymentMethod !== 'balance' && " ⚠️ 请手动退还现金/在线支付。"}
                   </AlertDescription>
                 </Alert>
               </div>
@@ -324,7 +365,7 @@ export function TransactionRefundDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={handleClose}>
+          <Button variant="outline" onClick={handleClose} disabled={isRefunding}>
             {canRefund ? "取消" : "关闭"}
           </Button>
           {canRefund && (
