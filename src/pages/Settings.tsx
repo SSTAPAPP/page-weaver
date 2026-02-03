@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { 
   Download, Save, Eye, EyeOff, Database, AlertTriangle, 
   Moon, Sun, Type, Store, MapPin, Phone, ChevronRight,
   Building, Palette, Lock, HardDrive, Cloud, CloudOff, 
-  History, FileSpreadsheet, FileText, Trash2, Printer
+  History, FileSpreadsheet, FileText, Trash2, Printer,
+  Upload, RefreshCw, Check
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -31,6 +32,8 @@ import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { hashPassword, isHashed } from "@/lib/crypto";
 import { getStorageUsage, exportToCSV, printReport } from "@/lib/print";
+import { migrationService } from "@/lib/migration";
+import { MigrationDialog } from "@/components/dialogs/MigrationDialog";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
@@ -89,6 +92,22 @@ export default function Settings() {
   
   // 云端同步配置
   const [syncApiUrl, setSyncApiUrl] = useState(syncConfig.apiUrl);
+  
+  // 迁移对话框
+  const [showMigrationDialog, setShowMigrationDialog] = useState(false);
+  const [isMigrated, setIsMigrated] = useState(() => migrationService.isMigrated());
+  const [hasLocalData, setHasLocalData] = useState(() => migrationService.hasLocalData());
+  
+  // 检查是否需要迁移
+  useEffect(() => {
+    if (hasLocalData && !isMigrated) {
+      // 延迟显示迁移提示，让用户先看到页面
+      const timer = setTimeout(() => {
+        setShowMigrationDialog(true);
+      }, 1000);
+      return () => clearTimeout(timer);
+    }
+  }, [hasLocalData, isMigrated]);
 
   // 存储使用情况
   const storageUsage = useMemo(() => getStorageUsage(), [members, transactions]);
@@ -533,8 +552,55 @@ export default function Settings() {
           <div className="space-y-6">
             <div>
               <h3 className="text-lg font-semibold mb-1">数据管理</h3>
-              <p className="text-sm text-muted-foreground">导出数据与云端同步</p>
+              <p className="text-sm text-muted-foreground">云端同步与数据导出</p>
             </div>
+            <Separator />
+            
+            {/* 云端数据库状态 */}
+            <div className="space-y-3">
+              <Label className="flex items-center gap-2">
+                <Cloud className="h-4 w-4" />
+                云端数据库
+              </Label>
+              <div className="rounded-lg border border-border p-4 bg-muted/30">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="font-medium">连接状态</p>
+                    <p className="text-sm text-muted-foreground">
+                      Lovable Cloud 已启用
+                    </p>
+                  </div>
+                  <Badge variant="default" className="bg-primary">
+                    <Check className="mr-1 h-3 w-3" />
+                    已连接
+                  </Badge>
+                </div>
+                
+                {hasLocalData && !isMigrated && (
+                  <Alert className="mb-3">
+                    <Upload className="h-4 w-4" />
+                    <AlertDescription className="flex items-center justify-between">
+                      <span>检测到本地数据，建议迁移到云端以实现多设备同步</span>
+                      <Button 
+                        size="sm" 
+                        onClick={() => setShowMigrationDialog(true)}
+                        className="ml-3"
+                      >
+                        开始迁移
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                )}
+                
+                {isMigrated && (
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <Check className="h-4 w-4 text-primary" />
+                    数据已迁移到云端
+                  </div>
+                )}
+              </div>
+            </div>
+
             <Separator />
             
             {/* 数据导出 */}
@@ -615,71 +681,6 @@ export default function Settings() {
 
             <Separator />
 
-            {/* 云端同步 */}
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2">
-                {syncConfig.enabled ? <Cloud className="h-4 w-4" /> : <CloudOff className="h-4 w-4" />}
-                云端同步
-              </Label>
-              <div className="rounded-lg border border-border p-4 bg-muted/30">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="font-medium">同步状态</p>
-                    <p className="text-sm text-muted-foreground">
-                      {syncConfig.enabled ? "已启用" : "未启用"}
-                    </p>
-                  </div>
-                  <Badge variant={syncConfig.enabled ? "default" : "secondary"}>
-                    {syncConfig.enabled ? "已连接" : "本地存储"}
-                  </Badge>
-                </div>
-                
-                <div className="space-y-3">
-                  <div className="space-y-2">
-                    <Label htmlFor="sync-api" className="text-sm">API 接口地址</Label>
-                    <Input
-                      id="sync-api"
-                      value={syncApiUrl}
-                      onChange={(e) => setSyncApiUrl(e.target.value)}
-                      placeholder="https://api.example.com/sync"
-                    />
-                  </div>
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleSaveSyncConfig}
-                    >
-                      <Save className="mr-2 h-4 w-4" />
-                      保存配置
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      disabled={!syncApiUrl}
-                      onClick={() => {
-                        toast({
-                          title: "功能开发中",
-                          description: "云端同步功能即将上线，敬请期待",
-                        });
-                      }}
-                    >
-                      测试连接
-                    </Button>
-                  </div>
-                </div>
-                
-                <Alert className="mt-3">
-                  <Cloud className="h-4 w-4" />
-                  <AlertDescription>
-                    云端同步功能需要配合后端API使用，支持数据实时同步和离线模式。
-                  </AlertDescription>
-                </Alert>
-              </div>
-            </div>
-
-            <Separator />
-
             {/* 存储信息 */}
             <div className="space-y-3">
               <Label className="flex items-center gap-2">
@@ -715,7 +716,7 @@ export default function Settings() {
                 </div>
                 <div className="rounded-lg bg-muted/50 p-4">
                   <p className="text-sm text-muted-foreground">数据存储</p>
-                  <p className="font-medium">本地浏览器</p>
+                  <p className="font-medium">Lovable Cloud</p>
                 </div>
                 <div className="rounded-lg bg-muted/50 p-4">
                   <p className="text-sm text-muted-foreground">会员总数</p>
@@ -788,6 +789,16 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Migration Dialog */}
+      <MigrationDialog 
+        open={showMigrationDialog}
+        onOpenChange={setShowMigrationDialog}
+        onComplete={() => {
+          setIsMigrated(true);
+          setHasLocalData(false);
+        }}
+      />
     </div>
   );
 }
