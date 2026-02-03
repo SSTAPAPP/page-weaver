@@ -20,6 +20,8 @@ env:
 jobs:
   build-windows:
     runs-on: windows-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout code
@@ -77,5 +79,6 @@ jobs:
             ### 系统要求
             - Windows 10 或更高版本
             - 64位操作系统
+          args: --bundles msi
           releaseDraft: true
           prerelease: false
