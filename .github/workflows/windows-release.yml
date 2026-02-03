@@ -14,70 +14,68 @@ on:
 env:
   TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
   TAURI_SIGNING_PUBLIC_KEY: ${{ secrets.TAURI_SIGNING_PUBLIC_KEY }}
+  # tag push 时 ref_name 已经是 v0.1.0；workflow_dispatch 时手动拼 v 前缀
+  TAG_NAME: ${{ github.event_name == 'workflow_dispatch' && format('v{0}', github.event.inputs.version) || github.ref_name }}
 
 jobs:
   build-windows:
     runs-on: windows-latest
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        
+        with:
+          fetch-depth: 0
+
+      # workflow_dispatch 触发时自动创建并推送 tag，避免用户手动操作
+      - name: Create tag (workflow_dispatch only)
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          git tag ${{ env.TAG_NAME }}
+          git push origin ${{ env.TAG_NAME }}
+
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-          
+
       - name: Setup Rust
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
-          
+
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
           workspaces: './src-tauri -> target'
-          
+
       - name: Install dependencies
         run: npm ci
-        
+
       - name: Build web app
         run: npm run build
-        
+
       - name: Build Tauri app
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: v${{ github.event.inputs.version || github.ref_name }}
-          releaseName: 'FFk v${{ github.event.inputs.version || github.ref_name }}'
+          tagName: ${{ env.TAG_NAME }}
+          releaseName: 'FFk ${{ env.TAG_NAME }}'
           releaseBody: |
             ## FFk 理发店管理系统
-            
+
             ### 更新内容
             - 请查看提交历史了解详细更改
-            
+
             ### 安装说明
             1. 下载 `.msi` 安装包
             2. 双击运行安装
             3. 按提示完成安装
-            
+
             ### 系统要求
             - Windows 10 或更高版本
             - 64位操作系统
           releaseDraft: true
           prerelease: false
-          
-  # Optional: Code signing job (requires certificate)
-  # sign-windows:
-  #   needs: build-windows
-  #   runs-on: windows-latest
-  #   if: ${{ secrets.WINDOWS_CERTIFICATE }}
-  #   steps:
-  #     - name: Download artifacts
-  #       uses: actions/download-artifact@v4
-  #     - name: Sign executables
-  #       run: |
-  #         # Add code signing steps here
-  #         # signtool sign /f certificate.pfx /p ${{ secrets.CERTIFICATE_PASSWORD }} *.exe
