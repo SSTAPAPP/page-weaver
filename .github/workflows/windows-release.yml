@@ -1,0 +1,83 @@
+name: Windows Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.0.0)'
+        required: true
+        type: string
+
+env:
+  TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+  TAURI_SIGNING_PUBLIC_KEY: ${{ secrets.TAURI_SIGNING_PUBLIC_KEY }}
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+          
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: './src-tauri -> target'
+          
+      - name: Install dependencies
+        run: npm ci
+        
+      - name: Build web app
+        run: npm run build
+        
+      - name: Build Tauri app
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: v${{ github.event.inputs.version || github.ref_name }}
+          releaseName: 'FFk v${{ github.event.inputs.version || github.ref_name }}'
+          releaseBody: |
+            ## FFk 理发店管理系统
+            
+            ### 更新内容
+            - 请查看提交历史了解详细更改
+            
+            ### 安装说明
+            1. 下载 `.msi` 安装包
+            2. 双击运行安装
+            3. 按提示完成安装
+            
+            ### 系统要求
+            - Windows 10 或更高版本
+            - 64位操作系统
+          releaseDraft: true
+          prerelease: false
+          
+  # Optional: Code signing job (requires certificate)
+  # sign-windows:
+  #   needs: build-windows
+  #   runs-on: windows-latest
+  #   if: ${{ secrets.WINDOWS_CERTIFICATE }}
+  #   steps:
+  #     - name: Download artifacts
+  #       uses: actions/download-artifact@v4
+  #     - name: Sign executables
+  #       run: |
+  #         # Add code signing steps here
+  #         # signtool sign /f certificate.pfx /p ${{ secrets.CERTIFICATE_PASSWORD }} *.exe

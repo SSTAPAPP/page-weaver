@@ -14,7 +14,352 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      appointments: {
+        Row: {
+          created_at: string
+          date: string
+          id: string
+          member_id: string | null
+          member_name: string
+          member_phone: string | null
+          service_id: string | null
+          service_name: string
+          status: string | null
+          time: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          id?: string
+          member_id?: string | null
+          member_name: string
+          member_phone?: string | null
+          service_id?: string | null
+          service_name: string
+          status?: string | null
+          time: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          id?: string
+          member_id?: string | null
+          member_name?: string
+          member_phone?: string | null
+          service_id?: string | null
+          service_name?: string
+          status?: string | null
+          time?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      audit_logs: {
+        Row: {
+          action: string
+          category: string
+          created_at: string
+          details: string | null
+          id: string
+          metadata: Json | null
+        }
+        Insert: {
+          action: string
+          category: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          metadata?: Json | null
+        }
+        Update: {
+          action?: string
+          category?: string
+          created_at?: string
+          details?: string | null
+          id?: string
+          metadata?: Json | null
+        }
+        Relationships: []
+      }
+      card_templates: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number
+          service_ids: string[] | null
+          total_count: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price: number
+          service_ids?: string[] | null
+          total_count: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
+          service_ids?: string[] | null
+          total_count?: number
+        }
+        Relationships: []
+      }
+      member_cards: {
+        Row: {
+          created_at: string
+          id: string
+          member_id: string
+          original_price: number
+          original_total_count: number
+          remaining_count: number
+          services: string[] | null
+          template_id: string | null
+          template_name: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          member_id: string
+          original_price: number
+          original_total_count: number
+          remaining_count: number
+          services?: string[] | null
+          template_id?: string | null
+          template_name: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          member_id?: string
+          original_price?: number
+          original_total_count?: number
+          remaining_count?: number
+          services?: string[] | null
+          template_id?: string | null
+          template_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "member_cards_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      members: {
+        Row: {
+          balance: number | null
+          created_at: string
+          gender: string | null
+          id: string
+          name: string
+          phone: string
+          updated_at: string
+        }
+        Insert: {
+          balance?: number | null
+          created_at?: string
+          gender?: string | null
+          id?: string
+          name: string
+          phone: string
+          updated_at?: string
+        }
+        Update: {
+          balance?: number | null
+          created_at?: string
+          gender?: string | null
+          id?: string
+          name?: string
+          phone?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      orders: {
+        Row: {
+          created_at: string
+          id: string
+          member_id: string
+          member_name: string
+          payments: Json
+          services: Json
+          total_amount: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          member_id: string
+          member_name: string
+          payments: Json
+          services: Json
+          total_amount: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          member_id?: string
+          member_name?: string
+          payments?: Json
+          services?: Json
+          total_amount?: number
+        }
+        Relationships: []
+      }
+      services: {
+        Row: {
+          category: string
+          created_at: string
+          duration: number | null
+          id: string
+          is_active: boolean | null
+          name: string
+          price: number
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          duration?: number | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          price: number
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          duration?: number | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
+      shop_settings: {
+        Row: {
+          admin_password_hash: string | null
+          font_size: string | null
+          id: string
+          shop_address: string | null
+          shop_name: string | null
+          shop_phone: string | null
+          sidebar_collapsed: boolean | null
+          sync_config: Json | null
+          theme: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_password_hash?: string | null
+          font_size?: string | null
+          id?: string
+          shop_address?: string | null
+          shop_name?: string | null
+          shop_phone?: string | null
+          sidebar_collapsed?: boolean | null
+          sync_config?: Json | null
+          theme?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_password_hash?: string | null
+          font_size?: string | null
+          id?: string
+          shop_address?: string | null
+          shop_name?: string | null
+          shop_phone?: string | null
+          sidebar_collapsed?: boolean | null
+          sync_config?: Json | null
+          theme?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      sync_queue: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          operation: string
+          retries: number | null
+          table_name: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          id?: string
+          operation: string
+          retries?: number | null
+          table_name: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          operation?: string
+          retries?: number | null
+          table_name?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          member_id: string
+          member_name: string
+          payment_method: string | null
+          related_transaction_id: string | null
+          sub_transactions: Json | null
+          type: string
+          voided: boolean | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          member_id: string
+          member_name: string
+          payment_method?: string | null
+          related_transaction_id?: string | null
+          sub_transactions?: Json | null
+          type: string
+          voided?: boolean | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          member_id?: string
+          member_name?: string
+          payment_method?: string | null
+          related_transaction_id?: string | null
+          sub_transactions?: Json | null
+          type?: string
+          voided?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -15,6 +14,8 @@ import {
 import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
+import { Separator } from "@/components/ui/separator";
 
 const menuItems = [
   { title: "仪表盘", url: "/", icon: LayoutDashboard },
@@ -27,14 +28,18 @@ const menuItems = [
   { title: "设置", url: "/settings", icon: Settings },
 ];
 
-export function AppSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
+interface AppSidebarProps {
+  collapsed: boolean;
+  onCollapsedChange: (collapsed: boolean) => void;
+}
+
+export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
   const location = useLocation();
 
   return (
-    <aside
+    <div
       className={cn(
-        "flex h-screen flex-col border-r border-border bg-sidebar transition-all duration-300 relative",
+        "flex h-full flex-col border-r border-border bg-sidebar transition-all duration-300",
         collapsed ? "w-16" : "w-60"
       )}
     >
@@ -56,7 +61,7 @@ export function AppSidebar() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => setCollapsed(!collapsed)}
+          onClick={() => onCollapsedChange(!collapsed)}
           className={cn("h-8 w-8 shrink-0", collapsed && "absolute right-1 top-4")}
         >
           {collapsed ? (
@@ -68,7 +73,7 @@ export function AppSidebar() {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-2">
+      <nav className="flex-1 space-y-1 p-2 overflow-y-auto">
         {menuItems.map((item) => {
           const isActive = location.pathname === item.url;
           return (
@@ -87,6 +92,12 @@ export function AppSidebar() {
           );
         })}
       </nav>
-    </aside>
+
+      {/* Sync Status */}
+      <div className="p-2">
+        <Separator className="mb-2" />
+        <SyncStatusIndicator collapsed={collapsed} />
+      </div>
+    </div>
   );
 }
