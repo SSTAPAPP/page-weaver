@@ -1,311 +1,422 @@
 
 
-# FFk - Final Production Delivery Implementation Plan
+# FFk - Comprehensive Cloud Migration & Production Enhancement Plan
 
 ## Overview
-This plan addresses all 9 user-reported issues plus additional improvements needed to deliver a production-ready system capable of handling 1000+ members with complete data integrity, security, and professional UI/UX.
+This plan addresses all user requirements to deliver a production-ready barber shop management system with cloud database storage (Supabase), enhanced security, professional UI/UX, and preparation for Windows desktop client deployment.
 
 ---
 
-## Issue 1: Dialog Overflow on Small Windows (MemberDeleteWithRefundDialog)
+## Phase 1: Database Schema & Cloud Migration
 
-**Problem**: When browser window is small, the delete member dialog gets compressed and content cannot be scrolled.
+### 1.1 Create Supabase Database Tables
 
-**Solution**:
-- Add `min-h-[400px]` to DialogContent
-- Ensure ScrollArea has proper `flex-1` and doesn't collapse
-- Add responsive handling with `overflow-y-auto` on inner containers
-- Add scrollable viewport for card refund details list
-
-**Files to Modify**:
-- `src/components/dialogs/MemberDeleteWithRefundDialog.tsx`
-- `src/components/dialogs/MemberDetailDialog.tsx` (apply same pattern)
-
----
-
-## Issue 2: Window/Font Size State Memory
-
-**Problem**: Need to remember user's last window/font size settings.
-
-**Current State**: Font size is already persisted via `useTheme` hook using localStorage (`barber-shop-font-size`). Theme is also persisted.
-
-**Enhancement**:
-- Font size and theme persistence is already implemented
-- Need to verify persistence works correctly
-- Consider adding window position/size memory (browser limitation - only app settings can be saved)
-
-**Files to Review**:
-- `src/hooks/useTheme.ts` - Already persists settings to localStorage ✓
-- No changes needed for font/theme - already implemented
-
----
-
-## Issue 3: Security Audit Logging
-
-**Problem**: Need to record all user operation history for traceability.
-
-**Solution**:
-Create a comprehensive audit log system:
+**Tables to Create:**
 
 ```text
-New Type: AuditLogEntry {
-  id: string;
-  timestamp: Date;
-  action: string;        // e.g., "member_created", "transaction_refund", "password_changed"
-  category: 'member' | 'transaction' | 'service' | 'card' | 'system' | 'security';
-  details: string;       // Human-readable description
-  metadata?: object;     // Additional data (e.g., memberId, amounts)
-  userId?: string;       // For future multi-user support
-}
+1. members
+   - id UUID PRIMARY KEY
+   - phone TEXT UNIQUE NOT NULL
+   - name TEXT NOT NULL
+   - gender TEXT CHECK (gender IN ('male', 'female'))
+   - balance DECIMAL(10,2) DEFAULT 0
+   - created_at TIMESTAMPTZ DEFAULT now()
+   - updated_at TIMESTAMPTZ DEFAULT now()
+
+2. member_cards
+   - id UUID PRIMARY KEY
+   - member_id UUID REFERENCES members(id) ON DELETE CASCADE
+   - template_id UUID
+   - template_name TEXT NOT NULL
+   - remaining_count INTEGER NOT NULL
+   - services TEXT[] (array of service IDs)
+   - original_price DECIMAL(10,2) NOT NULL
+   - original_total_count INTEGER NOT NULL
+   - created_at TIMESTAMPTZ DEFAULT now()
+
+3. card_templates
+   - id UUID PRIMARY KEY
+   - name TEXT NOT NULL
+   - price DECIMAL(10,2) NOT NULL
+   - total_count INTEGER NOT NULL
+   - service_ids TEXT[]
+   - created_at TIMESTAMPTZ DEFAULT now()
+   - is_active BOOLEAN DEFAULT true
+
+4. services
+   - id UUID PRIMARY KEY
+   - name TEXT NOT NULL
+   - price DECIMAL(10,2) NOT NULL
+   - duration INTEGER (minutes)
+   - category TEXT NOT NULL
+   - is_active BOOLEAN DEFAULT true
+   - created_at TIMESTAMPTZ DEFAULT now()
+
+5. transactions
+   - id UUID PRIMARY KEY
+   - member_id TEXT NOT NULL
+   - member_name TEXT NOT NULL
+   - type TEXT CHECK (type IN ('recharge', 'consume', 'card_deduct', 'refund', 'price_diff'))
+   - amount DECIMAL(10,2) NOT NULL
+   - payment_method TEXT
+   - description TEXT
+   - voided BOOLEAN DEFAULT false
+   - related_transaction_id UUID
+   - sub_transactions JSONB
+   - created_at TIMESTAMPTZ DEFAULT now()
+
+6. appointments
+   - id UUID PRIMARY KEY
+   - member_id UUID REFERENCES members(id)
+   - member_name TEXT NOT NULL
+   - member_phone TEXT
+   - service_id UUID
+   - service_name TEXT NOT NULL
+   - date DATE NOT NULL
+   - time TEXT NOT NULL
+   - status TEXT CHECK (status IN ('pending', 'confirmed', 'cancelled', 'completed', 'noshow'))
+   - created_at TIMESTAMPTZ DEFAULT now()
+
+7. orders
+   - id UUID PRIMARY KEY
+   - member_id TEXT NOT NULL
+   - member_name TEXT NOT NULL
+   - services JSONB NOT NULL
+   - total_amount DECIMAL(10,2) NOT NULL
+   - payments JSONB NOT NULL
+   - created_at TIMESTAMPTZ DEFAULT now()
+
+8. audit_logs
+   - id UUID PRIMARY KEY
+   - action TEXT NOT NULL
+   - category TEXT CHECK (category IN ('member', 'transaction', 'service', 'card', 'system', 'security'))
+   - details TEXT
+   - metadata JSONB
+   - created_at TIMESTAMPTZ DEFAULT now()
+
+9. shop_settings
+   - id UUID PRIMARY KEY DEFAULT gen_random_uuid()
+   - shop_name TEXT DEFAULT 'FFk'
+   - shop_address TEXT
+   - shop_phone TEXT
+   - admin_password_hash TEXT
+   - theme TEXT DEFAULT 'system'
+   - font_size TEXT DEFAULT 'base'
+   - sidebar_collapsed BOOLEAN DEFAULT false
+   - sync_config JSONB
+   - updated_at TIMESTAMPTZ DEFAULT now()
 ```
 
-**Implementation**:
-- Add `auditLogs: AuditLogEntry[]` to store
-- Add `addAuditLog` function
-- Wrap all sensitive operations with audit logging
-- Add audit log viewer in Settings page under "Security" tab
-- Limit stored logs to last 1000 entries (with auto-cleanup)
+### 1.2 RLS Policies
 
-**Files to Create/Modify**:
-- `src/types/index.ts` - Add AuditLogEntry interface
-- `src/stores/useStore.ts` - Add audit log storage and functions
-- `src/pages/Settings.tsx` - Add audit log viewer section
+Since this is a single-shop system without user authentication initially, we'll use a simple approach:
+- Enable RLS on all tables
+- Create policies that allow all operations for now (can be enhanced with auth later)
+- Add service_role access for edge functions
 
----
+### 1.3 Data Migration Service
 
-## Issue 4: Performance Optimization - Virtual Scrolling for Large Data Lists
+Create a migration utility to:
+1. Read existing localStorage data
+2. Transform and insert into Supabase tables
+3. Clear localStorage after successful migration
+4. Show migration progress UI
 
-**Problem**: With 1000+ members, rendering large lists will cause performance issues.
-
-**Solution**:
-Implement virtual scrolling for:
-1. Member list in Members.tsx
-2. Transaction list in Transactions.tsx
-3. Search result dropdowns
-
-**Technical Approach**:
-- Use `tanstack-virtual` or implement lightweight virtual scroll
-- For simplicity with existing dependencies, implement a "load more" pagination pattern
-- Use `useMemo` with proper dependencies to prevent unnecessary recalculations
-- Add debouncing to search inputs (300ms delay)
-
-**Implementation**:
-- Members page: Add pagination with "load more" or page navigation
-- Add search debouncing using `useCallback` and `setTimeout`
-- Optimize memoization patterns
-
-**Files to Modify**:
-- `src/pages/Members.tsx` - Add virtual pagination
-- `src/pages/Transactions.tsx` - Already has pagination ✓
-- `src/pages/Cashier.tsx` - Add search debounce
-- `src/components/dialogs/QuickRechargeDialog.tsx` - Add search debounce
+**Files to Create:**
+- `src/lib/migration.ts` - Data migration logic
+- `src/components/dialogs/MigrationDialog.tsx` - Migration UI
 
 ---
 
-## Issue 5: Cloud Data Sync & Offline Mode
+## Phase 2: Cloud Data Layer Implementation
 
-**Problem**: Need cloud sync capability and offline mode support.
+### 2.1 Supabase Data Services
 
-**Solution**:
-Create a sync infrastructure framework that:
-1. Shows sync status indicator
-2. Provides API endpoint configuration
-3. Implements offline queue for operations
-4. Auto-sync when connection restored
+Create service layer to handle all database operations:
 
-**Implementation** (Infrastructure only - full backend requires server):
-- Add sync settings section in Settings page
-- Add `syncConfig` to store (apiUrl, lastSyncTime, syncEnabled)
-- Add UI for configuring sync endpoint
-- Show "Local Storage" badge currently with "Cloud Sync Coming Soon"
-- Add sync status indicator in sidebar
+**Files to Create:**
+- `src/services/memberService.ts` - Member CRUD operations
+- `src/services/transactionService.ts` - Transaction operations
+- `src/services/serviceService.ts` - Service management
+- `src/services/cardService.ts` - Card template operations
+- `src/services/appointmentService.ts` - Appointment management
+- `src/services/auditService.ts` - Audit logging
+- `src/services/settingsService.ts` - Shop settings
 
-**Files to Modify**:
-- `src/types/index.ts` - Add SyncConfig interface
-- `src/stores/useStore.ts` - Add syncConfig and sync functions
-- `src/pages/Settings.tsx` - Add cloud sync configuration section
+### 2.2 Update Store with Cloud Sync
 
----
+Modify `src/stores/useStore.ts`:
+- Add `isCloudMode` flag
+- Implement hybrid local/cloud operations
+- Add sync queue for offline operations
+- Add conflict resolution logic
 
-## Issue 6: Print Functionality (Receipt & Reports)
+### 2.3 Offline-First Architecture
 
-**Problem**: Need receipt printing for checkout and report printing.
+```text
+Data Flow:
+1. Write Operation → Local Queue → Sync to Cloud (when online)
+2. Read Operation → Check Cloud → Fallback to Local Cache
+3. Conflict Resolution → Timestamp-based or Server-wins strategy
+```
 
-**Solution**:
-Implement browser-based printing:
-
-1. **Receipt Printing**:
-   - Create `ReceiptPrinter` component with thermal printer format (80mm width)
-   - Add print button to checkout confirmation
-   - Format: Shop name, items, payment details, date/time, barcode placeholder
-
-2. **Report Printing**:
-   - Add print button to Reports page
-   - Create print-friendly stylesheet
-   - Use `@media print` CSS rules
-
-**Implementation**:
-- Create `src/lib/print.ts` utility functions
-- Create `src/components/print/Receipt.tsx` component
-- Add print button to `CheckoutConfirmDialog.tsx`
-- Add print styles to `src/index.css`
-
-**Files to Create/Modify**:
-- `src/lib/print.ts` - Print utility functions
-- `src/components/print/Receipt.tsx` - Receipt component
-- `src/components/dialogs/CheckoutConfirmDialog.tsx` - Add print button
-- `src/pages/Reports.tsx` - Add print button
-- `src/index.css` - Add print media styles
+**Implementation:**
+- Add `src/lib/syncManager.ts` for sync queue management
+- Add `src/hooks/useOnlineStatus.ts` for network detection
+- Update store to handle offline queue
 
 ---
 
-## Issue 7: Multi-Format Data Export (CSV/Excel/PDF)
+## Phase 3: UI/UX Enhancements
 
-**Problem**: Currently only CSV export exists. Need Excel and PDF support.
+### 3.1 Fixed Navigation & Sidebar State Persistence
 
-**Solution**:
-Enhance export functionality:
+**Modify `src/components/layout/MainLayout.tsx`:**
+- Make sidebar fixed position
+- Persist collapsed state to localStorage/Supabase
 
-1. **CSV**: Already implemented ✓
-2. **Excel (XLSX)**: 
-   - Use browser-native approach with CSV format (Excel-compatible)
-   - Or create simple XML-based Excel format
-3. **PDF**:
-   - Use browser print dialog with PDF option
-   - Create print-friendly view for data
+**Modify `src/components/layout/AppSidebar.tsx`:**
+- Add persistence for collapsed state
+- Add sync status indicator
+- Add quick access shortcuts
 
-**Implementation**:
-- Add export format selector dropdown
-- Create PDF-friendly table view for printing
-- Enhance CSV with proper Excel encoding
+### 3.2 Professional Dark Mode
 
-**Files to Modify**:
-- `src/pages/Settings.tsx` - Add format selector and export functions
+**Modify `src/index.css`:**
+- Enhance dark mode color palette for better contrast
+- Add smooth transitions between themes
+- Ensure all components have proper dark mode styling
 
----
+### 3.3 Responsive Design Improvements
 
-## Issue 8: Dashboard - Show Voided/Refunded Transactions with Strikethrough
+- Add responsive breakpoints for tablet/mobile
+- Auto-collapse sidebar on smaller screens
+- Improve card layouts for narrow viewports
 
-**Problem**: Refunded orders in Dashboard "Recent Transactions" don't show strikethrough.
+### 3.4 Dialog Overflow Fixes
 
-**Solution**:
-Update Dashboard to include voided transaction styling matching Transactions page:
-- Show voided transactions with strikethrough
-- Show "已作废" badge
-- Keep in list but with reduced opacity
-
-**Files to Modify**:
-- `src/pages/Dashboard.tsx` - Update transaction display styling
+**Already implemented in `MemberDeleteWithRefundDialog.tsx`** with:
+- `max-h-[85vh]` on DialogContent
+- ScrollArea for scrollable content
+- Proper flex layout
 
 ---
 
-## Issue 9: Search Input Focus Ring Display Issue
+## Phase 4: Enhanced Data Management
 
-**Problem**: Focus ring appears cut off on sides of search inputs.
+### 4.1 Import/Restore Functionality
 
-**Solution**:
-Update Input component focus ring styling:
-- Change `focus-visible:ring-offset-2` to `focus-visible:ring-offset-0` or `1`
-- Or add padding to parent containers
-- Use `focus-within` on parent for better visual
+**Add to Settings page:**
+- File upload for CSV/JSON backup restore
+- Version validation
+- Field mapping
+- Conflict resolution options (skip/overwrite)
 
-**Files to Modify**:
-- `src/components/ui/input.tsx` - Adjust ring-offset value
+### 4.2 Backup Retention & Auto-Cleanup
+
+**Modify `src/stores/useStore.ts`:**
+- Implement auto-cleanup for audit logs (keep last 1000)
+- Add storage quota warning (90%+ usage alert)
+- Add periodic backup reminders
+
+### 4.3 Data Consistency Validation
+
+**Create `src/lib/dataValidator.ts`:**
+- Balance reconciliation check
+- Card usage vs transaction matching
+- Duplicate detection
+- Orphan record cleanup
 
 ---
 
-## Additional Improvements Identified
+## Phase 5: Security Enhancements
 
-### A. Storage Capacity for 1000+ Members
-- Current localStorage limit: ~5MB
-- Average member data: ~500 bytes
-- 1000 members = ~500KB (safe)
-- Add storage usage indicator in Settings
+### 5.1 Server-Side Password Hashing
 
-### B. Performance Optimizations
-- Add debounce to all search inputs
-- Optimize useMemo dependencies
-- Use React.memo for list items
+Move password handling to Supabase:
+- Store hashed password in `shop_settings` table
+- Create edge function for password verification
+- Keep client-side hashing as fallback for offline mode
 
-### C. Data Validation Consistency
-- Ensure all forms have consistent validation patterns
-- Add loading states to all async operations
+**Create `supabase/functions/verify-password/index.ts`:**
+```text
+- Accept password + hash
+- Use bcrypt for comparison
+- Return success/failure
+```
+
+### 5.2 Audit Log Enhancements
+
+**Modify audit log system:**
+- Add phone number masking (show last 4 digits only)
+- Add amount masking option
+- Add export functionality for audit logs
+- Add search/filter capabilities
+
+### 5.3 Session Security
+
+- Add device ID tracking
+- Add last sync timestamp
+- Add suspicious activity detection (multiple failed password attempts)
+
+---
+
+## Phase 6: Printing & Export Enhancements
+
+### 6.1 Enhanced Receipt Printing
+
+**Already implemented in `src/lib/print.ts`:**
+- 80mm thermal printer format
+- Shop info, services, payment details
+- Timestamp and footer
+
+### 6.2 Audit Log Export
+
+**Add to Settings page:**
+- Export audit logs to CSV/PDF
+- Date range filter
+- Category filter
+
+### 6.3 Report Printing
+
+**Already implemented in `src/pages/Reports.tsx`:**
+- Print button with `printReport()` function
+- CSS print styles in `src/index.css`
+
+---
+
+## Phase 7: GitHub Actions for Windows Build
+
+### 7.1 Create Windows Build Workflow
+
+**Create `.github/workflows/windows-release.yml`:**
+
+```text
+Workflow Steps:
+1. Checkout code
+2. Setup Node.js 20
+3. Install dependencies (npm ci)
+4. Build web app (npm run build)
+5. Package with Electron or Tauri
+6. Create Windows installer
+7. Sign application (optional with certificate)
+8. Upload to GitHub Releases
+9. Generate changelog
+```
+
+### 7.2 Tauri Configuration (Recommended)
+
+**Create `src-tauri/` directory with:**
+- `Cargo.toml` - Rust dependencies
+- `tauri.conf.json` - App configuration
+- `src/main.rs` - Tauri entry point
+
+**Benefits of Tauri:**
+- Smaller bundle size than Electron
+- Native Windows performance
+- Built-in auto-updater
+- Rust security
+
+### 7.3 Auto-Update System
+
+**Implement update mechanism:**
+- Check GitHub Releases for new versions
+- Download and apply updates
+- Rollback capability (keep previous version)
+- Version comparison using SemVer
+
+---
+
+## Phase 8: Sync Status & Indicators
+
+### 8.1 Sidebar Sync Indicator
+
+**Modify `src/components/layout/AppSidebar.tsx`:**
+- Add sync status badge (synced/syncing/offline/error)
+- Add last sync timestamp
+- Add manual sync button
+
+### 8.2 Settings Sync Panel
+
+**Enhance `src/pages/Settings.tsx`:**
+- Show cloud connection status with visual indicators
+- Display last sync time
+- Show pending changes count
+- Add force sync button
+- Add conflict resolution UI
 
 ---
 
 ## Implementation Order
 
-1. **Issue 9**: Focus ring fix (simple CSS fix)
-2. **Issue 1**: Dialog overflow fix (UI stability)
-3. **Issue 8**: Dashboard transaction styling (visual consistency)
-4. **Issue 4**: Performance optimization (critical for 1000+ members)
-5. **Issue 3**: Audit logging (security requirement)
-6. **Issue 5**: Cloud sync infrastructure (settings foundation)
-7. **Issue 7**: Multi-format export (feature enhancement)
-8. **Issue 6**: Print functionality (feature enhancement)
-9. **Issue 2**: Verify font/theme persistence (already implemented)
+1. **Database Migration (Phase 1)** - Create tables and RLS policies
+2. **Cloud Services (Phase 2)** - Implement Supabase data layer
+3. **UI Fixes (Phase 3.1, 3.3)** - Fixed nav, responsive improvements
+4. **Data Migration (Phase 1.3)** - Migrate localStorage to cloud
+5. **Dark Mode (Phase 3.2)** - Professional dark theme
+6. **Security (Phase 5)** - Password and audit enhancements
+7. **Export/Import (Phase 4)** - Enhanced data management
+8. **Sync UI (Phase 8)** - Status indicators
+9. **GitHub Actions (Phase 7)** - Windows build pipeline
 
 ---
 
 ## Technical Details
 
-### Audit Log Entry Structure
+### Database Migration Script Pattern
 
 ```text
-interface AuditLogEntry {
+async function migrateToCloud() {
+  // 1. Read localStorage
+  const localData = JSON.parse(localStorage.getItem('barber-shop-storage') || '{}');
+  
+  // 2. Migrate each entity type
+  for (const member of localData.state?.members || []) {
+    await supabase.from('members').upsert({
+      id: member.id,
+      phone: member.phone,
+      name: member.name,
+      gender: member.gender,
+      balance: member.balance,
+      created_at: member.createdAt
+    });
+    
+    // Migrate member cards
+    for (const card of member.cards || []) {
+      await supabase.from('member_cards').upsert({...});
+    }
+  }
+  
+  // 3. Mark migration complete
+  localStorage.setItem('cloud-migrated', 'true');
+}
+```
+
+### Sync Queue Structure
+
+```text
+interface SyncQueueItem {
   id: string;
+  operation: 'insert' | 'update' | 'delete';
+  table: string;
+  data: Record<string, unknown>;
   timestamp: Date;
-  action: string;
-  category: 'member' | 'transaction' | 'service' | 'card' | 'system' | 'security';
-  details: string;
-  metadata?: Record<string, unknown>;
+  retries: number;
 }
 ```
 
-### Receipt Print Format
+### Fixed Sidebar CSS
 
 ```text
-=============================
-      [Shop Name]
-=============================
-时间: 2024-01-15 14:30
-会员: 张三
------------------------------
-项目                    金额
-洗剪吹                ¥38.00
-染发                 ¥188.00
------------------------------
-次卡抵扣             -¥38.00
-余额抵扣             -¥50.00
-应付金额             ¥138.00
-支付方式: 微信
-=============================
-    谢谢光临，欢迎再来！
-=============================
-```
-
-### Virtual Pagination for Members
-
-```text
-- Page size: 24 members per page
-- Show page navigation at bottom
-- Maintain search functionality across all data
-- Display total count
-```
-
-### Storage Usage Calculation
-
-```text
-function getStorageUsage() {
-  const data = localStorage.getItem('barber-shop-storage');
-  const bytes = new Blob([data || '']).size;
-  return {
-    used: bytes,
-    usedMB: (bytes / 1024 / 1024).toFixed(2),
-    maxMB: 5,
-    percentage: Math.round((bytes / (5 * 1024 * 1024)) * 100)
-  };
-}
+// MainLayout.tsx
+<div className="flex min-h-screen">
+  <aside className="fixed left-0 top-0 h-screen z-50">
+    <AppSidebar />
+  </aside>
+  <main className="flex-1 ml-16 lg:ml-60">
+    {children}
+  </main>
+</div>
 ```
 
 ---
@@ -313,38 +424,46 @@ function getStorageUsage() {
 ## Files Summary
 
 ### Files to Create:
-- `src/lib/print.ts` - Print utility functions
-- `src/components/print/Receipt.tsx` - Receipt component for printing
+- `src/lib/migration.ts` - Data migration utilities
+- `src/lib/syncManager.ts` - Offline sync queue
+- `src/lib/dataValidator.ts` - Data consistency checks
+- `src/hooks/useOnlineStatus.ts` - Network status hook
+- `src/services/memberService.ts` - Member operations
+- `src/services/transactionService.ts` - Transaction operations
+- `src/services/serviceService.ts` - Service management
+- `src/services/cardService.ts` - Card operations
+- `src/services/appointmentService.ts` - Appointment management
+- `src/services/auditService.ts` - Audit logging
+- `src/services/settingsService.ts` - Shop settings
+- `src/components/dialogs/MigrationDialog.tsx` - Migration UI
+- `src/components/SyncStatusIndicator.tsx` - Sync status badge
+- `.github/workflows/windows-release.yml` - Windows build workflow
 
 ### Files to Modify:
-- `src/types/index.ts` - Add AuditLogEntry, SyncConfig interfaces
-- `src/stores/useStore.ts` - Add audit logs, sync config, export functions
-- `src/components/ui/input.tsx` - Fix focus ring offset
-- `src/components/dialogs/MemberDeleteWithRefundDialog.tsx` - Fix overflow
-- `src/components/dialogs/MemberDetailDialog.tsx` - Fix overflow
-- `src/components/dialogs/CheckoutConfirmDialog.tsx` - Add print button
-- `src/pages/Dashboard.tsx` - Add voided transaction styling
-- `src/pages/Members.tsx` - Add pagination, search debounce
-- `src/pages/Reports.tsx` - Add print button
-- `src/pages/Settings.tsx` - Add audit log viewer, cloud sync settings, enhanced export
-- `src/index.css` - Add print media styles
+- `src/stores/useStore.ts` - Add cloud sync capabilities
+- `src/components/layout/MainLayout.tsx` - Fixed layout
+- `src/components/layout/AppSidebar.tsx` - State persistence, sync indicator
+- `src/pages/Settings.tsx` - Import/restore, sync status
+- `src/index.css` - Enhanced dark mode
+- `supabase/config.toml` - Edge function configuration
 
 ---
 
 ## Verification Checklist
 
 After implementation:
-- [ ] Dialog scrolls properly on small windows
-- [ ] Font size setting persists across sessions
-- [ ] All sensitive operations create audit log entries
-- [ ] Members page handles 1000+ records smoothly
-- [ ] Cloud sync settings section visible in Settings
-- [ ] Receipt prints with proper format
-- [ ] Export supports multiple formats
-- [ ] Dashboard shows voided transactions with strikethrough
-- [ ] Search input focus ring displays correctly
-- [ ] No console errors or warnings
-- [ ] Storage usage shown in Settings
-- [ ] All forms validate consistently
-- [ ] Loading states work correctly
+- [ ] All data migrated from localStorage to Supabase
+- [ ] CRUD operations work with cloud database
+- [ ] Offline mode queues changes correctly
+- [ ] Sync status shows in sidebar
+- [ ] Dark mode looks professional
+- [ ] Sidebar stays fixed when scrolling
+- [ ] Sidebar collapsed state persists
+- [ ] Audit logs are exportable
+- [ ] Data validation catches inconsistencies
+- [ ] Import/restore functionality works
+- [ ] GitHub Actions workflow created
+- [ ] System supports 1000+ members
+- [ ] No console errors
+- [ ] All forms validate correctly
 
