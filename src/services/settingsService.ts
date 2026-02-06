@@ -47,8 +47,9 @@ const transformDbSettings = (db: DbShopSettings): ShopSettings => ({
 
 export const settingsService = {
   async get(): Promise<ShopSettings | null> {
+    // Use the public view to avoid exposing admin_password_hash
     const { data, error } = await supabase
-      .from('shop_settings')
+      .from('shop_settings_public')
       .select('*')
       .limit(1)
       .single();
@@ -57,7 +58,20 @@ export const settingsService = {
       console.error('Error fetching settings:', error);
       return null;
     }
-    return transformDbSettings(data as DbShopSettings);
+    // Map view data to DbShopSettings format (admin_password_hash will be null from view)
+    const dbSettings: DbShopSettings = {
+      id: data.id || '',
+      shop_name: data.shop_name,
+      shop_address: data.shop_address,
+      shop_phone: data.shop_phone,
+      admin_password_hash: null, // Never exposed through view
+      theme: data.theme,
+      font_size: data.font_size,
+      sidebar_collapsed: data.sidebar_collapsed,
+      sync_config: data.sync_config,
+      updated_at: data.updated_at || new Date().toISOString(),
+    };
+    return transformDbSettings(dbSettings);
   },
 
   async update(updates: Partial<{
@@ -91,9 +105,9 @@ export const settingsService = {
       dbUpdates.sync_config = updates.syncConfig as unknown as Json;
     }
 
-    // Get the first settings row
+    // Get settings ID from public view
     const { data: existing } = await supabase
-      .from('shop_settings')
+      .from('shop_settings_public')
       .select('id')
       .limit(1)
       .single();
@@ -109,8 +123,9 @@ export const settingsService = {
   },
 
   async updatePassword(passwordHash: string): Promise<void> {
+    // Get settings ID from public view
     const { data: existing } = await supabase
-      .from('shop_settings')
+      .from('shop_settings_public')
       .select('id')
       .limit(1)
       .single();
@@ -134,8 +149,9 @@ export const settingsService = {
   },
 
   async updateSidebarCollapsed(collapsed: boolean): Promise<void> {
+    // Get settings ID from public view
     const { data: existing } = await supabase
-      .from('shop_settings')
+      .from('shop_settings_public')
       .select('id')
       .limit(1)
       .single();

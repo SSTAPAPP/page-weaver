@@ -269,6 +269,187 @@ app.post('/void-transaction', async (c) => {
   }
 });
 
+// Refund transaction - secure server-side operation with balance/card restoration
+app.post('/refund-transaction', async (c) => {
+  try {
+    const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
+    
+    if (!checkRateLimit(clientIp)) {
+      return c.json({ 
+        success: false, 
+        error: 'Too many attempts. Please try again later.' 
+      }, 429, corsHeaders);
+    }
+    
+    const { 
+      password, 
+      transactionId, 
+      memberId, 
+      memberName,
+      originalAmount,
+      description,
+      subTransactions,
+      paymentMethod
+    } = await c.req.json();
+    
+    if (!password || !transactionId || !memberId) {
+      return c.json({ 
+        success: false, 
+        error: 'Password, transaction ID, and member ID are required' 
+      }, 400, corsHeaders);
+    }
+    
+    const inputHash = await hashPassword(password);
+    const supabase = getSupabaseClient();
+    
+    // Verify admin password server-side
+    const { data: isValid, error: verifyError } = await supabase.rpc('verify_admin_password', {
+      input_password_hash: inputHash
+    });
+    
+    if (verifyError || !isValid) {
+      return c.json({ 
+        success: false, 
+        error: 'Invalid admin password' 
+      }, 401, corsHeaders);
+    }
+    
+    const fundTrail: string[] = [];
+    let totalRefundAmount = originalAmount || 0;
+    
+    // Process subTransactions for refunds
+    if (subTransactions && subTransactions.length > 0) {
+      for (const sub of subTransactions) {
+        if (sub.type === 'card' && sub.cardId) {
+          // Restore card count
+          const { error: cardError } = await supabase
+            .from('member_cards')
+            .update({ remaining_count: supabase.rpc('increment_card_count', { card_id: sub.cardId }) })
+            .eq('id', sub.cardId);
+          
+          // Fallback: direct increment if RPC doesn't exist
+          if (cardError) {
+            const { data: card } = await supabase
+              .from('member_cards')
+              .select('remaining_count')
+              .eq('id', sub.cardId)
+              .single();
+            
+            if (card) {
+              await supabase
+                .from('member_cards')
+                .update({ remaining_count: card.remaining_count + 1 })
+                .eq('id', sub.cardId);
+            }
+          }
+          fundTrail.push(`次卡退回1次 (¥${sub.amount})`);
+        }
+        
+        if (sub.type === 'balance') {
+          // Restore balance
+          const { data: member } = await supabase
+            .from('members')
+            .select('balance')
+            .eq('id', memberId)
+            .single();
+          
+          if (member) {
+            await supabase
+              .from('members')
+              .update({ balance: (member.balance || 0) + sub.amount })
+              .eq('id', memberId);
+          }
+          fundTrail.push(`余额退回 ¥${sub.amount}`);
+        }
+        
+        if (sub.type === 'price_diff') {
+          const paymentMethodMap: Record<string, string> = {
+            balance: "余额", wechat: "微信", alipay: "支付宝", cash: "现金"
+          };
+          fundTrail.push(`⚠️ 补差价 ¥${sub.amount} 需手动退还 (${paymentMethodMap[sub.paymentMethod || 'cash']})`);
+        }
+      }
+    } else {
+      // Handle old format transactions without subTransactions
+      if (paymentMethod === 'balance') {
+        const { data: member } = await supabase
+          .from('members')
+          .select('balance')
+          .eq('id', memberId)
+          .single();
+        
+        if (member) {
+          await supabase
+            .from('members')
+            .update({ balance: (member.balance || 0) + originalAmount })
+            .eq('id', memberId);
+        }
+        fundTrail.push(`余额退回 ¥${originalAmount}`);
+      } else if (paymentMethod && paymentMethod !== 'balance') {
+        const paymentMethodMap: Record<string, string> = {
+          wechat: "微信", alipay: "支付宝", cash: "现金"
+        };
+        fundTrail.push(`⚠️ 需手动退还${paymentMethodMap[paymentMethod]} ¥${originalAmount}`);
+      }
+    }
+    
+    // Calculate total refund amount including price_diff
+    const priceDiffAmount = subTransactions?.find((s: { type: string }) => s.type === 'price_diff')?.amount || 0;
+    totalRefundAmount = originalAmount + priceDiffAmount;
+    
+    // Void the original transaction
+    await supabase
+      .from('transactions')
+      .update({ voided: true })
+      .eq('id', transactionId);
+    
+    // Create refund transaction record
+    const priceDiffSub = subTransactions?.find((s: { type: string }) => s.type === 'price_diff');
+    const manualRefundNote = priceDiffSub 
+      ? ` [需手动退还${priceDiffSub.paymentMethod === 'wechat' ? '微信' : priceDiffSub.paymentMethod === 'alipay' ? '支付宝' : '现金'}¥${priceDiffSub.amount}]`
+      : '';
+    
+    await supabase
+      .from('transactions')
+      .insert({
+        member_id: memberId,
+        member_name: memberName,
+        type: 'refund',
+        amount: totalRefundAmount,
+        description: `退款 - ${description}${manualRefundNote}`,
+        related_transaction_id: transactionId,
+        sub_transactions: subTransactions || null,
+      });
+    
+    // Log the action
+    await supabase
+      .from('audit_logs')
+      .insert({
+        action: 'TRANSACTION_REFUNDED',
+        category: 'transaction',
+        details: `Transaction ${transactionId} refunded with amount ${totalRefundAmount}`,
+        metadata: { 
+          transaction_id: transactionId, 
+          refund_amount: totalRefundAmount,
+          fund_trail: fundTrail
+        }
+      });
+    
+    return c.json({ 
+      success: true, 
+      refund_amount: totalRefundAmount,
+      fund_trail: fundTrail
+    }, 200, corsHeaders);
+    
+  } catch (error) {
+    console.error('Error refunding transaction:', error);
+    return c.json({ 
+      success: false, 
+      error: 'Internal server error' 
+    }, 500, corsHeaders);
+  }
+});
+
 // Legacy endpoint for backwards compatibility
 app.post('/', async (c) => {
   try {

@@ -18,7 +18,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
-import { hashPassword, isHashed } from "@/lib/crypto";
+import { refundTransaction as refundTransactionApi } from "@/lib/adminApi";
 import { 
   ArrowUpCircle, 
   ArrowDownCircle, 
@@ -60,7 +60,7 @@ export function TransactionRefundDialog({
   onOpenChange,
 }: TransactionRefundDialogProps) {
   const { toast } = useToast();
-  const { adminPassword, setAdminPassword, refundBalance, refundCard, addTransaction, voidTransaction, getRelatedTransactions } = useStore();
+  const { getRelatedTransactions } = useStore();
   const [password, setPassword] = useState("");
   const [isRefunding, setIsRefunding] = useState(false);
   const [passwordError, setPasswordError] = useState("");
@@ -86,85 +86,35 @@ export function TransactionRefundDialog({
     setPasswordError("");
 
     try {
-      // Hash the input password
-      const inputHash = await hashPassword(password);
-      
-      // Check if stored password is already hashed
-      let passwordValid = false;
-      if (isHashed(adminPassword)) {
-        passwordValid = inputHash === adminPassword;
-      } else {
-        // Legacy: plain text comparison
-        if (password === adminPassword) {
-          // Migrate to hashed password
-          setAdminPassword(inputHash);
-          passwordValid = true;
-        }
-      }
+      // Use server-side refund with password verification
+      const result = await refundTransactionApi({
+        password,
+        transactionId: transaction.id,
+        memberId: transaction.memberId,
+        memberName: transaction.memberName,
+        originalAmount: transaction.amount,
+        description: transaction.description || '',
+        subTransactions: transaction.subTransactions?.map(sub => ({
+          type: sub.type as 'balance' | 'card' | 'price_diff',
+          amount: sub.amount,
+          cardId: sub.cardId,
+          paymentMethod: sub.paymentMethod,
+        })),
+        paymentMethod: transaction.paymentMethod,
+      });
 
-      if (!passwordValid) {
-        setPasswordError("管理员密码不正确");
+      if (!result.success) {
+        setPasswordError(result.error || "退款失败");
         return;
       }
 
-      await new Promise((r) => setTimeout(r, 300));
-
-      let totalRefundAmount = transaction.amount;
-      const fundTrail: string[] = [];
-
-      // 1. 处理subTransactions中的退款
-      if (transaction.subTransactions && transaction.subTransactions.length > 0) {
-        transaction.subTransactions.forEach((sub) => {
-          if (sub.type === 'card' && sub.cardId) {
-            refundCard(transaction.memberId, sub.cardId);
-            fundTrail.push(`次卡退回1次 (¥${sub.amount})`);
-          }
-          if (sub.type === 'balance') {
-            refundBalance(transaction.memberId, sub.amount);
-            fundTrail.push(`余额退回 ¥${sub.amount}`);
-          }
-          if (sub.type === 'price_diff') {
-            fundTrail.push(`⚠️ 补差价 ¥${sub.amount} 需手动退还 (${paymentMethodMap[sub.paymentMethod || 'cash']})`);
-          }
-        });
-      } else {
-        // 2. 处理旧格式的交易（没有subTransactions）
-        if (transaction.type === "consume" && transaction.paymentMethod === "balance") {
-          refundBalance(transaction.memberId, transaction.amount);
-          fundTrail.push(`余额退回 ¥${transaction.amount}`);
-        } else if (transaction.paymentMethod && transaction.paymentMethod !== 'balance') {
-          fundTrail.push(`⚠️ 需手动退还${paymentMethodMap[transaction.paymentMethod]} ¥${transaction.amount}`);
-        }
-      }
-
-      // 计算总退款金额（包含补差价）
-      const priceDiffAmount = transaction.subTransactions?.find(s => s.type === 'price_diff')?.amount || 0;
-      totalRefundAmount = transaction.amount + priceDiffAmount;
-
-      // 3. 作废原交易
-      voidTransaction(transaction.id);
-
-      // 4. 添加退款记录（关联原交易ID）
-      const manualRefundNote = hasManualRefund 
-        ? ` [需手动退还${paymentMethodMap[priceDiffSub?.paymentMethod || 'cash']}¥${priceDiffSub?.amount}]`
-        : '';
-      
-      addTransaction({
-        memberId: transaction.memberId,
-        memberName: transaction.memberName,
-        type: "refund",
-        amount: totalRefundAmount,
-        description: `退款 - ${transaction.description}${manualRefundNote}`,
-        relatedTransactionId: transaction.id,
-        subTransactions: transaction.subTransactions?.map(sub => ({
-          ...sub,
-          type: sub.type as 'balance' | 'card' | 'price_diff',
-        })),
-      });
+      // Note: Parent component should refetch data after dialog closes
 
       toast({
         title: "退款成功",
-        description: fundTrail.length > 0 ? fundTrail.join('；') : `已退款 ¥${totalRefundAmount.toFixed(2)}`,
+        description: result.fundTrail && result.fundTrail.length > 0 
+          ? result.fundTrail.join('；') 
+          : `已退款 ¥${result.refundAmount?.toFixed(2) || transaction.amount.toFixed(2)}`,
       });
 
       setPassword("");
