@@ -11,6 +11,8 @@ import {
   ChevronRight,
   Settings,
   LogOut,
+  Sparkles,
+  UserCircle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
@@ -19,21 +21,70 @@ import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
-const menuItems = [
+const mainMenuItems = [
   { title: "仪表盘", url: "/", icon: LayoutDashboard },
   { title: "收银台", url: "/cashier", icon: ShoppingCart },
   { title: "会员管理", url: "/members", icon: Users },
   { title: "预约管理", url: "/appointments", icon: Calendar },
+];
+
+const manageMenuItems = [
   { title: "服务管理", url: "/services", icon: Scissors },
   { title: "数据报表", url: "/reports", icon: BarChart3 },
   { title: "交易流水", url: "/transactions", icon: FileText },
-  { title: "设置", url: "/settings", icon: Settings },
 ];
 
 interface AppSidebarProps {
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
+}
+
+function SidebarNavItem({
+  item,
+  isActive,
+  collapsed,
+}: {
+  item: { title: string; url: string; icon: React.ElementType };
+  isActive: boolean;
+  collapsed: boolean;
+}) {
+  const link = (
+    <NavLink
+      to={item.url}
+      className={cn(
+        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
+        "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        isActive && "bg-sidebar-primary/15 text-sidebar-primary font-semibold",
+        collapsed && "justify-center px-0"
+      )}
+    >
+      <item.icon className={cn(
+        "h-[18px] w-[18px] shrink-0 transition-colors",
+        isActive ? "text-sidebar-primary" : "text-sidebar-foreground/60"
+      )} />
+      {!collapsed && <span>{item.title}</span>}
+    </NavLink>
+  );
+
+  if (collapsed) {
+    return (
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>{link}</TooltipTrigger>
+        <TooltipContent side="right" sideOffset={12}>
+          {item.title}
+        </TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  return link;
 }
 
 export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
@@ -50,89 +101,168 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
     }
   };
 
+  const userInitial = user?.email?.charAt(0)?.toUpperCase() || "U";
+
   return (
-    <div
-      className={cn(
-        "flex h-full flex-col border-r border-border bg-sidebar transition-all duration-300",
-        collapsed ? "w-16" : "w-60"
-      )}
-    >
-      {/* Logo */}
-      <div className="flex h-16 items-center justify-between border-b border-sidebar-border px-4">
-        {!collapsed && (
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground">
-              <span className="text-lg font-black text-background">F</span>
+    <TooltipProvider>
+      <div
+        className={cn(
+          "flex h-full flex-col bg-sidebar transition-all duration-300",
+          collapsed ? "w-16" : "w-60"
+        )}
+      >
+        {/* Logo / Brand */}
+        <div className={cn(
+          "flex h-14 items-center border-b border-sidebar-border/50",
+          collapsed ? "justify-center px-2" : "justify-between px-4"
+        )}>
+          {!collapsed ? (
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
+                <Sparkles className="h-4 w-4 text-white" />
+              </div>
+              <div className="flex flex-col">
+                <span className="font-bold text-sidebar-accent-foreground text-sm leading-tight">FFk Barber</span>
+                <span className="text-[10px] text-sidebar-foreground/50 leading-tight">Management System</span>
+              </div>
             </div>
-            <span className="font-bold text-sidebar-foreground text-lg">FFk</span>
-          </div>
-        )}
-        {collapsed && (
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground mx-auto">
-            <span className="text-lg font-black text-background">F</span>
-          </div>
-        )}
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onCollapsedChange(!collapsed)}
-          className={cn("h-8 w-8 shrink-0", collapsed && "absolute right-1 top-4")}
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
           ) : (
-            <ChevronLeft className="h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
+              <Sparkles className="h-4 w-4 text-white" />
+            </div>
           )}
-        </Button>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 space-y-1 p-2 overflow-y-auto">
-        {menuItems.map((item) => {
-          const isActive = location.pathname === item.url;
-          return (
-            <NavLink
-              key={item.url}
-              to={item.url}
-              className={cn(
-                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
-                "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                isActive && "bg-sidebar-accent text-sidebar-primary"
-              )}
+          {!collapsed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onCollapsedChange(!collapsed)}
+              className="h-7 w-7 shrink-0 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent"
             >
-              <item.icon className="h-5 w-5 shrink-0" />
-              {!collapsed && <span>{item.title}</span>}
-            </NavLink>
-          );
-        })}
-      </nav>
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
 
-      {/* Sync Status & User Info */}
-      <div className="p-2">
-        <Separator className="mb-2" />
-        <SyncStatusIndicator collapsed={collapsed} />
-        
-        {/* User & Logout */}
-        <div className="mt-2 pt-2 border-t border-sidebar-border">
-          {!collapsed && user?.email && (
-            <p className="text-xs text-muted-foreground truncate px-3 mb-2">
-              {user.email}
+        {/* Collapsed expand button */}
+        {collapsed && (
+          <div className="flex justify-center py-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => onCollapsedChange(false)}
+              className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto px-2 py-3">
+          {/* Main section */}
+          {!collapsed && (
+            <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+              主要功能
             </p>
           )}
-          <Button
-            variant="ghost"
-            size={collapsed ? "icon" : "default"}
-            onClick={handleLogout}
-            className={cn(
-              "w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-              collapsed ? "h-10 w-10 mx-auto" : "justify-start gap-3 px-3"
+          <div className="space-y-0.5">
+            {mainMenuItems.map((item) => (
+              <SidebarNavItem
+                key={item.url}
+                item={item}
+                isActive={location.pathname === item.url}
+                collapsed={collapsed}
+              />
+            ))}
+          </div>
+
+          {/* Separator */}
+          <div className={cn("my-3", collapsed ? "mx-2" : "mx-3")}>
+            <Separator className="bg-sidebar-border/50" />
+          </div>
+
+          {/* Management section */}
+          {!collapsed && (
+            <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+              经营管理
+            </p>
+          )}
+          <div className="space-y-0.5">
+            {manageMenuItems.map((item) => (
+              <SidebarNavItem
+                key={item.url}
+                item={item}
+                isActive={location.pathname === item.url}
+                collapsed={collapsed}
+              />
+            ))}
+          </div>
+
+          {/* Separator */}
+          <div className={cn("my-3", collapsed ? "mx-2" : "mx-3")}>
+            <Separator className="bg-sidebar-border/50" />
+          </div>
+
+          {/* Settings */}
+          <SidebarNavItem
+            item={{ title: "设置", url: "/settings", icon: Settings }}
+            isActive={location.pathname === "/settings"}
+            collapsed={collapsed}
+          />
+        </nav>
+
+        {/* Bottom section */}
+        <div className="p-2 space-y-2">
+          <SyncStatusIndicator collapsed={collapsed} />
+
+          {/* User info & logout */}
+          <div className={cn(
+            "rounded-lg bg-sidebar-accent/50 p-2",
+            collapsed && "flex flex-col items-center gap-1"
+          )}>
+            {!collapsed ? (
+              <div className="flex items-center gap-2.5">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20 text-xs font-bold text-sidebar-primary">
+                  {userInitial}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-medium text-sidebar-accent-foreground truncate">
+                    {user?.email || "管理员"}
+                  </p>
+                  <p className="text-[10px] text-sidebar-foreground/50">管理员</p>
+                </div>
+                <Tooltip delayDuration={0}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={handleLogout}
+                      className="h-7 w-7 shrink-0 text-sidebar-foreground/50 hover:text-destructive hover:bg-sidebar-accent"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">退出登录</TooltipContent>
+                </Tooltip>
+              </div>
+            ) : (
+              <Tooltip delayDuration={0}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={handleLogout}
+                    className="h-8 w-8 text-sidebar-foreground/50 hover:text-destructive hover:bg-sidebar-accent"
+                  >
+                    <LogOut className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">退出登录</TooltipContent>
+              </Tooltip>
             )}
-          >
-            <LogOut className="h-5 w-5 shrink-0" />
-            {!collapsed && <span>退出登录</span>}
-          </Button>
+          </div>
         </div>
       </div>
-    </div>
+    </TooltipProvider>
   );
 }
