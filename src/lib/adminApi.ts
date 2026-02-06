@@ -114,3 +114,43 @@ export async function voidTransaction(
     error: response.error || response.data?.error,
   };
 }
+
+export interface RefundSubTransaction {
+  type: 'balance' | 'card' | 'price_diff';
+  amount: number;
+  cardId?: string;
+  paymentMethod?: string;
+}
+
+export interface RefundTransactionParams {
+  password: string;
+  transactionId: string;
+  memberId: string;
+  memberName: string;
+  originalAmount: number;
+  description: string;
+  subTransactions?: RefundSubTransaction[];
+  paymentMethod?: string;
+}
+
+/**
+ * Refund transaction - atomic server-side operation with password verification
+ */
+export async function refundTransaction(
+  params: RefundTransactionParams
+): Promise<{ success: boolean; error?: string; refundAmount?: number; fundTrail?: string[] }> {
+  const body: Record<string, unknown> = { ...params };
+  const response = await callEdgeFunction<{
+    success: boolean; 
+    error?: string; 
+    refund_amount?: number;
+    fund_trail?: string[];
+  }>('/refund-transaction', body);
+  
+  return {
+    success: response.success && response.data?.success === true,
+    error: response.error || response.data?.error,
+    refundAmount: response.data?.refund_amount,
+    fundTrail: response.data?.fund_trail,
+  };
+}
