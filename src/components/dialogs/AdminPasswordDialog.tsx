@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,9 +11,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
-import { hashPassword, isHashed } from "@/lib/crypto";
+import { verifyAdminPassword } from "@/lib/adminApi";
 
 interface AdminPasswordDialogProps {
   open: boolean;
@@ -31,7 +30,6 @@ export function AdminPasswordDialog({
   description = "请输入管理员密码以继续操作",
 }: AdminPasswordDialogProps) {
   const { toast } = useToast();
-  const { adminPassword, setAdminPassword } = useStore();
   const [password, setPassword] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -40,43 +38,24 @@ export function AdminPasswordDialog({
     setIsVerifying(true);
 
     try {
-      // Hash the input password
-      const inputHash = await hashPassword(password);
+      // Use server-side password verification
+      const result = await verifyAdminPassword(password);
       
-      // Check if stored password is already hashed
-      if (isHashed(adminPassword)) {
-        // Compare hashes directly
-        if (inputHash === adminPassword) {
-          onConfirm();
-          setPassword("");
-          onOpenChange(false);
-        } else {
-          toast({
-            title: "密码错误",
-            description: "管理员密码不正确，请重试",
-            variant: "destructive",
-          });
-        }
+      if (result.success) {
+        onConfirm();
+        setPassword("");
+        onOpenChange(false);
       } else {
-        // Legacy: stored password is plain text, compare directly and migrate
-        if (password === adminPassword) {
-          // Migrate to hashed password
-          setAdminPassword(inputHash);
-          onConfirm();
-          setPassword("");
-          onOpenChange(false);
-        } else {
-          toast({
-            title: "密码错误",
-            description: "管理员密码不正确，请重试",
-            variant: "destructive",
-          });
-        }
+        toast({
+          title: "密码错误",
+          description: result.error || "管理员密码不正确，请重试",
+          variant: "destructive",
+        });
       }
     } finally {
       setIsVerifying(false);
     }
-  }, [password, adminPassword, onConfirm, onOpenChange, setAdminPassword, toast, isVerifying]);
+  }, [password, onConfirm, onOpenChange, toast, isVerifying]);
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>

@@ -17,7 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
 import { AlertTriangle, CreditCard, Calculator, Trash2 } from "lucide-react";
-import { hashPassword, isHashed } from "@/lib/crypto";
+import { deleteMemberWithRefund } from "@/lib/adminApi";
 import type { Member, MemberCard } from "@/types";
 
 interface CardRefundDetail {
@@ -44,7 +44,7 @@ export function MemberDeleteWithRefundDialog({
   onDeleted,
 }: MemberDeleteWithRefundDialogProps) {
   const { toast } = useToast();
-  const { adminPassword, setAdminPassword, deleteMember, cardTemplates, addTransaction } = useStore();
+  const { deleteMember, cardTemplates } = useStore();
   const [password, setPassword] = useState("");
   const [step, setStep] = useState<"refund" | "confirm">("refund");
   const [isVerifying, setIsVerifying] = useState(false);
@@ -91,48 +91,32 @@ export function MemberDeleteWithRefundDialog({
 
   const handleConfirmDelete = async () => {
     if (isVerifying) return;
+    if (!member) return;
     setIsVerifying(true);
 
     try {
-      // Hash the input password
-      const inputHash = await hashPassword(password);
+      const refundDescription = `会员注销退款 (余额¥${member.balance.toFixed(2)} + 次卡折现¥${totalCardRefund.toFixed(2)})`;
       
-      // Check if stored password is already hashed
-      let passwordValid = false;
-      if (isHashed(adminPassword)) {
-        passwordValid = inputHash === adminPassword;
-      } else {
-        // Legacy: plain text comparison
-        if (password === adminPassword) {
-          // Migrate to hashed password
-          setAdminPassword(inputHash);
-          passwordValid = true;
-        }
-      }
+      // Use server-side secure deletion with password verification
+      const result = await deleteMemberWithRefund(
+        password,
+        member.id,
+        totalRefund,
+        refundDescription
+      );
 
-      if (!passwordValid) {
+      if (!result.success) {
         toast({
-          title: "密码错误",
-          description: "管理员密码不正确，请重试",
+          title: result.error === 'Invalid admin password' ? "密码错误" : "操作失败",
+          description: result.error === 'Invalid admin password' 
+            ? "管理员密码不正确，请重试" 
+            : result.error || "删除会员失败，请重试",
           variant: "destructive",
         });
         return;
       }
 
-      if (!member) return;
-
-      // 创建退款交易记录（如果有需要退款的金额）
-      if (totalRefund > 0) {
-        addTransaction({
-          memberId: member.id,
-          memberName: member.name,
-          type: "refund",
-          amount: totalRefund,
-          description: `会员注销退款 (余额¥${member.balance.toFixed(2)} + 次卡折现¥${totalCardRefund.toFixed(2)})`,
-        });
-      }
-
-      // 删除会员
+      // Refresh local state by triggering deleteMember (for UI update)
       deleteMember(member.id);
 
       toast({

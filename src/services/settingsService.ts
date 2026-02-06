@@ -125,15 +125,12 @@ export const settingsService = {
     }
   },
 
+  // Password hash is no longer exposed to client
+  // Use server-side verification via Edge Functions instead
   async getPasswordHash(): Promise<string | null> {
-    const { data, error } = await supabase
-      .from('shop_settings')
-      .select('admin_password_hash')
-      .limit(1)
-      .single();
-
-    if (error) return null;
-    return data?.admin_password_hash || null;
+    // Return null - password verification should go through Edge Function
+    console.warn('getPasswordHash is deprecated. Use verifyAdminPassword from adminApi instead.');
+    return null;
   },
 
   async updateSidebarCollapsed(collapsed: boolean): Promise<void> {

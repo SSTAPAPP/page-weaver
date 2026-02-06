@@ -365,7 +365,28 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      admin_delete_member_with_refund: {
+        Args: {
+          p_member_id: string
+          p_password_hash: string
+          p_refund_amount: number
+          p_refund_description: string
+        }
+        Returns: Json
+      }
+      admin_void_transaction: {
+        Args: { p_password_hash: string; p_transaction_id: string }
+        Returns: Json
+      }
+      get_admin_password_hash: { Args: never; Returns: string }
+      update_admin_password: {
+        Args: { new_password_hash: string }
+        Returns: boolean
+      }
+      verify_admin_password: {
+        Args: { input_password_hash: string }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
