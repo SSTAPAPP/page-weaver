@@ -362,7 +362,42 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      shop_settings_public: {
+        Row: {
+          font_size: string | null
+          id: string | null
+          shop_address: string | null
+          shop_name: string | null
+          shop_phone: string | null
+          sidebar_collapsed: boolean | null
+          sync_config: Json | null
+          theme: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          font_size?: string | null
+          id?: string | null
+          shop_address?: string | null
+          shop_name?: string | null
+          shop_phone?: string | null
+          sidebar_collapsed?: boolean | null
+          sync_config?: Json | null
+          theme?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          font_size?: string | null
+          id?: string | null
+          shop_address?: string | null
+          shop_name?: string | null
+          shop_phone?: string | null
+          sidebar_collapsed?: boolean | null
+          sync_config?: Json | null
+          theme?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_delete_member_with_refund: {
