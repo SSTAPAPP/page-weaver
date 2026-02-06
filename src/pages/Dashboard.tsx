@@ -11,6 +11,8 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
+  Sparkles,
+  Activity,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -58,30 +60,35 @@ interface StatCardWithTooltipProps {
   description: string;
   icon: React.ElementType;
   color: string;
+  bgColor: string;
   hidden?: boolean;
 }
 
-function StatCardWithTooltip({ title, value, description, icon: Icon, color, hidden }: StatCardWithTooltipProps) {
+function StatCardWithTooltip({ title, value, description, icon: Icon, color, bgColor, hidden }: StatCardWithTooltipProps) {
   const metricInfo = metricsInfo[title];
-  
+
   const cardContent = (
-    <Card className="relative overflow-hidden transition-shadow hover:shadow-md cursor-pointer group">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-          {title}
-        </p>
-        <Icon className={`h-4 w-4 ${color}`} />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{hidden ? "****" : value}</div>
-        <p className="text-xs text-muted-foreground">{description}</p>
+    <Card className="relative overflow-hidden transition-all duration-200 hover:shadow-md cursor-pointer group">
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between">
+          <div className="space-y-2">
+            <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+              {title}
+            </p>
+            <div className="text-2xl font-bold tracking-tight">{hidden ? "****" : value}</div>
+            <p className="text-xs text-muted-foreground">{description}</p>
+          </div>
+          <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${bgColor}`}>
+            <Icon className={`h-5 w-5 ${color}`} />
+          </div>
+        </div>
       </CardContent>
       {metricInfo && (
         <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
       )}
     </Card>
   );
-  
+
   if (metricInfo) {
     return (
       <HoverCard openDelay={100} closeDelay={50}>
@@ -91,10 +98,7 @@ function StatCardWithTooltip({ title, value, description, icon: Icon, color, hid
         <HoverCardContent className="w-80" side="bottom" align="start">
           <div className="space-y-3">
             <div className="flex items-center gap-2">
-              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                title === "今日实收" ? "bg-chart-1/10" : 
-                title === "今日充值" ? "bg-chart-2/10" : "bg-chart-3/10"
-              }`}>
+              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${bgColor}`}>
                 <Icon className={`h-4 w-4 ${color}`} />
               </div>
               <div>
@@ -103,7 +107,7 @@ function StatCardWithTooltip({ title, value, description, icon: Icon, color, hid
               </div>
             </div>
             <div className="space-y-2 text-sm">
-              <div className="rounded-md bg-muted/50 p-2">
+              <div className="rounded-lg bg-muted/50 p-2.5">
                 <p className="font-medium text-xs text-muted-foreground mb-1">计算公式</p>
                 <p className="font-mono text-xs">{metricInfo.formula}</p>
               </div>
@@ -111,9 +115,8 @@ function StatCardWithTooltip({ title, value, description, icon: Icon, color, hid
                 <p className="font-medium text-xs text-muted-foreground mb-1">示例</p>
                 <p className="text-xs">{metricInfo.example}</p>
               </div>
-              <p className="text-xs text-muted-foreground/80 italic flex items-start gap-1">
-                <span>💡</span>
-                <span>{metricInfo.note}</span>
+              <p className="text-xs text-muted-foreground/80 italic">
+                {metricInfo.note}
               </p>
             </div>
           </div>
@@ -141,7 +144,8 @@ export default function Dashboard() {
       value: `¥${stats.revenue.toFixed(2)}`,
       icon: Wallet,
       description: "现金+微信+支付宝+补差价",
-      color: "text-chart-1",
+      color: "text-primary",
+      bgColor: "bg-primary/10",
     },
     {
       id: "recharge",
@@ -150,6 +154,7 @@ export default function Dashboard() {
       icon: CreditCard,
       description: "储值卡/次卡入账",
       color: "text-chart-2",
+      bgColor: "bg-chart-2/10",
     },
     {
       id: "consumption",
@@ -158,6 +163,7 @@ export default function Dashboard() {
       icon: TrendingUp,
       description: "余额+次卡消费",
       color: "text-chart-3",
+      bgColor: "bg-chart-3/10",
     },
     {
       id: "newMembers",
@@ -166,6 +172,7 @@ export default function Dashboard() {
       icon: Users,
       description: "今日新注册",
       color: "text-chart-4",
+      bgColor: "bg-chart-4/10",
     },
     {
       id: "appointments",
@@ -174,36 +181,42 @@ export default function Dashboard() {
       icon: Calendar,
       description: "待服务预约",
       color: "text-chart-5",
+      bgColor: "bg-chart-5/10",
     },
   ];
 
   const quickActions = [
     {
       title: "快速开卡",
+      description: "新增会员",
       icon: UserPlus,
       onClick: () => setMemberDialogOpen(true),
       variant: "default" as const,
     },
     {
       title: "会员充值",
+      description: "储值/次卡",
       icon: Plus,
       onClick: () => setRechargeDialogOpen(true),
-      variant: "secondary" as const,
+      variant: "outline" as const,
     },
     {
       title: "收银结账",
+      description: "服务结算",
       icon: Wallet,
       onClick: () => navigate("/cashier"),
-      variant: "secondary" as const,
+      variant: "outline" as const,
     },
     {
       title: "查找会员",
+      description: "搜索查询",
       icon: Search,
       onClick: () => navigate("/members"),
       variant: "outline" as const,
     },
     {
       title: "新增预约",
+      description: "预约登记",
       icon: Calendar,
       onClick: () => navigate("/appointments"),
       variant: "outline" as const,
@@ -214,22 +227,25 @@ export default function Dashboard() {
   const recentTransactions = transactions.slice(0, 5);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">仪表盘</h1>
-          <p className="text-muted-foreground">今日经营数据一览 · 鼠标移至卡片查看指标说明</p>
+          <div className="flex items-center gap-2 mb-1">
+            <h1 className="text-2xl font-bold tracking-tight text-foreground">仪表盘</h1>
+            <Activity className="h-5 w-5 text-primary" />
+          </div>
+          <p className="text-muted-foreground text-sm">今日经营数据一览 · 鼠标移至卡片查看指标说明</p>
         </div>
         <div className="hidden items-center gap-2 sm:flex">
-          <Badge variant="outline" className="font-normal">
+          <Badge variant="outline" className="font-normal text-xs px-3 py-1">
             {format(new Date(), "yyyy年M月d日 EEEE", { locale: zhCN })}
           </Badge>
         </div>
       </div>
 
       {/* Stats Grid */}
-      <div className={`transition-all ${isHidden("stats") ? "opacity-30" : ""}`}>
+      <div className={`transition-all duration-300 ${isHidden("stats") ? "opacity-30" : ""}`}>
         <div className="mb-2 flex items-center justify-end">
           <Button
             variant="ghost"
@@ -249,6 +265,7 @@ export default function Dashboard() {
               description={stat.description}
               icon={stat.icon}
               color={stat.color}
+              bgColor={stat.bgColor}
               hidden={isHidden("stats")}
             />
           ))}
@@ -258,19 +275,23 @@ export default function Dashboard() {
       {/* Quick Actions */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg">快捷操作</CardTitle>
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-primary" />
+            <CardTitle className="text-lg">快捷操作</CardTitle>
+          </div>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
             {quickActions.map((action) => (
               <Button
                 key={action.title}
                 variant={action.variant}
                 onClick={action.onClick}
-                className="gap-2 transition-all hover:scale-105"
+                className="h-auto flex-col gap-1.5 py-4 transition-all hover:scale-[1.02]"
               >
-                <action.icon className="h-4 w-4" />
-                {action.title}
+                <action.icon className="h-5 w-5" />
+                <span className="text-sm font-medium">{action.title}</span>
+                <span className="text-[10px] opacity-60">{action.description}</span>
               </Button>
             ))}
           </div>
@@ -279,7 +300,7 @@ export default function Dashboard() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Members */}
-        <Card className={`transition-all ${isHidden("members") ? "opacity-30" : ""}`}>
+        <Card className={`transition-all duration-300 ${isHidden("members") ? "opacity-30" : ""}`}>
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="text-lg">最近会员</CardTitle>
             <div className="flex items-center gap-1">
@@ -294,7 +315,7 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-1"
+                className="gap-1 text-primary hover:text-primary"
                 onClick={() => navigate("/members")}
               >
                 查看全部
@@ -316,29 +337,29 @@ export default function Dashboard() {
                 }
               />
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {members.slice(0, 5).map((member) => (
                   <div
                     key={member.id}
                     onClick={() => navigate("/members")}
-                    className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 transition-all hover:border-primary/50 hover:bg-muted/50"
+                    className="flex cursor-pointer items-center justify-between rounded-xl border border-border/50 p-3 transition-all duration-200 hover:border-primary/30 hover:bg-accent/50 hover:shadow-sm"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
                         {member.name.charAt(0)}
                       </div>
                       <div>
-                        <p className="font-medium">{isHidden("members") ? "***" : member.name}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-medium text-sm">{isHidden("members") ? "***" : member.name}</p>
+                        <p className="text-xs text-muted-foreground">
                           {isHidden("members") ? "****" : member.phone}
                         </p>
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">
+                      <p className="font-semibold text-sm">
                         {isHidden("members") ? "****" : `¥${member.balance.toFixed(2)}`}
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {member.cards.length}张次卡
                       </p>
                     </div>
@@ -350,7 +371,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Recent Transactions */}
-        <Card className={`transition-all ${isHidden("transactions") ? "opacity-30" : ""}`}>
+        <Card className={`transition-all duration-300 ${isHidden("transactions") ? "opacity-30" : ""}`}>
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="text-lg">最近交易</CardTitle>
             <div className="flex items-center gap-1">
@@ -365,7 +386,7 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-1"
+                className="gap-1 text-primary hover:text-primary"
                 onClick={() => navigate("/transactions")}
               >
                 查看全部
@@ -381,35 +402,35 @@ export default function Dashboard() {
                 description="交易记录将在这里显示"
               />
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {recentTransactions.map((tx) => (
                   <div
                     key={tx.id}
-                    className={`flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/50 ${
+                    className={`flex items-center justify-between rounded-xl border border-border/50 p-3 transition-all duration-200 hover:bg-accent/50 ${
                       tx.voided ? "opacity-50" : ""
                     }`}
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <p className={`font-medium truncate ${tx.voided ? "line-through" : ""}`}>
+                        <p className={`font-medium text-sm truncate ${tx.voided ? "line-through" : ""}`}>
                           {isHidden("transactions") ? "****" : tx.description}
                         </p>
                         {tx.voided && (
-                          <Badge variant="destructive" className="text-xs shrink-0">已作废</Badge>
+                          <Badge variant="destructive" className="text-[10px] shrink-0">已作废</Badge>
                         )}
                       </div>
-                      <p className={`text-sm text-muted-foreground ${tx.voided ? "line-through" : ""}`}>
-                        {isHidden("transactions") ? "***" : tx.memberName} • {format(new Date(tx.createdAt), "HH:mm")}
+                      <p className={`text-xs text-muted-foreground ${tx.voided ? "line-through" : ""}`}>
+                        {isHidden("transactions") ? "***" : tx.memberName} · {format(new Date(tx.createdAt), "HH:mm")}
                       </p>
                     </div>
                     <span
-                      className={`font-semibold shrink-0 ml-2 ${
+                      className={`font-semibold text-sm shrink-0 ml-2 ${
                         tx.voided ? "line-through text-muted-foreground" :
-                        tx.type === "recharge" || tx.type === "refund" ? "text-chart-2" : "text-destructive"
+                        tx.type === "recharge" || tx.type === "refund" ? "text-success" : "text-foreground"
                       }`}
                     >
-                      {isHidden("transactions") 
-                        ? "****" 
+                      {isHidden("transactions")
+                        ? "****"
                         : `${tx.type === "recharge" || tx.type === "refund" ? "+" : "-"}¥${tx.amount.toFixed(2)}`
                       }
                     </span>
