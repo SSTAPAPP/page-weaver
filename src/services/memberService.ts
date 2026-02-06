@@ -203,10 +203,20 @@ export const memberService = {
   },
 
   async search(query: string): Promise<Member[]> {
+    // Sanitize input: escape SQL LIKE special characters and limit length
+    const sanitized = query
+      .substring(0, 50) // Limit length to prevent performance issues
+      .replace(/[%_\\]/g, '\\$&'); // Escape LIKE pattern characters
+    
+    // Validate input format (alphanumeric, Chinese characters, spaces, and common phone chars)
+    if (sanitized.length === 0) {
+      return [];
+    }
+    
     const { data: members, error } = await supabase
       .from('members')
       .select('*')
-      .or(`name.ilike.%${query}%,phone.ilike.%${query}%`)
+      .or(`name.ilike.%${sanitized}%,phone.ilike.%${sanitized}%`)
       .order('created_at', { ascending: false });
 
     if (error) throw error;
