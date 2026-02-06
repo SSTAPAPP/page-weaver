@@ -10,12 +10,15 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
+  LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import { Separator } from "@/components/ui/separator";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 const menuItems = [
   { title: "仪表盘", url: "/", icon: LayoutDashboard },
@@ -35,6 +38,17 @@ interface AppSidebarProps {
 
 export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
   const location = useLocation();
+  const { signOut, user } = useAuth();
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      toast.success("已退出登录");
+    } catch (error) {
+      console.error("Logout error:", error);
+      toast.error("退出失败，请重试");
+    }
+  };
 
   return (
     <div
@@ -93,10 +107,31 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
         })}
       </nav>
 
-      {/* Sync Status */}
+      {/* Sync Status & User Info */}
       <div className="p-2">
         <Separator className="mb-2" />
         <SyncStatusIndicator collapsed={collapsed} />
+        
+        {/* User & Logout */}
+        <div className="mt-2 pt-2 border-t border-sidebar-border">
+          {!collapsed && user?.email && (
+            <p className="text-xs text-muted-foreground truncate px-3 mb-2">
+              {user.email}
+            </p>
+          )}
+          <Button
+            variant="ghost"
+            size={collapsed ? "icon" : "default"}
+            onClick={handleLogout}
+            className={cn(
+              "w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              collapsed ? "h-10 w-10 mx-auto" : "justify-start gap-3 px-3"
+            )}
+          >
+            <LogOut className="h-5 w-5 shrink-0" />
+            {!collapsed && <span>退出登录</span>}
+          </Button>
+        </div>
       </div>
     </div>
   );
