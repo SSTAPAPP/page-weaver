@@ -49,9 +49,7 @@ interface Store {
   orders: Order[];
   addOrder: (order: Omit<Order, 'id' | 'createdAt'>) => void;
   
-  // 设置 - password is now stored as hash
-  adminPassword: string;
-  setAdminPassword: (password: string) => void;
+  // 设置 - admin password is managed server-side only
   
   // 店铺信息
   shopInfo: ShopInfo;
@@ -328,9 +326,7 @@ export const useStore = create<Store>()(
         }));
       },
 
-      // 设置 - Note: Password is now stored as hash
-      adminPassword: '123456', // Will be migrated to hash on first use
-      setAdminPassword: (password) => set({ adminPassword: password }),
+      // 设置 - admin password managed server-side only (no client storage)
       
       // 店铺信息
       shopInfo: {
@@ -444,6 +440,11 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'barber-shop-storage',
-    }
+      partialize: (state: Record<string, unknown>) => {
+        const rest = { ...state };
+        delete rest.adminPassword;
+        return rest;
+      },
+    } as any
   )
 );
