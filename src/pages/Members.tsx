@@ -147,13 +147,13 @@ export default function Members() {
             {paginatedMembers.map((member) => (
               <Card
                 key={member.id}
-                className="cursor-pointer transition-all hover:border-primary/50 hover:shadow-md"
+                className="cursor-pointer transition-all hover:border-foreground/20 hover:shadow-md"
                 onClick={() => setSelectedMemberId(member.id)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary transition-colors group-hover:bg-primary/20">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-foreground/5 text-lg font-semibold text-foreground transition-colors">
                         {member.name.charAt(0)}
                       </div>
                       <div className="min-w-0">

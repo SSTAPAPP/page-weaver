@@ -11,7 +11,7 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  Sparkles,
+  Scissors,
   Activity,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -173,8 +173,8 @@ export default function Dashboard() {
       value: `¥${(stats?.revenue ?? 0).toFixed(2)}`,
       icon: Wallet,
       description: "现金+微信+支付宝+补差价",
-      color: "text-primary",
-      bgColor: "bg-primary/10",
+      color: "text-foreground",
+      bgColor: "bg-foreground/5",
     },
     {
       id: "recharge",
@@ -305,7 +305,7 @@ export default function Dashboard() {
       <Card>
         <CardHeader className="pb-3">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-primary" />
+            <Scissors className="h-4 w-4 text-muted-foreground" />
             <CardTitle className="text-lg">快捷操作</CardTitle>
           </div>
         </CardHeader>
@@ -373,10 +373,10 @@ export default function Dashboard() {
                   <div
                     key={member.id}
                     onClick={() => navigate("/members")}
-                    className="flex cursor-pointer items-center justify-between rounded-xl border border-border/50 p-3 transition-all duration-200 hover:border-primary/30 hover:bg-accent/50 hover:shadow-sm"
+                    className="flex cursor-pointer items-center justify-between rounded-xl border border-border/50 p-3 transition-all duration-200 hover:border-foreground/20 hover:bg-accent/50 hover:shadow-sm"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-foreground/5 text-sm font-semibold text-foreground">
                         {member.name.charAt(0)}
                       </div>
                       <div>

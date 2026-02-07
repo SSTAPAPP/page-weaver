@@ -697,8 +697,8 @@ export default function Settings() {
 
             {/* 系统品牌 */}
             <div className="flex flex-col items-center py-6">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-lg mb-4">
-                <span className="text-2xl font-black text-white">F</span>
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-foreground shadow-lg mb-4">
+                <span className="text-2xl font-black text-background">F</span>
               </div>
               <h2 className="text-xl font-bold">FFk Barber</h2>
               <p className="text-sm text-muted-foreground">理发店会员管理系统</p>

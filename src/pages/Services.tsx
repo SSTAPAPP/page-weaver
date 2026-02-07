@@ -255,7 +255,7 @@ export default function Services() {
                       .map((service) => (
                         <div
                           key={service.id}
-                          className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/30"
+                          className="flex items-center justify-between rounded-xl border border-border p-4 transition-all duration-200 hover:bg-accent/50 hover:border-foreground/10"
                         >
                           <div>
                             <p className="font-medium">{service.name}</p>
