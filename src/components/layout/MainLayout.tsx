@@ -3,7 +3,6 @@ import { useLocation } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { cn } from "@/lib/utils";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
-import { useSupabaseSync } from "@/hooks/useSupabaseSync";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -14,7 +13,6 @@ const SIDEBAR_COLLAPSED_KEY = 'ffk-sidebar-collapsed';
 export function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation();
   useKeyboardShortcuts();
-  const { lastSyncTime, syncNow } = useSupabaseSync();
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
     return saved === 'true';
@@ -31,7 +29,7 @@ export function MainLayout({ children }: MainLayoutProps) {
         "fixed left-0 top-0 h-screen z-50 transition-all duration-300",
         collapsed ? "w-16" : "w-60"
       )}>
-        <AppSidebar collapsed={collapsed} onCollapsedChange={setCollapsed} lastSyncTime={lastSyncTime} onSync={syncNow} />
+        <AppSidebar collapsed={collapsed} onCollapsedChange={setCollapsed} />
       </aside>
 
       {/* Main content with margin to account for fixed sidebar */}

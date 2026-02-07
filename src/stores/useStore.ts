@@ -1,7 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { Member, MemberCard, CardTemplate, Service, Appointment, Transaction, Order, ShopInfo, AuditLogEntry, SyncConfig } from '@/types';
-import { supabaseWriteThrough } from '@/hooks/useSupabaseSync';
 
 interface Store {
   // 会员
@@ -115,8 +114,6 @@ export const useStore = create<Store>()(
           cards: [],
         };
         set((state) => ({ members: [...state.members, member] }));
-        // Write-through to Supabase
-        supabaseWriteThrough.createMember(memberData);
         return member;
       },
       updateMember: (id, data) => {
@@ -125,8 +122,6 @@ export const useStore = create<Store>()(
             m.id === id ? { ...m, ...data } : m
           ),
         }));
-        // Write-through to Supabase
-        supabaseWriteThrough.updateMember(id, data as Record<string, unknown>);
       },
       getMember: (id) => get().members.find((m) => m.id === id),
       getMemberByPhone: (phone) => get().members.find((m) => m.phone === phone),
@@ -164,15 +159,6 @@ export const useStore = create<Store>()(
             m.id === memberId ? { ...m, cards: [...m.cards, card] } : m
           ),
         }));
-        // Write-through to Supabase
-        supabaseWriteThrough.addMemberCard(memberId, {
-          templateId: card.templateId,
-          templateName: card.templateName,
-          remainingCount: card.remainingCount,
-          services: card.services,
-          originalPrice: card.originalPrice,
-          originalTotalCount: card.originalTotalCount,
-        });
       },
       deductCard: (memberId, cardId) => {
         set((state) => ({
@@ -189,12 +175,6 @@ export const useStore = create<Store>()(
               : m
           ),
         }));
-        // Write-through: update card remaining count in Supabase
-        const updatedMember = get().members.find(m => m.id === memberId);
-        const updatedCard = updatedMember?.cards.find(c => c.id === cardId);
-        if (updatedCard) {
-          supabaseWriteThrough.updateMemberCard(cardId, { remainingCount: updatedCard.remainingCount });
-        }
       },
       refundCard: (memberId, cardId) => {
         set((state) => ({
@@ -211,12 +191,6 @@ export const useStore = create<Store>()(
               : m
           ),
         }));
-        // Write-through: update card remaining count in Supabase
-        const refundedMember = get().members.find(m => m.id === memberId);
-        const refundedCard = refundedMember?.cards.find(c => c.id === cardId);
-        if (refundedCard) {
-          supabaseWriteThrough.updateMemberCard(cardId, { remainingCount: refundedCard.remainingCount });
-        }
       },
 
       // 充值 - 仅用于充值操作
@@ -226,11 +200,6 @@ export const useStore = create<Store>()(
             m.id === memberId ? { ...m, balance: m.balance + amount } : m
           ),
         }));
-        // Write-through: sync new balance to Supabase
-        const rechargedMember = get().members.find(m => m.id === memberId);
-        if (rechargedMember) {
-          supabaseWriteThrough.updateMemberBalance(memberId, rechargedMember.balance);
-        }
       },
       // 扣款
       deductBalance: (memberId, amount) => {
@@ -239,11 +208,6 @@ export const useStore = create<Store>()(
             m.id === memberId ? { ...m, balance: Math.max(0, m.balance - amount) } : m
           ),
         }));
-        // Write-through: sync new balance to Supabase
-        const deductedMember = get().members.find(m => m.id === memberId);
-        if (deductedMember) {
-          supabaseWriteThrough.updateMemberBalance(memberId, deductedMember.balance);
-        }
       },
       // 退款 - 专用于退款操作，独立于充值
       refundBalance: (memberId, amount) => {
@@ -252,11 +216,6 @@ export const useStore = create<Store>()(
             m.id === memberId ? { ...m, balance: m.balance + amount } : m
           ),
         }));
-        // Write-through: sync new balance to Supabase
-        const refundedBalanceMember = get().members.find(m => m.id === memberId);
-        if (refundedBalanceMember) {
-          supabaseWriteThrough.updateMemberBalance(memberId, refundedBalanceMember.balance);
-        }
       },
 
       // 次卡模板
@@ -268,8 +227,6 @@ export const useStore = create<Store>()(
         set((state) => ({
           cardTemplates: [...state.cardTemplates, { ...template, id: generateId() }],
         }));
-        // Write-through to Supabase
-        supabaseWriteThrough.createCardTemplate(template);
       },
       updateCardTemplate: (id, data) => {
         set((state) => ({
@@ -277,15 +234,11 @@ export const useStore = create<Store>()(
             t.id === id ? { ...t, ...data } : t
           ),
         }));
-        // Write-through to Supabase
-        supabaseWriteThrough.updateCardTemplate(id, data);
       },
       deleteCardTemplate: (id) => {
         set((state) => ({
           cardTemplates: state.cardTemplates.filter((t) => t.id !== id),
         }));
-        // Write-through to Supabase
-        supabaseWriteThrough.deleteCardTemplate(id);
       },
 
       // 服务
@@ -299,8 +252,6 @@ export const useStore = create<Store>()(
         set((state) => ({
           services: [...state.services, { ...service, id: generateId() }],
         }));
-        // Write-through to Supabase
-        supabaseWriteThrough.createService(service);
       },
       updateService: (id, data) => {
         set((state) => ({
@@ -308,15 +259,11 @@ export const useStore = create<Store>()(
             s.id === id ? { ...s, ...data } : s
           ),
         }));
-        // Write-through to Supabase
-        supabaseWriteThrough.updateService(id, data);
       },
       deleteService: (id) => {
         set((state) => ({
           services: state.services.filter((s) => s.id !== id),
         }));
-        // Write-through to Supabase
-        supabaseWriteThrough.deleteService(id);
       },
 
       // 预约
@@ -328,8 +275,6 @@ export const useStore = create<Store>()(
             { ...appointment, id: generateId(), createdAt: new Date() },
           ],
         }));
-        // Write-through to Supabase
-        supabaseWriteThrough.createAppointment(appointment);
       },
       updateAppointment: (id, data) => {
         set((state) => ({
@@ -337,8 +282,6 @@ export const useStore = create<Store>()(
             a.id === id ? { ...a, ...data } : a
           ),
         }));
-        // Write-through to Supabase
-        supabaseWriteThrough.updateAppointment(id, data);
       },
 
       // 交易流水
@@ -350,8 +293,6 @@ export const useStore = create<Store>()(
             ...state.transactions,
           ],
         }));
-        // Write-through to Supabase
-        supabaseWriteThrough.createTransaction(transaction);
       },
       voidTransaction: (id) => {
         set((state) => ({
@@ -359,8 +300,6 @@ export const useStore = create<Store>()(
             t.id === id ? { ...t, voided: true } : t
           ),
         }));
-        // Write-through to Supabase
-        supabaseWriteThrough.voidTransaction(id);
       },
       // 获取关联交易（消费+退款）
       getRelatedTransactions: (transactionId) => {
@@ -406,8 +345,6 @@ export const useStore = create<Store>()(
         set((state) => ({
           members: state.members.filter((m) => m.id !== id),
         }));
-        // Write-through to Supabase
-        supabaseWriteThrough.deleteMember(id);
       },
       
       // UI状态

@@ -44,8 +44,6 @@ const manageMenuItems = [
 interface AppSidebarProps {
   collapsed: boolean;
   onCollapsedChange: (collapsed: boolean) => void;
-  lastSyncTime?: Date | null;
-  onSync?: () => Promise<void>;
 }
 
 function SidebarNavItem({
@@ -89,7 +87,7 @@ function SidebarNavItem({
   return link;
 }
 
-export function AppSidebar({ collapsed, onCollapsedChange, lastSyncTime, onSync }: AppSidebarProps) {
+export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
   const location = useLocation();
   const { signOut, user } = useAuth();
 
@@ -129,8 +127,8 @@ export function AppSidebar({ collapsed, onCollapsedChange, lastSyncTime, onSync 
               </div>
             </div>
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white">
-              <ScissorsLogo className="h-4 w-4 text-black" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
+              <Sparkles className="h-4 w-4 text-white" />
             </div>
           )}
           {!collapsed && (
@@ -215,7 +213,7 @@ export function AppSidebar({ collapsed, onCollapsedChange, lastSyncTime, onSync 
 
         {/* Bottom section */}
         <div className="p-2 space-y-2">
-          <SyncStatusIndicator collapsed={collapsed} lastSyncTime={lastSyncTime} onSync={onSync} />
+          <SyncStatusIndicator collapsed={collapsed} />
 
           {/* User info & logout */}
           <div className={cn(

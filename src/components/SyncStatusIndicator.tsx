@@ -1,9 +1,11 @@
 import { Cloud, CloudOff, RefreshCw, AlertCircle, Check } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
+import { syncManager } from "@/lib/syncManager";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
@@ -16,16 +18,23 @@ interface SyncStatusIndicatorProps {
 export function SyncStatusIndicator({ collapsed, lastSyncTime, onSync }: SyncStatusIndicatorProps) {
   const { isOnline } = useOnlineStatus();
   const [isSyncing, setIsSyncing] = useState(false);
+  const [pendingCount, setPendingCount] = useState(0);
   const [syncError, setSyncError] = useState(false);
+
+  useEffect(() => {
+    const count = syncManager.getPendingCount();
+    setPendingCount(count);
+  }, []);
 
   const handleSync = async () => {
     if (!onSync || isSyncing || !isOnline) return;
-
+    
     setIsSyncing(true);
     setSyncError(false);
-
+    
     try {
       await onSync();
+      setPendingCount(syncManager.getPendingCount());
     } catch {
       setSyncError(true);
     } finally {
@@ -36,7 +45,7 @@ export function SyncStatusIndicator({ collapsed, lastSyncTime, onSync }: SyncSta
   const getStatusColor = () => {
     if (!isOnline) return "text-muted-foreground";
     if (syncError) return "text-destructive";
-    if (!lastSyncTime) return "text-amber-500";
+    if (pendingCount > 0) return "text-amber-500";
     return "text-emerald-500";
   };
 
@@ -44,7 +53,7 @@ export function SyncStatusIndicator({ collapsed, lastSyncTime, onSync }: SyncSta
     if (!isOnline) return <CloudOff className="h-4 w-4" />;
     if (isSyncing) return <RefreshCw className="h-4 w-4 animate-spin" />;
     if (syncError) return <AlertCircle className="h-4 w-4" />;
-    if (!lastSyncTime) return <Cloud className="h-4 w-4" />;
+    if (pendingCount > 0) return <Cloud className="h-4 w-4" />;
     return <Check className="h-4 w-4" />;
   };
 
@@ -52,7 +61,7 @@ export function SyncStatusIndicator({ collapsed, lastSyncTime, onSync }: SyncSta
     if (!isOnline) return "离线";
     if (isSyncing) return "同步中...";
     if (syncError) return "同步失败";
-    if (!lastSyncTime) return "未同步";
+    if (pendingCount > 0) return `待同步 ${pendingCount}`;
     return "已同步";
   };
 
@@ -95,6 +104,11 @@ export function SyncStatusIndicator({ collapsed, lastSyncTime, onSync }: SyncSta
               {lastSyncTime && (
                 <p className="text-xs text-muted-foreground">
                   上次同步: {format(lastSyncTime, 'HH:mm', { locale: zhCN })}
+                </p>
+              )}
+              {pendingCount > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {pendingCount} 条待同步
                 </p>
               )}
             </div>
