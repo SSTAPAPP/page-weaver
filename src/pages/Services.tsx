@@ -19,13 +19,16 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStore } from "@/stores/useStore";
+import { useServices } from "@/hooks/useCloudData";
 import { useToast } from "@/hooks/use-toast";
 import { AdminPasswordDialog } from "@/components/dialogs/AdminPasswordDialog";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export default function Services() {
   const { toast } = useToast();
+  const { data: cloudServices = [], isLoading } = useServices();
   const {
-    services,
+    services: localServices,
     addService,
     updateService,
     deleteService,
@@ -34,6 +37,9 @@ export default function Services() {
     updateCardTemplate,
     deleteCardTemplate,
   } = useStore();
+
+  // Use cloud services if available, fallback to local
+  const services = cloudServices.length > 0 ? cloudServices : localServices;
 
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [cardDialogOpen, setCardDialogOpen] = useState(false);
@@ -249,7 +255,7 @@ export default function Services() {
                       .map((service) => (
                         <div
                           key={service.id}
-                          className="flex items-center justify-between rounded-xl border border-border p-4 transition-all duration-200 hover:bg-accent/50 hover:border-foreground/10"
+                          className="flex items-center justify-between rounded-lg border border-border p-4 transition-colors hover:bg-muted/30"
                         >
                           <div>
                             <p className="font-medium">{service.name}</p>

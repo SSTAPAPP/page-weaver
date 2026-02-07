@@ -2,7 +2,6 @@ import { ReactNode, useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { cn } from "@/lib/utils";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -12,7 +11,6 @@ const SIDEBAR_COLLAPSED_KEY = 'ffk-sidebar-collapsed';
 
 export function MainLayout({ children }: MainLayoutProps) {
   const location = useLocation();
-  useKeyboardShortcuts();
   const [collapsed, setCollapsed] = useState(() => {
     const saved = localStorage.getItem(SIDEBAR_COLLAPSED_KEY);
     return saved === 'true';

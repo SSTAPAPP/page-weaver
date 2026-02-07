@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useEffect } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Search, UserPlus, Phone, CreditCard, Wallet, ChevronLeft, ChevronRight } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useStore } from "@/stores/useStore";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useMembers } from "@/hooks/useCloudData";
 import { QuickMemberDialog } from "@/components/dialogs/QuickMemberDialog";
 import { QuickRechargeDialog } from "@/components/dialogs/QuickRechargeDialog";
 import { MemberDetailDialog } from "@/components/dialogs/MemberDetailDialog";
@@ -14,8 +15,39 @@ import { matchMemberSearch } from "@/lib/pinyin";
 
 const ITEMS_PER_PAGE = 24;
 
+function MemberCardSkeleton() {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-12 w-12 rounded-full" />
+            <div className="space-y-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-3 w-28" />
+            </div>
+          </div>
+          <Skeleton className="h-5 w-8" />
+        </div>
+        <div className="mt-4 rounded-lg bg-muted/50 p-3">
+          <div className="flex items-center justify-between">
+            <div className="space-y-1">
+              <Skeleton className="h-3 w-8" />
+              <Skeleton className="h-5 w-16" />
+            </div>
+            <div className="space-y-1">
+              <Skeleton className="h-3 w-8" />
+              <Skeleton className="h-5 w-12" />
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Members() {
-  const { members } = useStore();
+  const { data: members = [], isLoading } = useMembers();
   const [searchQuery, setSearchQuery] = useState("");
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [memberDialogOpen, setMemberDialogOpen] = useState(false);
@@ -55,7 +87,7 @@ export default function Members() {
       {/* Header */}
       <PageHeader
         title="会员管理"
-        description={`共 ${members.length} 位会员 · 总余额 ¥${totalBalance.toFixed(2)}`}
+        description={isLoading ? "加载中..." : `共 ${members.length} 位会员 · 总余额 ¥${totalBalance.toFixed(2)}`}
       >
         <Button variant="outline" onClick={() => setRechargeDialogOpen(true)}>
           <Wallet className="mr-2 h-4 w-4" />
@@ -88,8 +120,14 @@ export default function Members() {
         )}
       </div>
 
-      {/* Members List */}
-      {filteredMembers.length === 0 ? (
+      {/* Loading skeleton */}
+      {isLoading ? (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <MemberCardSkeleton key={i} />
+          ))}
+        </div>
+      ) : filteredMembers.length === 0 ? (
         <EmptyState
           icon={UserPlus}
           title={searchQuery ? "未找到匹配的会员" : "暂无会员"}
@@ -109,13 +147,13 @@ export default function Members() {
             {paginatedMembers.map((member) => (
               <Card
                 key={member.id}
-                className="cursor-pointer transition-all hover:border-foreground/20 hover:shadow-md"
+                className="cursor-pointer transition-all hover:border-primary/50 hover:shadow-md"
                 onClick={() => setSelectedMemberId(member.id)}
               >
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-foreground/5 text-lg font-semibold text-foreground transition-colors">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary transition-colors group-hover:bg-primary/20">
                         {member.name.charAt(0)}
                       </div>
                       <div className="min-w-0">

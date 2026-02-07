@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { toast } from "sonner";
-import { Loader2, Scissors, Eye, EyeOff } from "lucide-react";
+import { Loader2, Sparkles, Eye, EyeOff } from "lucide-react";
 
 export default function Auth() {
   const navigate = useNavigate();
@@ -53,11 +53,14 @@ export default function Auth() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      {/* Subtle background pattern */}
+      <div className="fixed inset-0 bg-gradient-to-br from-primary/5 via-transparent to-chart-2/5 pointer-events-none" />
+
       <div className="relative w-full max-w-md animate-fade-in">
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-foreground shadow-lg mb-4">
-            <Scissors className="h-7 w-7 text-background" />
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg mb-4">
+            <Sparkles className="h-7 w-7 text-white" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">FFk Barber</h1>
           <p className="text-sm text-muted-foreground mt-1">理发店会员管理系统</p>
