@@ -11,7 +11,7 @@ import {
   ChevronRight,
   Settings,
   LogOut,
-  Sparkles,
+  Scissors as ScissorsLogo,
   UserCircle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
@@ -61,13 +61,13 @@ function SidebarNavItem({
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
         "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        isActive && "bg-sidebar-primary/15 text-sidebar-primary font-semibold",
+        isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-semibold",
         collapsed && "justify-center px-0"
       )}
     >
       <item.icon className={cn(
         "h-[18px] w-[18px] shrink-0 transition-colors",
-        isActive ? "text-sidebar-primary" : "text-sidebar-foreground/60"
+        isActive ? "text-sidebar-accent-foreground" : "text-sidebar-foreground/60"
       )} />
       {!collapsed && <span>{item.title}</span>}
     </NavLink>
@@ -118,8 +118,8 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
         )}>
           {!collapsed ? (
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
-                <Sparkles className="h-4 w-4 text-white" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white">
+                <ScissorsLogo className="h-4 w-4 text-black" />
               </div>
               <div className="flex flex-col">
                 <span className="font-bold text-sidebar-accent-foreground text-sm leading-tight">FFk Barber</span>
@@ -222,7 +222,7 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
           )}>
             {!collapsed ? (
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20 text-xs font-bold text-sidebar-primary">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-xs font-bold text-sidebar-accent-foreground">
                   {userInitial}
                 </div>
                 <div className="flex-1 min-w-0">
