@@ -10,19 +10,12 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { useStore, generateWalkInId } from "@/stores/useStore";
-import { useMembers, useServices } from "@/hooks/useCloudData";
 import { useToast } from "@/hooks/use-toast";
 import { Member, Service, MemberCard } from "@/types";
 import { matchMemberSearch } from "@/lib/pinyin";
 import { CheckoutConfirmDialog } from "@/components/dialogs/CheckoutConfirmDialog";
-import { memberService } from "@/services/memberService";
-import { transactionService } from "@/services/transactionService";
-import { orderService } from "@/services/orderService";
-import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/hooks/useCloudData";
 
 interface CartItem {
   service: Service;
@@ -39,12 +32,15 @@ interface CardUsageInfo {
 
 export default function Cashier() {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-  const { data: members = [], isLoading: isMembersLoading } = useMembers();
-  const { data: services = [], isLoading: isServicesLoading } = useServices();
-
-  // Keep local store for card/balance mutations that need immediate UI feedback
-  const { deductBalance, deductCard, addTransaction, addOrder } = useStore();
+  const {
+    members,
+    services,
+    deductBalance,
+    deductCard,
+    addTransaction,
+    addOrder,
+    getMember,
+  } = useStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -55,6 +51,7 @@ export default function Cashier() {
 
   const isWalkIn = !selectedMember;
 
+  // 实时搜索会员 - 增加结果数量限制到10条并支持滚动
   const searchResults = useMemo(() => {
     if (searchQuery.length < 1) return [];
     return members.filter((m) => matchMemberSearch(m.name, m.phone, searchQuery)).slice(0, 10);
@@ -66,16 +63,20 @@ export default function Cashier() {
     setCart([]);
   };
 
+  // 计算购物车中每张卡的使用次数
   const getCardUsageInCart = (cardId: string) => {
     return cart.filter(item => item.useCard && item.card?.id === cardId).length;
   };
 
+  // 获取卡的有效剩余次数（考虑购物车中的使用）
   const getEffectiveRemainingCount = (card: MemberCard) => {
     const usedInCart = getCardUsageInCart(card.id);
     return card.remainingCount - usedInCart;
   };
 
   const addToCart = (service: Service) => {
+    // 检查是否有对应服务的次卡（仅会员）
+    // 改进：检查卡的有效剩余次数（扣除购物车中已使用的次数）
     const availableCard = selectedMember?.cards.find(
       (card) => card.services.includes(service.id) && getEffectiveRemainingCount(card) > 0
     );
@@ -89,7 +90,10 @@ export default function Cashier() {
       },
     ]);
 
-    toast({ title: "已添加", description: service.name });
+    toast({
+      title: "已添加",
+      description: service.name,
+    });
   };
 
   const removeFromCart = (index: number) => {
@@ -104,6 +108,7 @@ export default function Cashier() {
     );
   };
 
+  // 计算金额
   const calculatePayment = () => {
     let cardDeductTotal = 0;
     let needPayTotal = 0;
@@ -124,9 +129,13 @@ export default function Cashier() {
 
   const { cardDeductTotal, balanceDeduct, cashNeed, total } = calculatePayment();
 
+  // 计算次卡使用明细 - 改进：显示有效剩余次数
   const cardUsageInfo = useMemo((): CardUsageInfo[] => {
     if (!selectedMember) return [];
+    
+    // 按卡ID分组统计使用次数
     const cardUsageMap = new Map<string, { card: MemberCard; count: number }>();
+    
     cart.forEach((item) => {
       if (item.useCard && item.card) {
         const existing = cardUsageMap.get(item.card.id);
@@ -137,6 +146,7 @@ export default function Cashier() {
         }
       }
     });
+    
     return Array.from(cardUsageMap.values()).map(({ card, count }) => ({
       cardName: card.templateName,
       originalCount: card.remainingCount,
@@ -156,37 +166,50 @@ export default function Cashier() {
   const handleConfirmCheckout = async () => {
     setIsCheckingOut(true);
     try {
+      await new Promise((r) => setTimeout(r, 500));
+
+      // 处理会员结账
       if (selectedMember) {
         const serviceNames = cart.map(c => c.service.name).join(", ");
         const subTransactions: { type: 'balance' | 'card' | 'price_diff'; amount: number; paymentMethod?: string; cardId?: string }[] = [];
-
-        // Process card deductions via cloud
-        for (const item of cart) {
+        
+        // 处理次卡扣除
+        cart.forEach((item) => {
           if (item.useCard && item.card) {
-            await memberService.updateCard(item.card.id, {
-              remainingCount: item.card.remainingCount - 1,
+            deductCard(selectedMember.id, item.card.id);
+            subTransactions.push({
+              type: 'card',
+              amount: item.service.price,
+              cardId: item.card.id,
             });
-            subTransactions.push({ type: 'card', amount: item.service.price, cardId: item.card.id });
           }
-        }
+        });
 
-        // Process balance deduction via cloud
+        // 处理余额扣除
         if (balanceDeduct > 0) {
-          await memberService.updateBalance(selectedMember.id, selectedMember.balance - balanceDeduct);
-          subTransactions.push({ type: 'balance', amount: balanceDeduct });
+          deductBalance(selectedMember.id, balanceDeduct);
+          subTransactions.push({
+            type: 'balance',
+            amount: balanceDeduct,
+          });
         }
 
+        // 处理补差价
         if (cashNeed > 0) {
-          subTransactions.push({ type: 'price_diff', amount: cashNeed, paymentMethod });
+          subTransactions.push({
+            type: 'price_diff',
+            amount: cashNeed,
+            paymentMethod,
+          });
         }
 
+        // 创建合并的交易记录
         const mainTransactionType = cardDeductTotal > 0 ? "card_deduct" : "consume";
-        const mainDescription = cashNeed > 0
+        const mainDescription = cashNeed > 0 
           ? `${serviceNames} (含补差价¥${cashNeed})`
           : serviceNames;
-
-        // Write transaction to cloud
-        await transactionService.create({
+        
+        addTransaction({
           memberId: selectedMember.id,
           memberName: selectedMember.name,
           type: mainTransactionType,
@@ -194,11 +217,10 @@ export default function Cashier() {
           paymentMethod: balanceDeduct > 0 ? "balance" : undefined,
           description: mainDescription,
           subTransactions,
-          voided: false,
         });
 
-        // Write order to cloud
-        await orderService.create({
+        // 添加订单
+        addOrder({
           memberId: selectedMember.id,
           memberName: selectedMember.name,
           services: cart.map((item) => ({
@@ -216,19 +238,19 @@ export default function Cashier() {
           ],
         });
       } else {
+        // 散客结账 - 使用唯一ID
         const walkInId = generateWalkInId();
-
-        await transactionService.create({
+        
+        addTransaction({
           memberId: walkInId,
           memberName: "散客",
           type: "consume",
           amount: total,
           paymentMethod,
           description: `散客消费 - ${cart.map(c => c.service.name).join(", ")}`,
-          voided: false,
         });
 
-        await orderService.create({
+        addOrder({
           memberId: walkInId,
           memberName: "散客",
           services: cart.map((item) => ({
@@ -242,29 +264,21 @@ export default function Cashier() {
         });
       }
 
-      // Invalidate cloud queries
-      queryClient.invalidateQueries({ queryKey: queryKeys.members });
-      queryClient.invalidateQueries({ queryKey: queryKeys.transactions });
-      queryClient.invalidateQueries({ queryKey: queryKeys.orders });
-      queryClient.invalidateQueries({ queryKey: queryKeys.todayStats });
-      queryClient.invalidateQueries({ queryKey: queryKeys.cloudCounts });
-
       toast({
         title: "结账成功",
         description: `${isWalkIn ? "散客" : selectedMember?.name}消费 ¥${total}`,
       });
 
+      // 重置
       setSelectedMember(null);
       setCart([]);
       setConfirmDialogOpen(false);
-    } catch (error) {
-      console.error("Checkout error:", error);
-      toast({ title: "结账失败", description: "请检查网络连接后重试", variant: "destructive" });
     } finally {
       setIsCheckingOut(false);
     }
   };
 
+  // 按分类分组服务
   const servicesByCategory = useMemo(() => {
     const categories = [...new Set(services.map((s) => s.category))];
     return categories.map((category) => ({
@@ -273,13 +287,16 @@ export default function Cashier() {
     }));
   }, [services]);
 
-  const isLoading = isMembersLoading || isServicesLoading;
-
   return (
     <div className="space-y-6">
-      <PageHeader title="收银台" description="快速结账，支持多种支付方式" />
+      {/* Header */}
+      <PageHeader
+        title="收银台"
+        description="快速结账，支持多种支付方式"
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
+        {/* 左侧：会员选择和服务列表 */}
         <div className="space-y-6 lg:col-span-2">
           {/* 会员搜索 */}
           <Card>
@@ -300,9 +317,13 @@ export default function Cashier() {
                   </div>
                   <div className="text-right">
                     <p className="font-semibold">余额: ¥{selectedMember.balance.toFixed(2)}</p>
-                    <p className="text-sm text-muted-foreground">{selectedMember.cards.length}张次卡</p>
+                    <p className="text-sm text-muted-foreground">
+                      {selectedMember.cards.length}张次卡
+                    </p>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => setSelectedMember(null)}>更换</Button>
+                  <Button variant="ghost" size="sm" onClick={() => setSelectedMember(null)}>
+                    更换
+                  </Button>
                 </div>
               ) : (
                 <div className="space-y-3">
@@ -312,12 +333,21 @@ export default function Cashier() {
                   </div>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input placeholder="输入姓名或手机号搜索" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-10" />
+                    <Input
+                      placeholder="输入姓名或手机号搜索"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-10"
+                    />
                   </div>
                   {searchResults.length > 0 && (
                     <div className="max-h-[200px] space-y-1 overflow-auto rounded-lg border border-border">
                       {searchResults.map((member) => (
-                        <div key={member.id} onClick={() => selectMember(member)} className="cursor-pointer p-3 transition-colors hover:bg-muted/50">
+                        <div
+                          key={member.id}
+                          onClick={() => selectMember(member)}
+                          className="cursor-pointer p-3 transition-colors hover:bg-muted/50"
+                        >
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="font-medium">{member.name}</p>
@@ -340,14 +370,12 @@ export default function Cashier() {
               <CardTitle className="text-base">服务项目</CardTitle>
             </CardHeader>
             <CardContent>
-              {isLoading ? (
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {Array.from({ length: 4 }).map((_, i) => (
-                    <Skeleton key={i} className="h-16 rounded-lg" />
-                  ))}
-                </div>
-              ) : services.length === 0 ? (
-                <EmptyState icon={ShoppingCart} title="暂无服务项目" description="请先在服务管理中添加服务" />
+              {services.length === 0 ? (
+                <EmptyState
+                  icon={ShoppingCart}
+                  title="暂无服务项目"
+                  description="请先在服务管理中添加服务"
+                />
               ) : (
                 <div className="space-y-4">
                   {servicesByCategory.map(({ category, services: categoryServices }) => (
@@ -355,18 +383,24 @@ export default function Cashier() {
                       <p className="mb-2 text-sm font-medium text-muted-foreground">{category}</p>
                       <div className="grid gap-2 sm:grid-cols-2">
                         {categoryServices.map((service) => {
+                          // 改进：检查有效剩余次数
                           const hasCard = selectedMember?.cards.some(
                             (card) => card.services.includes(service.id) && getEffectiveRemainingCount(card) > 0
                           );
                           return (
-                            <div key={service.id} onClick={() => addToCart(service)} className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 transition-all hover:border-primary/50 hover:bg-muted/30">
+                            <div
+                              key={service.id}
+                              onClick={() => addToCart(service)}
+                              className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 transition-all hover:border-primary/50 hover:bg-muted/30"
+                            >
                               <div>
                                 <p className="font-medium">{service.name}</p>
                                 <div className="flex items-center gap-2">
                                   <p className="text-sm text-muted-foreground">¥{service.price}</p>
                                   {hasCard && (
                                     <Badge variant="secondary" className="text-xs">
-                                      <CreditCard className="mr-1 h-3 w-3" />有次卡
+                                      <CreditCard className="mr-1 h-3 w-3" />
+                                      有次卡
                                     </Badge>
                                   )}
                                 </div>
@@ -393,7 +427,11 @@ export default function Cashier() {
               <CardTitle className="flex items-center gap-2 text-base">
                 <ShoppingCart className="h-4 w-4" />
                 结算清单
-                {isWalkIn && <Badge variant="outline" className="ml-auto">散客</Badge>}
+                {isWalkIn && (
+                  <Badge variant="outline" className="ml-auto">
+                    散客
+                  </Badge>
+                )}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -404,36 +442,58 @@ export default function Cashier() {
                 </div>
               ) : (
                 <>
+                  {/* 散客提示 */}
                   {isWalkIn && (
                     <Alert>
                       <UserX className="h-4 w-4" />
-                      <AlertDescription>当前为散客结账，无法使用会员余额和次卡抵扣</AlertDescription>
+                      <AlertDescription>
+                        当前为散客结账，无法使用会员余额和次卡抵扣
+                      </AlertDescription>
                     </Alert>
                   )}
 
                   <div className="space-y-2 max-h-[300px] overflow-auto">
                     {cart.map((item, index) => {
-                      const effectiveRemaining = item.card
-                        ? item.card.remainingCount - cart.slice(0, index + 1).filter(c => c.useCard && c.card?.id === item.card?.id).length
+                      // 计算此项对应卡的有效剩余次数
+                      const effectiveRemaining = item.card 
+                        ? item.card.remainingCount - cart.slice(0, index + 1).filter(
+                            c => c.useCard && c.card?.id === item.card?.id
+                          ).length
                         : 0;
+                      
                       return (
-                        <div key={index} className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/30">
+                        <div
+                          key={index}
+                          className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/30"
+                        >
                           <div className="flex-1 min-w-0">
                             <p className="font-medium truncate">{item.service.name}</p>
                             {item.card && item.useCard ? (
                               <Badge variant="secondary" className="mt-1 text-xs">
-                                <CreditCard className="mr-1 h-3 w-3" />次卡抵扣 (剩{effectiveRemaining}次)
+                                <CreditCard className="mr-1 h-3 w-3" />
+                                次卡抵扣 (剩{effectiveRemaining}次)
                               </Badge>
                             ) : (
-                              <p className="text-sm text-muted-foreground">¥{item.service.price}</p>
+                              <p className="text-sm text-muted-foreground">
+                                ¥{item.service.price}
+                              </p>
                             )}
                             {item.card && !isWalkIn && (
-                              <Button variant="link" size="sm" className="h-auto p-0 text-xs" onClick={() => toggleCardUse(index)}>
+                              <Button
+                                variant="link"
+                                size="sm"
+                                className="h-auto p-0 text-xs"
+                                onClick={() => toggleCardUse(index)}
+                              >
                                 {item.useCard ? "改为现金" : "使用次卡"}
                               </Button>
                             )}
                           </div>
-                          <Button variant="ghost" size="icon" onClick={() => removeFromCart(index)}>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeFromCart(index)}
+                          >
                             <Trash2 className="h-4 w-4 text-destructive" />
                           </Button>
                         </div>
@@ -443,16 +503,23 @@ export default function Cashier() {
 
                   <Separator />
 
+                  {/* 支付明细 */}
                   <div className="space-y-2 text-sm">
                     {cardDeductTotal > 0 && (
                       <div className="flex justify-between">
-                        <span className="flex items-center gap-1 text-muted-foreground"><CreditCard className="h-4 w-4" />次卡抵扣</span>
+                        <span className="flex items-center gap-1 text-muted-foreground">
+                          <CreditCard className="h-4 w-4" />
+                          次卡抵扣
+                        </span>
                         <span className="text-chart-2">-¥{cardDeductTotal}</span>
                       </div>
                     )}
                     {balanceDeduct > 0 && (
                       <div className="flex justify-between">
-                        <span className="flex items-center gap-1 text-muted-foreground"><Wallet className="h-4 w-4" />余额支付</span>
+                        <span className="flex items-center gap-1 text-muted-foreground">
+                          <Wallet className="h-4 w-4" />
+                          余额支付
+                        </span>
                         <span>¥{balanceDeduct}</span>
                       </div>
                     )}
@@ -463,31 +530,55 @@ export default function Cashier() {
                           <span className="text-lg text-primary">¥{cashNeed}</span>
                         </div>
                         {!isWalkIn && balanceDeduct > 0 && (
-                          <p className="mt-1 text-xs text-muted-foreground">余额不足，需额外支付 ¥{cashNeed}</p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            余额不足，需额外支付 ¥{cashNeed}
+                          </p>
                         )}
                       </div>
                     )}
                   </div>
 
+                  {/* 支付方式 */}
                   {cashNeed > 0 && (
                     <div className="space-y-2">
                       <Label>支付方式</Label>
-                      <RadioGroup value={paymentMethod} onValueChange={(v) => setPaymentMethod(v as "wechat" | "alipay" | "cash")} className="flex gap-4">
-                        <div className="flex items-center space-x-2"><RadioGroupItem value="wechat" id="c-wechat" /><Label htmlFor="c-wechat" className="cursor-pointer">微信</Label></div>
-                        <div className="flex items-center space-x-2"><RadioGroupItem value="alipay" id="c-alipay" /><Label htmlFor="c-alipay" className="cursor-pointer">支付宝</Label></div>
-                        <div className="flex items-center space-x-2"><RadioGroupItem value="cash" id="c-cash" /><Label htmlFor="c-cash" className="cursor-pointer">现金</Label></div>
+                      <RadioGroup
+                        value={paymentMethod}
+                        onValueChange={(v) =>
+                          setPaymentMethod(v as "wechat" | "alipay" | "cash")
+                        }
+                        className="flex gap-4"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="wechat" id="c-wechat" />
+                          <Label htmlFor="c-wechat" className="cursor-pointer">微信</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="alipay" id="c-alipay" />
+                          <Label htmlFor="c-alipay" className="cursor-pointer">支付宝</Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="cash" id="c-cash" />
+                          <Label htmlFor="c-cash" className="cursor-pointer">现金</Label>
+                        </div>
                       </RadioGroup>
                     </div>
                   )}
 
                   <Separator />
 
+                  {/* 合计和结账 */}
                   <div className="space-y-3">
                     <div className="flex items-center justify-between text-lg font-semibold">
                       <span>合计</span>
                       <span className="text-primary">¥{total}</span>
                     </div>
-                    <LoadingButton className="w-full" size="lg" onClick={handleCheckoutClick} loading={isCheckingOut}>
+                    <LoadingButton
+                      className="w-full"
+                      size="lg"
+                      onClick={handleCheckoutClick}
+                      loading={isCheckingOut}
+                    >
                       确认结账
                     </LoadingButton>
                   </div>
@@ -498,6 +589,7 @@ export default function Cashier() {
         </div>
       </div>
 
+      {/* 结账确认弹窗 */}
       <CheckoutConfirmDialog
         open={confirmDialogOpen}
         onOpenChange={setConfirmDialogOpen}

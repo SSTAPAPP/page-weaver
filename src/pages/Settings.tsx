@@ -29,7 +29,6 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useStore } from "@/stores/useStore";
-import { useCloudCounts } from "@/hooks/useCloudData";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
@@ -84,7 +83,6 @@ export default function Settings() {
     members, transactions, shopInfo, setShopInfo,
     auditLogs, clearAuditLogs, syncConfig, setSyncConfig
   } = useStore();
-  const { data: cloudCounts } = useCloudCounts();
   const { theme, setTheme, fontSize, setFontSize } = useTheme();
 
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>("shop");
@@ -552,7 +550,7 @@ export default function Settings() {
             <div className="space-y-3">
               <Label className="flex items-center gap-2">
                 <Cloud className="h-4 w-4" />
-                Lovable Cloud
+                云端数据库
               </Label>
               <div className="rounded-xl border border-border p-4 bg-accent/30">
                 <div className="flex items-center justify-between mb-3">
@@ -566,33 +564,11 @@ export default function Settings() {
                   </Badge>
                 </div>
 
-                {/* Cloud data counts */}
-                {cloudCounts && (
-                  <div className="grid grid-cols-2 gap-2 mt-3">
-                    <div className="rounded-lg bg-background/60 p-2.5">
-                      <p className="text-xs text-muted-foreground">会员</p>
-                      <p className="font-semibold">{cloudCounts.members} 条</p>
-                    </div>
-                    <div className="rounded-lg bg-background/60 p-2.5">
-                      <p className="text-xs text-muted-foreground">交易</p>
-                      <p className="font-semibold">{cloudCounts.transactions} 条</p>
-                    </div>
-                    <div className="rounded-lg bg-background/60 p-2.5">
-                      <p className="text-xs text-muted-foreground">服务</p>
-                      <p className="font-semibold">{cloudCounts.services} 条</p>
-                    </div>
-                    <div className="rounded-lg bg-background/60 p-2.5">
-                      <p className="text-xs text-muted-foreground">预约</p>
-                      <p className="font-semibold">{cloudCounts.appointments} 条</p>
-                    </div>
-                  </div>
-                )}
-
                 {hasLocalData && !isMigrated && (
-                  <Alert className="mt-3">
+                  <Alert className="mb-3">
                     <Upload className="h-4 w-4" />
                     <AlertDescription className="flex items-center justify-between">
-                      <span>检测到本地数据，建议迁移到云端</span>
+                      <span>检测到本地数据，建议迁移到云端以实现多设备同步</span>
                       <Button size="sm" onClick={() => setShowMigrationDialog(true)} className="ml-3">
                         开始迁移
                       </Button>
@@ -601,7 +577,7 @@ export default function Settings() {
                 )}
 
                 {isMigrated && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <Check className="h-4 w-4 text-success" />
                     数据已迁移到云端
                   </div>
@@ -642,7 +618,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between rounded-xl border border-border p-4 transition-colors hover:bg-accent/30">
                   <div>
                     <p className="font-medium">会员数据</p>
-                    <p className="text-sm text-muted-foreground">云端 {cloudCounts?.members ?? members.length} 条记录</p>
+                    <p className="text-sm text-muted-foreground">共 {members.length} 条记录</p>
                   </div>
                   <LoadingButton onClick={handleExportMembers} loading={isExporting} disabled={members.length === 0} size="sm">
                     <Download className="mr-2 h-4 w-4" />导出
@@ -652,7 +628,7 @@ export default function Settings() {
                 <div className="flex items-center justify-between rounded-xl border border-border p-4 transition-colors hover:bg-accent/30">
                   <div>
                     <p className="font-medium">交易记录</p>
-                    <p className="text-sm text-muted-foreground">云端 {cloudCounts?.transactions ?? transactions.length} 条记录</p>
+                    <p className="text-sm text-muted-foreground">共 {transactions.length} 条记录</p>
                   </div>
                   <LoadingButton onClick={handleExportTransactions} loading={isExportingTx} disabled={transactions.length === 0} size="sm">
                     <Download className="mr-2 h-4 w-4" />导出
@@ -724,11 +700,11 @@ export default function Settings() {
                 </div>
                 <div className="rounded-xl bg-accent/50 p-4">
                   <p className="text-xs text-muted-foreground mb-1">会员总数</p>
-                  <p className="font-medium">{cloudCounts?.members ?? members.length} 位</p>
+                  <p className="font-medium">{members.length} 位</p>
                 </div>
                 <div className="rounded-xl bg-accent/50 p-4">
                   <p className="text-xs text-muted-foreground mb-1">交易记录</p>
-                  <p className="font-medium">{cloudCounts?.transactions ?? transactions.length} 条</p>
+                  <p className="font-medium">{transactions.length} 条</p>
                 </div>
               </div>
             </div>
@@ -740,7 +716,7 @@ export default function Settings() {
               <Label>功能特性</Label>
               <div className="space-y-2">
                 {[
-                  { icon: "shield", text: "安全认证与数据加密" },
+                  { icon: "shield", text: "Supabase 安全认证与数据加密" },
                   { icon: "cloud", text: "云端数据同步，多设备使用" },
                   { icon: "smartphone", text: "响应式设计，支持桌面和移动端" },
                   { icon: "search", text: "拼音首字母智能搜索" },

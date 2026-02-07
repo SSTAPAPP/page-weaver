@@ -26,8 +26,6 @@ import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { useStore } from "@/stores/useStore";
-import { useAppointments } from "@/hooks/useCloudData";
-import { Skeleton } from "@/components/ui/skeleton";
 import { NewAppointmentDialog } from "@/components/dialogs/NewAppointmentDialog";
 import { AppointmentDetailDialog } from "@/components/dialogs/AppointmentDetailDialog";
 import type { Appointment } from "@/types";
@@ -43,9 +41,7 @@ const statusMap = {
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
 export default function Appointments() {
-  const { data: cloudAppointments = [] } = useAppointments();
-  const { appointments: localAppointments } = useStore();
-  const appointments = cloudAppointments.length > 0 ? cloudAppointments : localAppointments;
+  const { appointments } = useStore();
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [dialogOpen, setDialogOpen] = useState(false);

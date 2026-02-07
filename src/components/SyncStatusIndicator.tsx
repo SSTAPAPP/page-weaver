@@ -1,72 +1,52 @@
-import { Cloud, CloudOff, RefreshCw, AlertCircle, Check, Database } from "lucide-react";
+import { Cloud, CloudOff, RefreshCw, AlertCircle, Check } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useOnlineStatus } from "@/hooks/useOnlineStatus";
-import { useCloudCounts, useManualSync } from "@/hooks/useCloudData";
 import { syncManager } from "@/lib/syncManager";
 import { cn } from "@/lib/utils";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
 interface SyncStatusIndicatorProps {
   collapsed?: boolean;
+  lastSyncTime?: Date | null;
+  onSync?: () => Promise<void>;
 }
 
-export function SyncStatusIndicator({ collapsed }: SyncStatusIndicatorProps) {
+export function SyncStatusIndicator({ collapsed, lastSyncTime, onSync }: SyncStatusIndicatorProps) {
   const { isOnline } = useOnlineStatus();
-  const { data: cloudCounts, isLoading: isCountsLoading } = useCloudCounts();
-  const manualSync = useManualSync();
   const [isSyncing, setIsSyncing] = useState(false);
   const [pendingCount, setPendingCount] = useState(0);
   const [syncError, setSyncError] = useState(false);
-  const [lastSyncTime, setLastSyncTime] = useState<Date | null>(null);
 
   useEffect(() => {
-    setPendingCount(syncManager.getPendingCount());
+    const count = syncManager.getPendingCount();
+    setPendingCount(count);
   }, []);
 
-  // Auto-sync on reconnect
-  useEffect(() => {
-    if (isOnline && !isSyncing) {
-      handleSync();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOnline]);
-
-  // Heartbeat every 5 minutes
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (isOnline && !isSyncing) {
-        handleSync();
-      }
-    }, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOnline]);
-
-  const handleSync = useCallback(async () => {
-    if (isSyncing || !isOnline) return;
-
+  const handleSync = async () => {
+    if (!onSync || isSyncing || !isOnline) return;
+    
     setIsSyncing(true);
     setSyncError(false);
-
+    
     try {
-      await manualSync();
+      await onSync();
       setPendingCount(syncManager.getPendingCount());
-      setLastSyncTime(new Date());
     } catch {
       setSyncError(true);
     } finally {
       setIsSyncing(false);
     }
-  }, [isSyncing, isOnline, manualSync]);
+  };
 
   const getStatusColor = () => {
     if (!isOnline) return "text-muted-foreground";
     if (syncError) return "text-destructive";
-    if (pendingCount > 0) return "text-chart-4";
-    return "text-chart-2";
+    if (pendingCount > 0) return "text-amber-500";
+    return "text-emerald-500";
   };
 
   const getStatusIcon = () => {
@@ -85,88 +65,65 @@ export function SyncStatusIndicator({ collapsed }: SyncStatusIndicatorProps) {
     return "已同步";
   };
 
-  const cloudTotal = cloudCounts?.total ?? 0;
-
-  const tooltipContent = (
-    <div className="space-y-1.5">
-      <p className="font-medium">{getStatusText()}</p>
-      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Database className="h-3 w-3" />
-        <span>云端 {isCountsLoading ? "..." : cloudTotal} 条记录</span>
+  const content = (
+    <div className={cn(
+      "flex items-center gap-2 px-3 py-2 rounded-lg border border-border/50 bg-background/50",
+      collapsed && "justify-center px-2"
+    )}>
+      <div className={cn("flex items-center gap-2", getStatusColor())}>
+        {getStatusIcon()}
+        {!collapsed && (
+          <span className="text-xs font-medium">{getStatusText()}</span>
+        )}
       </div>
-      {pendingCount > 0 && (
-        <p className="text-xs text-muted-foreground">
-          本地 {pendingCount} 条待同步
-        </p>
-      )}
-      {lastSyncTime && (
-        <p className="text-xs text-muted-foreground">
-          上次同步: {format(lastSyncTime, "HH:mm:ss", { locale: zhCN })}
-        </p>
+      
+      {!collapsed && isOnline && onSync && (
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-6 w-6 ml-auto"
+          onClick={handleSync}
+          disabled={isSyncing}
+        >
+          <RefreshCw className={cn("h-3 w-3", isSyncing && "animate-spin")} />
+        </Button>
       )}
     </div>
   );
 
-  // Collapsed mode
   if (collapsed) {
     return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
-              onClick={handleSync}
-              disabled={isSyncing || !isOnline}
-              className={cn(
-                "flex items-center justify-center rounded-lg border border-border/50 bg-background/50 p-2 transition-colors hover:bg-accent",
-                getStatusColor()
-              )}
-            >
-              {getStatusIcon()}
-            </button>
+            {content}
           </TooltipTrigger>
-          <TooltipContent side="right">{tooltipContent}</TooltipContent>
+          <TooltipContent side="right">
+            <div className="space-y-1">
+              <p className="font-medium">{getStatusText()}</p>
+              {lastSyncTime && (
+                <p className="text-xs text-muted-foreground">
+                  上次同步: {format(lastSyncTime, 'HH:mm', { locale: zhCN })}
+                </p>
+              )}
+              {pendingCount > 0 && (
+                <p className="text-xs text-muted-foreground">
+                  {pendingCount} 条待同步
+                </p>
+              )}
+            </div>
+          </TooltipContent>
         </Tooltip>
       </TooltipProvider>
     );
   }
 
-  // Expanded mode
   return (
     <div className="space-y-1">
-      <div className="rounded-lg border border-border/50 bg-background/50 px-3 py-2">
-        {/* Status row */}
-        <div className="flex items-center justify-between">
-          <div className={cn("flex items-center gap-2", getStatusColor())}>
-            {getStatusIcon()}
-            <span className="text-xs font-medium">{getStatusText()}</span>
-          </div>
-          {isOnline && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6"
-              onClick={handleSync}
-              disabled={isSyncing}
-            >
-              <RefreshCw className={cn("h-3 w-3", isSyncing && "animate-spin")} />
-            </Button>
-          )}
-        </div>
-
-        {/* Cloud count */}
-        <div className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-          <Database className="h-3 w-3" />
-          <span>云端 {isCountsLoading ? "..." : cloudTotal} 条</span>
-          {pendingCount > 0 && (
-            <span className="text-chart-4">· 本地 {pendingCount} 待同步</span>
-          )}
-        </div>
-      </div>
-
-      {/* Last sync time */}
+      {content}
       {lastSyncTime && (
         <p className="text-xs text-muted-foreground px-3">
-          上次: {format(lastSyncTime, "HH:mm", { locale: zhCN })}
+          上次: {format(lastSyncTime, 'HH:mm', { locale: zhCN })}
         </p>
       )}
     </div>

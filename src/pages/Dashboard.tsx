@@ -18,14 +18,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   HoverCard,
   HoverCardContent,
   HoverCardTrigger,
 } from "@/components/ui/hover-card";
 import { useStore } from "@/stores/useStore";
-import { useTodayStats, useMembers, useTransactions } from "@/hooks/useCloudData";
 import { QuickMemberDialog } from "@/components/dialogs/QuickMemberDialog";
 import { QuickRechargeDialog } from "@/components/dialogs/QuickRechargeDialog";
 import { useNavigate } from "react-router-dom";
@@ -64,10 +62,9 @@ interface StatCardWithTooltipProps {
   color: string;
   bgColor: string;
   hidden?: boolean;
-  loading?: boolean;
 }
 
-function StatCardWithTooltip({ title, value, description, icon: Icon, color, bgColor, hidden, loading }: StatCardWithTooltipProps) {
+function StatCardWithTooltip({ title, value, description, icon: Icon, color, bgColor, hidden }: StatCardWithTooltipProps) {
   const metricInfo = metricsInfo[title];
 
   const cardContent = (
@@ -78,9 +75,7 @@ function StatCardWithTooltip({ title, value, description, icon: Icon, color, bgC
             <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
               {title}
             </p>
-            <div className="text-2xl font-bold tracking-tight">
-              {loading ? <Skeleton className="h-8 w-20" /> : hidden ? "****" : value}
-            </div>
+            <div className="text-2xl font-bold tracking-tight">{hidden ? "****" : value}</div>
             <p className="text-xs text-muted-foreground">{description}</p>
           </div>
           <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${bgColor}`}>
@@ -133,34 +128,10 @@ function StatCardWithTooltip({ title, value, description, icon: Icon, color, bgC
   return cardContent;
 }
 
-function RecentListSkeleton() {
-  return (
-    <div className="space-y-2">
-      {Array.from({ length: 5 }).map((_, i) => (
-        <div key={i} className="flex items-center justify-between rounded-xl border border-border/50 p-3">
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-10 w-10 rounded-full" />
-            <div className="space-y-1.5">
-              <Skeleton className="h-4 w-16" />
-              <Skeleton className="h-3 w-24" />
-            </div>
-          </div>
-          <div className="space-y-1.5 text-right">
-            <Skeleton className="h-4 w-16 ml-auto" />
-            <Skeleton className="h-3 w-12 ml-auto" />
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { hiddenSections, toggleSectionVisibility } = useStore();
-  const { data: stats, isLoading: isStatsLoading } = useTodayStats();
-  const { data: members = [], isLoading: isMembersLoading } = useMembers();
-  const { data: transactions = [], isLoading: isTxLoading } = useTransactions();
+  const { getTodayStats, members, transactions, hiddenSections, toggleSectionVisibility } = useStore();
+  const stats = getTodayStats();
   const [memberDialogOpen, setMemberDialogOpen] = useState(false);
   const [rechargeDialogOpen, setRechargeDialogOpen] = useState(false);
 
@@ -170,7 +141,7 @@ export default function Dashboard() {
     {
       id: "revenue",
       title: "今日实收",
-      value: `¥${(stats?.revenue ?? 0).toFixed(2)}`,
+      value: `¥${stats.revenue.toFixed(2)}`,
       icon: Wallet,
       description: "现金+微信+支付宝+补差价",
       color: "text-foreground",
@@ -179,7 +150,7 @@ export default function Dashboard() {
     {
       id: "recharge",
       title: "今日充值",
-      value: `¥${(stats?.recharge ?? 0).toFixed(2)}`,
+      value: `¥${stats.recharge.toFixed(2)}`,
       icon: CreditCard,
       description: "储值卡/次卡入账",
       color: "text-chart-2",
@@ -188,7 +159,7 @@ export default function Dashboard() {
     {
       id: "consumption",
       title: "今日消耗",
-      value: `¥${(stats?.consumption ?? 0).toFixed(2)}`,
+      value: `¥${stats.consumption.toFixed(2)}`,
       icon: TrendingUp,
       description: "余额+次卡消费",
       color: "text-chart-3",
@@ -197,7 +168,7 @@ export default function Dashboard() {
     {
       id: "newMembers",
       title: "新增会员",
-      value: (stats?.newMembers ?? 0).toString(),
+      value: stats.newMembers.toString(),
       icon: Users,
       description: "今日新注册",
       color: "text-chart-4",
@@ -206,7 +177,7 @@ export default function Dashboard() {
     {
       id: "appointments",
       title: "今日预约",
-      value: (stats?.appointments ?? 0).toString(),
+      value: stats.appointments.toString(),
       icon: Calendar,
       description: "待服务预约",
       color: "text-chart-5",
@@ -252,6 +223,7 @@ export default function Dashboard() {
     },
   ];
 
+  // 最近交易 - 显示包括已退款的订单，退款订单加删除线
   const recentTransactions = transactions.slice(0, 5);
 
   return (
@@ -295,7 +267,6 @@ export default function Dashboard() {
               color={stat.color}
               bgColor={stat.bgColor}
               hidden={isHidden("stats")}
-              loading={isStatsLoading}
             />
           ))}
         </div>
@@ -353,9 +324,7 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            {isMembersLoading ? (
-              <RecentListSkeleton />
-            ) : members.length === 0 ? (
+            {members.length === 0 ? (
               <EmptyState
                 icon={Users}
                 title="暂无会员"
@@ -426,9 +395,7 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent>
-            {isTxLoading ? (
-              <RecentListSkeleton />
-            ) : recentTransactions.length === 0 ? (
+            {recentTransactions.length === 0 ? (
               <EmptyState
                 icon={CreditCard}
                 title="暂无交易"
@@ -459,7 +426,7 @@ export default function Dashboard() {
                     <span
                       className={`font-semibold text-sm shrink-0 ml-2 ${
                         tx.voided ? "line-through text-muted-foreground" :
-                        tx.type === "recharge" || tx.type === "refund" ? "text-chart-2" : "text-foreground"
+                        tx.type === "recharge" || tx.type === "refund" ? "text-success" : "text-foreground"
                       }`}
                     >
                       {isHidden("transactions")
