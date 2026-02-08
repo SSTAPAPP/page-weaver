@@ -30,6 +30,28 @@ function checkRateLimit(ip: string): boolean {
   return true;
 }
 
+// Verify JWT and return authenticated user ID
+async function verifyAuth(c: any): Promise<{ userId: string } | null> {
+  const authHeader = c.req.header('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return null;
+  }
+
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: authHeader } }
+  });
+
+  const token = authHeader.replace('Bearer ', '');
+  const { data, error } = await supabase.auth.getClaims(token);
+  if (error || !data?.claims) {
+    return null;
+  }
+
+  return { userId: data.claims.sub as string };
+}
+
 // Handle CORS preflight
 app.options('*', (c) => {
   return new Response(null, { headers: corsHeaders });
@@ -52,9 +74,14 @@ function getSupabaseClient() {
   return createClient(supabaseUrl, supabaseServiceKey);
 }
 
-// Verify password endpoint
+// Verify password endpoint (requires auth)
 app.post('/verify', async (c) => {
   try {
+    const auth = await verifyAuth(c);
+    if (!auth) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401, corsHeaders);
+    }
+
     const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
     
     if (!checkRateLimit(clientIp)) {
@@ -76,7 +103,6 @@ app.post('/verify', async (c) => {
     const inputHash = await hashPassword(password);
     const supabase = getSupabaseClient();
     
-    // Use the secure database function to verify password
     const { data, error } = await supabase.rpc('verify_admin_password', {
       input_password_hash: inputHash
     });
@@ -91,7 +117,7 @@ app.post('/verify', async (c) => {
     
     return c.json({ 
       success: data === true,
-      hash: data === true ? inputHash : undefined // Return hash only if valid (for first-time setup migration)
+      hash: data === true ? inputHash : undefined
     }, 200, corsHeaders);
     
   } catch (error) {
@@ -103,9 +129,14 @@ app.post('/verify', async (c) => {
   }
 });
 
-// Update password endpoint
+// Update password endpoint (requires auth)
 app.post('/update-password', async (c) => {
   try {
+    const auth = await verifyAuth(c);
+    if (!auth) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401, corsHeaders);
+    }
+
     const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
     
     if (!checkRateLimit(clientIp)) {
@@ -126,7 +157,6 @@ app.post('/update-password', async (c) => {
     
     const supabase = getSupabaseClient();
     
-    // Verify current password first (if provided)
     if (currentPassword) {
       const currentHash = await hashPassword(currentPassword);
       const { data: isValid, error: verifyError } = await supabase.rpc('verify_admin_password', {
@@ -141,7 +171,6 @@ app.post('/update-password', async (c) => {
       }
     }
     
-    // Update to new password
     const newHash = await hashPassword(newPassword);
     const { data, error } = await supabase.rpc('update_admin_password', {
       new_password_hash: newHash
@@ -169,9 +198,14 @@ app.post('/update-password', async (c) => {
   }
 });
 
-// Delete member with refund - secure server-side operation
+// Delete member with refund (requires auth)
 app.post('/delete-member', async (c) => {
   try {
+    const auth = await verifyAuth(c);
+    if (!auth) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401, corsHeaders);
+    }
+
     const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
     
     if (!checkRateLimit(clientIp)) {
@@ -193,7 +227,6 @@ app.post('/delete-member', async (c) => {
     const inputHash = await hashPassword(password);
     const supabase = getSupabaseClient();
     
-    // Use the secure database function for atomic delete with refund
     const { data, error } = await supabase.rpc('admin_delete_member_with_refund', {
       p_password_hash: inputHash,
       p_member_id: memberId,
@@ -220,9 +253,14 @@ app.post('/delete-member', async (c) => {
   }
 });
 
-// Void transaction - secure server-side operation
+// Void transaction (requires auth)
 app.post('/void-transaction', async (c) => {
   try {
+    const auth = await verifyAuth(c);
+    if (!auth) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401, corsHeaders);
+    }
+
     const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
     
     if (!checkRateLimit(clientIp)) {
@@ -244,7 +282,6 @@ app.post('/void-transaction', async (c) => {
     const inputHash = await hashPassword(password);
     const supabase = getSupabaseClient();
     
-    // Use the secure database function for atomic void
     const { data, error } = await supabase.rpc('admin_void_transaction', {
       p_password_hash: inputHash,
       p_transaction_id: transactionId
@@ -269,9 +306,14 @@ app.post('/void-transaction', async (c) => {
   }
 });
 
-// Refund transaction - secure server-side operation with balance/card restoration
+// Refund transaction (requires auth)
 app.post('/refund-transaction', async (c) => {
   try {
+    const auth = await verifyAuth(c);
+    if (!auth) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401, corsHeaders);
+    }
+
     const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
     
     if (!checkRateLimit(clientIp)) {
@@ -321,32 +363,22 @@ app.post('/refund-transaction', async (c) => {
     if (subTransactions && subTransactions.length > 0) {
       for (const sub of subTransactions) {
         if (sub.type === 'card' && sub.cardId) {
-          // Restore card count
-          const { error: cardError } = await supabase
+          const { data: card } = await supabase
             .from('member_cards')
-            .update({ remaining_count: supabase.rpc('increment_card_count', { card_id: sub.cardId }) })
-            .eq('id', sub.cardId);
+            .select('remaining_count')
+            .eq('id', sub.cardId)
+            .single();
           
-          // Fallback: direct increment if RPC doesn't exist
-          if (cardError) {
-            const { data: card } = await supabase
+          if (card) {
+            await supabase
               .from('member_cards')
-              .select('remaining_count')
-              .eq('id', sub.cardId)
-              .single();
-            
-            if (card) {
-              await supabase
-                .from('member_cards')
-                .update({ remaining_count: card.remaining_count + 1 })
-                .eq('id', sub.cardId);
-            }
+              .update({ remaining_count: card.remaining_count + 1 })
+              .eq('id', sub.cardId);
           }
           fundTrail.push(`次卡退回1次 (¥${sub.amount})`);
         }
         
         if (sub.type === 'balance') {
-          // Restore balance
           const { data: member } = await supabase
             .from('members')
             .select('balance')
@@ -370,7 +402,6 @@ app.post('/refund-transaction', async (c) => {
         }
       }
     } else {
-      // Handle old format transactions without subTransactions
       if (paymentMethod === 'balance') {
         const { data: member } = await supabase
           .from('members')
@@ -393,17 +424,14 @@ app.post('/refund-transaction', async (c) => {
       }
     }
     
-    // Calculate total refund amount including price_diff
     const priceDiffAmount = subTransactions?.find((s: { type: string }) => s.type === 'price_diff')?.amount || 0;
     totalRefundAmount = originalAmount + priceDiffAmount;
     
-    // Void the original transaction
     await supabase
       .from('transactions')
       .update({ voided: true })
       .eq('id', transactionId);
     
-    // Create refund transaction record
     const priceDiffSub = subTransactions?.find((s: { type: string }) => s.type === 'price_diff');
     const manualRefundNote = priceDiffSub 
       ? ` [需手动退还${priceDiffSub.paymentMethod === 'wechat' ? '微信' : priceDiffSub.paymentMethod === 'alipay' ? '支付宝' : '现金'}¥${priceDiffSub.amount}]`
@@ -421,7 +449,6 @@ app.post('/refund-transaction', async (c) => {
         sub_transactions: subTransactions || null,
       });
     
-    // Log the action
     await supabase
       .from('audit_logs')
       .insert({
@@ -450,72 +477,12 @@ app.post('/refund-transaction', async (c) => {
   }
 });
 
-// Legacy endpoint for backwards compatibility
-app.post('/', async (c) => {
-  try {
-    const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
-    
-    if (!checkRateLimit(clientIp)) {
-      return c.json({ 
-        success: false, 
-        error: 'Too many attempts. Please try again later.' 
-      }, 429, corsHeaders);
-    }
-    
-    const { password, storedHash } = await c.req.json();
-    
-    if (!password) {
-      return c.json({ 
-        success: false, 
-        error: 'Password is required' 
-      }, 400, corsHeaders);
-    }
-    
-    const inputHash = await hashPassword(password);
-    
-    // If storedHash is provided, compare directly (legacy mode)
-    if (storedHash) {
-      const isValid = storedHash === inputHash;
-      return c.json({ 
-        success: isValid,
-        hash: inputHash
-      }, 200, corsHeaders);
-    }
-    
-    // Otherwise use secure database function
-    const supabase = getSupabaseClient();
-    const { data, error } = await supabase.rpc('verify_admin_password', {
-      input_password_hash: inputHash
-    });
-    
-    if (error) {
-      console.error('Error verifying password:', error);
-      return c.json({ 
-        success: false, 
-        error: 'Verification failed' 
-      }, 500, corsHeaders);
-    }
-    
-    return c.json({ 
-      success: data === true,
-      hash: inputHash
-    }, 200, corsHeaders);
-    
-  } catch (error) {
-    console.error('Error verifying password:', error);
-    return c.json({ 
-      success: false, 
-      error: 'Internal server error' 
-    }, 500, corsHeaders);
-  }
-});
-
 // Health check
 app.get('/', (c) => {
   return c.json({ 
     status: 'ok',
     message: 'Password verification service',
-    version: '2.0.0'
+    version: '3.0.0'
   }, 200, corsHeaders);
 });
 
