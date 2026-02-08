@@ -1,6 +1,8 @@
 // Server-side admin API client for secure operations
 // All sensitive operations go through Edge Functions with server-side password verification
 
+import { supabase } from "@/integrations/supabase/client";
+
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const EDGE_FUNCTION_URL = `${SUPABASE_URL}/functions/v1/verify-password`;
 
@@ -10,13 +12,23 @@ interface ApiResponse<T = unknown> {
   data?: T;
 }
 
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (session?.access_token) {
+    headers['Authorization'] = `Bearer ${session.access_token}`;
+  }
+  return headers;
+}
+
 async function callEdgeFunction<T>(endpoint: string, body: Record<string, unknown>): Promise<ApiResponse<T>> {
   try {
+    const headers = await getAuthHeaders();
     const response = await fetch(`${EDGE_FUNCTION_URL}${endpoint}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers,
       body: JSON.stringify(body),
     });
 
