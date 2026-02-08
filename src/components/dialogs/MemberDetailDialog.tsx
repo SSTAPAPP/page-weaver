@@ -16,13 +16,16 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useStore } from "@/stores/useStore";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useMemberById, useTransactions, useUpdateMember } from "@/hooks/useCloudData";
+import { memberService } from "@/services/memberService";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/hooks/useCloudData";
 import { useToast } from "@/hooks/use-toast";
 import { Phone, Calendar, CreditCard, Wallet, Pencil, Trash2, Save, X, History, ArrowUpCircle, ArrowDownCircle, Link2 } from "lucide-react";
 import { MemberDeleteWithRefundDialog } from "@/components/dialogs/MemberDeleteWithRefundDialog";
 import type { Transaction } from "@/types";
 
-// Transaction type mapping for consistent display
 const typeMap = {
   recharge: { label: "充值", icon: ArrowUpCircle, color: "text-chart-2", bgColor: "bg-chart-2/10", borderColor: "border-chart-2/20" },
   consume: { label: "消费", icon: ArrowDownCircle, color: "text-destructive", bgColor: "bg-destructive/10", borderColor: "border-destructive/20" },
@@ -31,7 +34,6 @@ const typeMap = {
   price_diff: { label: "补差价", icon: ArrowDownCircle, color: "text-chart-1", bgColor: "bg-chart-1/10", borderColor: "border-chart-1/20" },
 };
 
-// Grouped transaction type for member detail view
 interface GroupedTransaction {
   mainTransaction: Transaction;
   refundTransaction?: Transaction;
@@ -45,8 +47,11 @@ interface MemberDetailDialogProps {
 
 export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetailDialogProps) {
   const { toast } = useToast();
-  const { getMember, updateMember, transactions, isPhoneUnique } = useStore();
-  
+  const queryClient = useQueryClient();
+  const { data: member, isLoading: isMemberLoading } = useMemberById(memberId);
+  const { data: allTransactions = [] } = useTransactions();
+  const updateMember = useUpdateMember();
+
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
@@ -54,49 +59,33 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [phoneError, setPhoneError] = useState("");
 
-  const member = memberId ? getMember(memberId) : null;
-
-  // Get member transactions and group them like the main Transactions page
+  // Get member transactions from cloud data
   const memberTransactions = useMemo(() => {
     if (!member) return [];
-    return transactions.filter((t) => t.memberId === member.id);
-  }, [transactions, member]);
-  
-  // Group transactions: consumption with related refund
+    return allTransactions.filter((t) => t.memberId === member.id);
+  }, [allTransactions, member]);
+
   const groupedTransactions = useMemo(() => {
     const groups: GroupedTransaction[] = [];
     const processedIds = new Set<string>();
-    
-    // Build refund map
     const refundMap = new Map<string, Transaction>();
     memberTransactions.forEach((tx) => {
       if (tx.type === 'refund' && tx.relatedTransactionId) {
         refundMap.set(tx.relatedTransactionId, tx);
       }
     });
-    
     memberTransactions.forEach((tx) => {
       if (processedIds.has(tx.id)) return;
-      
-      // Skip refunds with related transactions (they'll be shown as sub-records)
       if (tx.type === 'refund' && tx.relatedTransactionId) {
         processedIds.add(tx.id);
         return;
       }
-      
-      // For non-refund transactions, check if there's a related refund
       const refundTx = refundMap.get(tx.id);
-      groups.push({
-        mainTransaction: tx,
-        refundTransaction: refundTx,
-      });
+      groups.push({ mainTransaction: tx, refundTransaction: refundTx });
       processedIds.add(tx.id);
-      if (refundTx) {
-        processedIds.add(refundTx.id);
-      }
+      if (refundTx) processedIds.add(refundTx.id);
     });
-    
-    return groups.slice(0, 20); // Limit to 20 groups
+    return groups.slice(0, 20);
   }, [memberTransactions]);
 
   const handleStartEdit = () => {
@@ -113,9 +102,8 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
     setPhoneError("");
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!member) return;
-    
     if (!editName.trim()) {
       toast({ title: "请输入姓名", variant: "destructive" });
       return;
@@ -124,23 +112,26 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
       toast({ title: "请输入正确的手机号", variant: "destructive" });
       return;
     }
-
-    // Check phone uniqueness (exclude current member)
-    if (editPhone !== member.phone && !isPhoneUnique(editPhone, member.id)) {
-      setPhoneError("该手机号已被其他会员使用");
-      toast({ title: "手机号重复", description: "该手机号已被其他会员使用", variant: "destructive" });
-      return;
+    if (editPhone !== member.phone) {
+      const isUnique = await memberService.isPhoneUnique(editPhone, member.id);
+      if (!isUnique) {
+        setPhoneError("该手机号已被其他会员使用");
+        toast({ title: "手机号重复", description: "该手机号已被其他会员使用", variant: "destructive" });
+        return;
+      }
     }
 
-    updateMember(member.id, {
-      name: editName.trim(),
-      phone: editPhone.trim(),
-      gender: editGender,
-    });
-
-    toast({ title: "修改成功", description: "会员信息已更新" });
-    setIsEditing(false);
-    setPhoneError("");
+    try {
+      await updateMember.mutateAsync({
+        id: member.id,
+        updates: { name: editName.trim(), phone: editPhone.trim(), gender: editGender },
+      });
+      toast({ title: "修改成功", description: "会员信息已更新" });
+      setIsEditing(false);
+      setPhoneError("");
+    } catch (error) {
+      toast({ title: "修改失败", variant: "destructive" });
+    }
   };
 
   const handleClose = () => {
@@ -150,11 +141,46 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
   };
 
   const handleMemberDeleted = () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.members });
+    queryClient.invalidateQueries({ queryKey: queryKeys.cloudCounts });
     onOpenChange(false);
   };
 
-  // Early return after all hooks
-  if (!member) return null;
+  if (!memberId) return null;
+
+  if (isMemberLoading) {
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-h-[85vh] max-w-lg">
+          <DialogHeader>
+            <DialogTitle>会员详情</DialogTitle>
+            <DialogDescription>加载中...</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 p-4">
+            <Skeleton className="h-20 w-full" />
+            <div className="grid grid-cols-2 gap-3">
+              <Skeleton className="h-16" />
+              <Skeleton className="h-16" />
+            </div>
+            <Skeleton className="h-40 w-full" />
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
+  if (!member) {
+    return (
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-h-[85vh] max-w-lg">
+          <DialogHeader>
+            <DialogTitle>会员详情</DialogTitle>
+            <DialogDescription>未找到该会员</DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <>
@@ -162,52 +188,34 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
         <DialogContent className="max-h-[85vh] max-w-lg overflow-hidden flex flex-col">
           <DialogHeader className="pb-2">
             <DialogTitle>会员详情</DialogTitle>
-            <DialogDescription>
-              查看和管理会员信息
-            </DialogDescription>
+            <DialogDescription>查看和管理会员信息</DialogDescription>
           </DialogHeader>
 
           <ScrollArea className="flex-1 -mx-6 px-6">
             <div className="space-y-4 pb-4">
-              {/* 会员信息卡片 - 紧凑版 */}
               {isEditing ? (
                 <div className="space-y-3 rounded-lg border border-border p-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label htmlFor="edit-name" className="text-xs">姓名</Label>
-                      <Input
-                        id="edit-name"
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        placeholder="请输入姓名"
-                        className="h-9"
-                      />
+                      <Input id="edit-name" value={editName} onChange={(e) => setEditName(e.target.value)} placeholder="请输入姓名" className="h-9" />
                     </div>
                     <div className="space-y-1.5">
                       <Label htmlFor="edit-phone" className="text-xs">手机号</Label>
                       <Input
                         id="edit-phone"
                         value={editPhone}
-                        onChange={(e) => {
-                          setEditPhone(e.target.value);
-                          setPhoneError("");
-                        }}
+                        onChange={(e) => { setEditPhone(e.target.value); setPhoneError(""); }}
                         placeholder="请输入手机号"
                         maxLength={11}
                         className={`h-9 ${phoneError ? "border-destructive" : ""}`}
                       />
-                      {phoneError && (
-                        <p className="text-xs text-destructive">{phoneError}</p>
-                      )}
+                      {phoneError && <p className="text-xs text-destructive">{phoneError}</p>}
                     </div>
                   </div>
                   <div className="space-y-1.5">
                     <Label className="text-xs">性别</Label>
-                    <RadioGroup
-                      value={editGender}
-                      onValueChange={(v) => setEditGender(v as "male" | "female")}
-                      className="flex gap-4"
-                    >
+                    <RadioGroup value={editGender} onValueChange={(v) => setEditGender(v as "male" | "female")} className="flex gap-4">
                       <div className="flex items-center space-x-2">
                         <RadioGroupItem value="male" id="edit-male" />
                         <Label htmlFor="edit-male" className="text-sm">男</Label>
@@ -232,20 +240,13 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                       </Badge>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
-                      <span className="flex items-center gap-1">
-                        <Phone className="h-3 w-3" />
-                        {member.phone}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3" />
-                        {format(new Date(member.createdAt), "yyyy-MM-dd", { locale: zhCN })}
-                      </span>
+                      <span className="flex items-center gap-1"><Phone className="h-3 w-3" />{member.phone}</span>
+                      <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{format(new Date(member.createdAt), "yyyy-MM-dd", { locale: zhCN })}</span>
                     </div>
                   </div>
                 </div>
               )}
 
-              {/* 账户统计 - 横向紧凑 */}
               <div className="grid grid-cols-2 gap-3">
                 <div className="flex items-center gap-3 rounded-lg border border-border bg-chart-2/5 p-3">
                   <Wallet className="h-5 w-5 text-chart-2" />
@@ -263,19 +264,11 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                 </div>
               </div>
 
-              {/* Tabs */}
               <Tabs defaultValue="cards" className="w-full">
                 <TabsList className="grid w-full grid-cols-2 h-9">
-                  <TabsTrigger value="cards" className="gap-1.5 text-xs">
-                    <CreditCard className="h-3.5 w-3.5" />
-                    次卡详情
-                  </TabsTrigger>
-                  <TabsTrigger value="transactions" className="gap-1.5 text-xs">
-                    <History className="h-3.5 w-3.5" />
-                    交易记录
-                  </TabsTrigger>
+                  <TabsTrigger value="cards" className="gap-1.5 text-xs"><CreditCard className="h-3.5 w-3.5" />次卡详情</TabsTrigger>
+                  <TabsTrigger value="transactions" className="gap-1.5 text-xs"><History className="h-3.5 w-3.5" />交易记录</TabsTrigger>
                 </TabsList>
-                
                 <TabsContent value="cards" className="mt-3">
                   {member.cards.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-6 text-center">
@@ -285,15 +278,10 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                   ) : (
                     <div className="space-y-2 max-h-[180px] overflow-auto">
                       {member.cards.map((card) => (
-                        <div
-                          key={card.id}
-                          className="flex items-center justify-between rounded-lg border border-border p-2.5 text-sm"
-                        >
+                        <div key={card.id} className="flex items-center justify-between rounded-lg border border-border p-2.5 text-sm">
                           <div>
                             <p className="font-medium">{card.templateName}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(card.createdAt), "yyyy-MM-dd", { locale: zhCN })}
-                            </p>
+                            <p className="text-xs text-muted-foreground">{format(new Date(card.createdAt), "yyyy-MM-dd", { locale: zhCN })}</p>
                           </div>
                           <Badge variant={card.remainingCount <= 1 ? "destructive" : "default"} className="text-xs">
                             剩余 {card.remainingCount} 次
@@ -303,7 +291,6 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                     </div>
                   )}
                 </TabsContent>
-                
                 <TabsContent value="transactions" className="mt-3">
                   {groupedTransactions.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-6 text-center">
@@ -322,11 +309,7 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                         const hasRefund = !!refundTx;
 
                         return (
-                          <div
-                            key={tx.id}
-                            className={`rounded-lg border border-border overflow-hidden ${isVoided ? "opacity-50" : ""}`}
-                          >
-                            {/* Main transaction */}
+                          <div key={tx.id} className={`rounded-lg border border-border overflow-hidden ${isVoided ? "opacity-50" : ""}`}>
                             <div className="flex items-center justify-between p-2.5 text-sm">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
                                 <div className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full ${typeInfo.bgColor}`}>
@@ -334,46 +317,24 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5 flex-wrap">
-                                    <p className={`font-medium truncate ${isVoided ? "line-through text-muted-foreground" : ""}`}>
-                                      {tx.description}
-                                    </p>
-                                    <Badge 
-                                      variant="outline" 
-                                      className={`text-xs shrink-0 ${isVoided ? "bg-muted text-muted-foreground border-muted" : `${typeInfo.bgColor} ${typeInfo.color} ${typeInfo.borderColor}`}`}
-                                    >
+                                    <p className={`font-medium truncate ${isVoided ? "line-through text-muted-foreground" : ""}`}>{tx.description}</p>
+                                    <Badge variant="outline" className={`text-xs shrink-0 ${isVoided ? "bg-muted text-muted-foreground border-muted" : `${typeInfo.bgColor} ${typeInfo.color} ${typeInfo.borderColor}`}`}>
                                       {typeInfo.label}
                                     </Badge>
-                                    {isVoided && (
-                                      <Badge variant="destructive" className="text-xs shrink-0">
-                                        已作废
-                                      </Badge>
-                                    )}
+                                    {isVoided && <Badge variant="destructive" className="text-xs shrink-0">已作废</Badge>}
                                     {hasRefund && !isVoided && (
                                       <Badge variant="outline" className="text-xs shrink-0 text-chart-4 border-chart-4/30">
-                                        <Link2 className="h-2.5 w-2.5 mr-0.5" />
-                                        已退款
+                                        <Link2 className="h-2.5 w-2.5 mr-0.5" />已退款
                                       </Badge>
                                     )}
                                   </div>
-                                  <p className="text-xs text-muted-foreground mt-0.5">
-                                    {format(new Date(tx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
-                                  </p>
+                                  <p className="text-xs text-muted-foreground mt-0.5">{format(new Date(tx.createdAt), "MM-dd HH:mm", { locale: zhCN })}</p>
                                 </div>
                               </div>
-                              <span
-                                className={`font-semibold shrink-0 ml-2 ${
-                                  isVoided 
-                                    ? "line-through text-muted-foreground" 
-                                    : isPositive 
-                                      ? "text-chart-2" 
-                                      : "text-destructive"
-                                }`}
-                              >
+                              <span className={`font-semibold shrink-0 ml-2 ${isVoided ? "line-through text-muted-foreground" : isPositive ? "text-chart-2" : "text-destructive"}`}>
                                 {isPositive ? "+" : "-"}¥{tx.amount.toFixed(2)}
                               </span>
                             </div>
-                            
-                            {/* Related refund transaction */}
                             {refundTx && (
                               <div className="flex items-center justify-between px-2.5 py-2 border-t border-dashed border-border bg-chart-4/5">
                                 <div className="flex items-center gap-2">
@@ -382,14 +343,10 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                                   </div>
                                   <div>
                                     <p className="text-xs font-medium">退款记录</p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {format(new Date(refundTx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
-                                    </p>
+                                    <p className="text-xs text-muted-foreground">{format(new Date(refundTx.createdAt), "MM-dd HH:mm", { locale: zhCN })}</p>
                                   </div>
                                 </div>
-                                <span className="text-xs font-semibold text-chart-4">
-                                  +¥{refundTx.amount.toFixed(2)}
-                                </span>
+                                <span className="text-xs font-semibold text-chart-4">+¥{refundTx.amount.toFixed(2)}</span>
                               </div>
                             )}
                           </div>
@@ -402,32 +359,23 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
             </div>
           </ScrollArea>
 
-          {/* Footer with action buttons */}
-          <DialogFooter className="pt-4 border-t border-border gap-2 sm:gap-2">
+          <DialogFooter className="flex-row gap-2 pt-2 border-t border-border">
             {isEditing ? (
               <>
-                <Button variant="outline" onClick={handleCancelEdit} className="gap-1.5">
-                  <X className="h-4 w-4" />
-                  取消
+                <Button variant="ghost" size="sm" onClick={handleCancelEdit} className="flex-1">
+                  <X className="mr-1 h-4 w-4" />取消
                 </Button>
-                <Button onClick={handleSaveEdit} className="gap-1.5">
-                  <Save className="h-4 w-4" />
-                  保存
+                <Button size="sm" onClick={handleSaveEdit} className="flex-1">
+                  <Save className="mr-1 h-4 w-4" />保存
                 </Button>
               </>
             ) : (
               <>
-                <Button
-                  variant="destructive"
-                  onClick={() => setDeleteDialogOpen(true)}
-                  className="gap-1.5"
-                >
-                  <Trash2 className="h-4 w-4" />
-                  删除
+                <Button variant="outline" size="sm" onClick={handleStartEdit} className="flex-1">
+                  <Pencil className="mr-1 h-4 w-4" />编辑
                 </Button>
-                <Button variant="outline" onClick={handleStartEdit} className="gap-1.5">
-                  <Pencil className="h-4 w-4" />
-                  编辑
+                <Button variant="destructive" size="sm" onClick={() => setDeleteDialogOpen(true)} className="flex-1">
+                  <Trash2 className="mr-1 h-4 w-4" />删除
                 </Button>
               </>
             )}
@@ -435,13 +383,14 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
         </DialogContent>
       </Dialog>
 
-      {/* 删除确认弹窗 - 使用带退款计算的新弹窗 */}
-      <MemberDeleteWithRefundDialog
-        member={member}
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        onDeleted={handleMemberDeleted}
-      />
+      {member && (
+        <MemberDeleteWithRefundDialog
+          open={deleteDialogOpen}
+          onOpenChange={setDeleteDialogOpen}
+          member={member}
+          onDeleted={handleMemberDeleted}
+        />
+      )}
     </>
   );
 }
