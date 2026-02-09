@@ -29,9 +29,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useStore } from "@/stores/useStore";
-import { useCloudCounts } from "@/hooks/useCloudData";
+import { useCloudCounts, useSettings, useUpdateSettings } from "@/hooks/useCloudData";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/useTheme";
+import { settingsService } from "@/services/settingsService";
 import { cn } from "@/lib/utils";
 import { updateAdminPassword } from "@/lib/adminApi";
 import { getStorageUsage, exportToCSV, printReport } from "@/lib/print";
@@ -85,7 +86,18 @@ export default function Settings() {
     auditLogs, clearAuditLogs, syncConfig, setSyncConfig
   } = useStore();
   const { data: cloudCounts } = useCloudCounts();
+  const { data: cloudSettings } = useSettings();
+  const updateCloudSettings = useUpdateSettings();
   const { theme, setTheme, fontSize, setFontSize } = useTheme();
+
+  // Initialize from cloud settings
+  useEffect(() => {
+    if (cloudSettings) {
+      setEditShopName(cloudSettings.shopInfo.name);
+      setEditShopAddress(cloudSettings.shopInfo.address);
+      setEditShopPhone(cloudSettings.shopInfo.phone);
+    }
+  }, [cloudSettings]);
 
   const [activeCategory, setActiveCategory] = useState<SettingsCategory>("shop");
   const [currentPassword, setCurrentPassword] = useState("");
@@ -215,17 +227,25 @@ export default function Settings() {
   const handleSaveShopInfo = async () => {
     setIsSavingShop(true);
     try {
-      await new Promise((r) => setTimeout(r, 300));
-      setShopInfo({ name: editShopName, address: editShopAddress, phone: editShopPhone });
-      toast({ title: "保存成功", description: "店铺信息已更新" });
+      const shopInfoData = { name: editShopName, address: editShopAddress, phone: editShopPhone };
+      await settingsService.update({ shopInfo: shopInfoData });
+      setShopInfo(shopInfoData);
+      toast({ title: "保存成功", description: "店铺信息已更新并同步到云端" });
+    } catch (error) {
+      toast({ title: "保存失败", description: "请检查网络连接", variant: "destructive" });
     } finally {
       setIsSavingShop(false);
     }
   };
 
-  const handleSaveSyncConfig = () => {
-    setSyncConfig({ apiUrl: syncApiUrl });
-    toast({ title: "保存成功", description: "同步配置已更新" });
+  const handleSaveSyncConfig = async () => {
+    try {
+      await settingsService.update({ syncConfig: { ...syncConfig, apiUrl: syncApiUrl } });
+      setSyncConfig({ apiUrl: syncApiUrl });
+      toast({ title: "保存成功", description: "同步配置已更新并保存到云端" });
+    } catch (error) {
+      toast({ title: "保存失败", variant: "destructive" });
+    }
   };
 
   const fontSizeValue = ["xs", "sm", "base", "lg", "xl"].indexOf(fontSize);
