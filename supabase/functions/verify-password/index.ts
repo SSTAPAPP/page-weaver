@@ -1,33 +1,26 @@
 import { Hono } from "https://deno.land/x/hono@v3.4.1/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
-};
+// Dynamic CORS based on environment
+function getCorsHeaders(): Record<string, string> {
+  const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN') || '*';
+  const env = Deno.env.get('ENVIRONMENT') || 'development';
+  return {
+    'Access-Control-Allow-Origin': env === 'production' ? allowedOrigin : '*',
+    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
+  };
+}
 
 const app = new Hono();
 
-// Rate limiting storage (in-memory for simplicity)
-const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_MAX = 5;
-const RATE_LIMIT_WINDOW = 60000; // 1 minute
-
-function checkRateLimit(ip: string): boolean {
-  const now = Date.now();
-  const record = rateLimitMap.get(ip);
-  
-  if (!record || now > record.resetTime) {
-    rateLimitMap.set(ip, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
-    return true;
-  }
-  
-  if (record.count >= RATE_LIMIT_MAX) {
-    return false;
-  }
-  
-  record.count++;
-  return true;
+// Server-side password hashing with environment salt
+async function hashPassword(password: string): Promise<string> {
+  const salt = Deno.env.get('ADMIN_PASSWORD_SALT') || 'ffk-shop-2024-salt';
+  const encoder = new TextEncoder();
+  const data = encoder.encode(password + salt);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 // Verify JWT and return authenticated user ID
@@ -43,28 +36,27 @@ async function verifyAuth(c: any): Promise<{ userId: string } | null> {
     global: { headers: { Authorization: authHeader } }
   });
 
-  const token = authHeader.replace('Bearer ', '');
-  const { data, error } = await supabase.auth.getClaims(token);
-  if (error || !data?.claims) {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
     return null;
   }
 
-  return { userId: data.claims.sub as string };
+  return { userId: user.id };
 }
 
-// Handle CORS preflight
-app.options('*', (c) => {
-  return new Response(null, { headers: corsHeaders });
-});
-
-// Hash function matching client-side implementation
-async function hashPassword(password: string): Promise<string> {
-  const SALT = 'ffk-shop-2024-salt';
-  const encoder = new TextEncoder();
-  const data = encoder.encode(password + SALT);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+// DB-based rate limiting via check_rate_limit RPC
+async function checkRateLimit(ip: string): Promise<boolean> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc('check_rate_limit', {
+    p_key: `password_verify:${ip}`,
+    p_max: 5,
+    p_window_seconds: 60,
+  });
+  if (error) {
+    console.error('Rate limit check failed:', error);
+    return true; // fail open to avoid blocking legitimate requests
+  }
+  return data === true;
 }
 
 // Get Supabase client with service role for secure operations
@@ -74,8 +66,14 @@ function getSupabaseClient() {
   return createClient(supabaseUrl, supabaseServiceKey);
 }
 
+// Handle CORS preflight
+app.options('*', (c) => {
+  return new Response(null, { headers: getCorsHeaders() });
+});
+
 // Verify password endpoint (requires auth)
 app.post('/verify', async (c) => {
+  const corsHeaders = getCorsHeaders();
   try {
     const auth = await verifyAuth(c);
     if (!auth) {
@@ -84,7 +82,7 @@ app.post('/verify', async (c) => {
 
     const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
     
-    if (!checkRateLimit(clientIp)) {
+    if (!(await checkRateLimit(clientIp))) {
       return c.json({ 
         success: false, 
         error: 'Too many attempts. Please try again later.' 
@@ -116,8 +114,7 @@ app.post('/verify', async (c) => {
     }
     
     return c.json({ 
-      success: data === true,
-      hash: data === true ? inputHash : undefined
+      success: data === true
     }, 200, corsHeaders);
     
   } catch (error) {
@@ -131,6 +128,7 @@ app.post('/verify', async (c) => {
 
 // Update password endpoint (requires auth)
 app.post('/update-password', async (c) => {
+  const corsHeaders = getCorsHeaders();
   try {
     const auth = await verifyAuth(c);
     if (!auth) {
@@ -139,7 +137,7 @@ app.post('/update-password', async (c) => {
 
     const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
     
-    if (!checkRateLimit(clientIp)) {
+    if (!(await checkRateLimit(clientIp))) {
       return c.json({ 
         success: false, 
         error: 'Too many attempts. Please try again later.' 
@@ -172,7 +170,7 @@ app.post('/update-password', async (c) => {
     }
     
     const newHash = await hashPassword(newPassword);
-    const { data, error } = await supabase.rpc('update_admin_password', {
+    const { error } = await supabase.rpc('update_admin_password', {
       new_password_hash: newHash
     });
     
@@ -185,8 +183,7 @@ app.post('/update-password', async (c) => {
     }
     
     return c.json({ 
-      success: true,
-      hash: newHash
+      success: true
     }, 200, corsHeaders);
     
   } catch (error) {
@@ -200,6 +197,7 @@ app.post('/update-password', async (c) => {
 
 // Delete member with refund (requires auth)
 app.post('/delete-member', async (c) => {
+  const corsHeaders = getCorsHeaders();
   try {
     const auth = await verifyAuth(c);
     if (!auth) {
@@ -208,7 +206,7 @@ app.post('/delete-member', async (c) => {
 
     const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
     
-    if (!checkRateLimit(clientIp)) {
+    if (!(await checkRateLimit(clientIp))) {
       return c.json({ 
         success: false, 
         error: 'Too many attempts. Please try again later.' 
@@ -255,6 +253,7 @@ app.post('/delete-member', async (c) => {
 
 // Void transaction (requires auth)
 app.post('/void-transaction', async (c) => {
+  const corsHeaders = getCorsHeaders();
   try {
     const auth = await verifyAuth(c);
     if (!auth) {
@@ -263,7 +262,7 @@ app.post('/void-transaction', async (c) => {
 
     const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
     
-    if (!checkRateLimit(clientIp)) {
+    if (!(await checkRateLimit(clientIp))) {
       return c.json({ 
         success: false, 
         error: 'Too many attempts. Please try again later.' 
@@ -308,6 +307,7 @@ app.post('/void-transaction', async (c) => {
 
 // Refund transaction (requires auth)
 app.post('/refund-transaction', async (c) => {
+  const corsHeaders = getCorsHeaders();
   try {
     const auth = await verifyAuth(c);
     if (!auth) {
@@ -316,7 +316,7 @@ app.post('/refund-transaction', async (c) => {
 
     const clientIp = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown';
     
-    if (!checkRateLimit(clientIp)) {
+    if (!(await checkRateLimit(clientIp))) {
       return c.json({ 
         success: false, 
         error: 'Too many attempts. Please try again later.' 
@@ -379,18 +379,10 @@ app.post('/refund-transaction', async (c) => {
         }
         
         if (sub.type === 'balance') {
-          const { data: member } = await supabase
-            .from('members')
-            .select('balance')
-            .eq('id', memberId)
-            .single();
-          
-          if (member) {
-            await supabase
-              .from('members')
-              .update({ balance: (member.balance || 0) + sub.amount })
-              .eq('id', memberId);
-          }
+          await supabase.rpc('increment_member_balance', {
+            p_member_id: memberId,
+            p_amount: sub.amount,
+          });
           fundTrail.push(`余额退回 ¥${sub.amount}`);
         }
         
@@ -403,18 +395,10 @@ app.post('/refund-transaction', async (c) => {
       }
     } else {
       if (paymentMethod === 'balance') {
-        const { data: member } = await supabase
-          .from('members')
-          .select('balance')
-          .eq('id', memberId)
-          .single();
-        
-        if (member) {
-          await supabase
-            .from('members')
-            .update({ balance: (member.balance || 0) + originalAmount })
-            .eq('id', memberId);
-        }
+        await supabase.rpc('increment_member_balance', {
+          p_member_id: memberId,
+          p_amount: originalAmount,
+        });
         fundTrail.push(`余额退回 ¥${originalAmount}`);
       } else if (paymentMethod && paymentMethod !== 'balance') {
         const paymentMethodMap: Record<string, string> = {
@@ -482,8 +466,8 @@ app.get('/', (c) => {
   return c.json({ 
     status: 'ok',
     message: 'Password verification service',
-    version: '3.0.0'
-  }, 200, corsHeaders);
+    version: '4.0.0'
+  }, 200, getCorsHeaders());
 });
 
 Deno.serve(app.fetch);

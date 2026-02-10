@@ -58,12 +58,11 @@ async function callEdgeFunction<T>(endpoint: string, body: Record<string, unknow
 /**
  * Verify admin password server-side
  */
-export async function verifyAdminPassword(password: string): Promise<{ success: boolean; error?: string; hash?: string }> {
-  const response = await callEdgeFunction<{ success: boolean; hash?: string }>('/verify', { password });
+export async function verifyAdminPassword(password: string): Promise<{ success: boolean; error?: string }> {
+  const response = await callEdgeFunction<{ success: boolean }>('/verify', { password });
   return {
     success: response.success && response.data?.success === true,
     error: response.error,
-    hash: response.data?.hash,
   };
 }
 
@@ -73,15 +72,14 @@ export async function verifyAdminPassword(password: string): Promise<{ success: 
 export async function updateAdminPassword(
   currentPassword: string | null, 
   newPassword: string
-): Promise<{ success: boolean; error?: string; hash?: string }> {
-  const response = await callEdgeFunction<{ success: boolean; hash?: string }>('/update-password', { 
+): Promise<{ success: boolean; error?: string }> {
+  const response = await callEdgeFunction<{ success: boolean }>('/update-password', { 
     currentPassword, 
     newPassword 
   });
   return {
     success: response.success && response.data?.success === true,
     error: response.error,
-    hash: response.data?.hash,
   };
 }
 
