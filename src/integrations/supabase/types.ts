@@ -222,6 +222,24 @@ export type Database = {
         }
         Relationships: []
       }
+      rate_limits: {
+        Row: {
+          count: number
+          key: string
+          window_start: string
+        }
+        Insert: {
+          count?: number
+          key: string
+          window_start?: string
+        }
+        Update: {
+          count?: number
+          key?: string
+          window_start?: string
+        }
+        Relationships: []
+      }
       services: {
         Row: {
           category: string
@@ -413,7 +431,33 @@ export type Database = {
         Args: { p_password_hash: string; p_transaction_id: string }
         Returns: Json
       }
+      check_rate_limit: {
+        Args: { p_key: string; p_max?: number; p_window_seconds?: number }
+        Returns: boolean
+      }
+      decrement_member_balance: {
+        Args: { p_amount: number; p_member_id: string }
+        Returns: number
+      }
       get_admin_password_hash: { Args: never; Returns: string }
+      increment_member_balance: {
+        Args: { p_amount: number; p_member_id: string }
+        Returns: number
+      }
+      process_checkout: {
+        Args: {
+          p_balance_deduct: number
+          p_card_deduct_total: number
+          p_cart: Json
+          p_cash_need: number
+          p_is_walk_in: boolean
+          p_member_id: string
+          p_member_name: string
+          p_payment_method: string
+          p_total: number
+        }
+        Returns: Json
+      }
       update_admin_password: {
         Args: { new_password_hash: string }
         Returns: boolean
