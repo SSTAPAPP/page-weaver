@@ -17,7 +17,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { useStore } from "@/stores/useStore";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { refundTransaction as refundTransactionApi } from "@/lib/adminApi";
 import { 
   ArrowUpCircle, 
@@ -59,7 +59,7 @@ export function TransactionRefundDialog({
   open,
   onOpenChange,
 }: TransactionRefundDialogProps) {
-  const { toast } = useToast();
+  
   const { getRelatedTransactions } = useStore();
   const [password, setPassword] = useState("");
   const [isRefunding, setIsRefunding] = useState(false);
@@ -110,8 +110,7 @@ export function TransactionRefundDialog({
 
       // Note: Parent component should refetch data after dialog closes
 
-      toast({
-        title: "退款成功",
+      toast.success("退款成功", {
         description: result.fundTrail && result.fundTrail.length > 0 
           ? result.fundTrail.join('；') 
           : `已退款 ¥${result.refundAmount?.toFixed(2) || transaction.amount.toFixed(2)}`,

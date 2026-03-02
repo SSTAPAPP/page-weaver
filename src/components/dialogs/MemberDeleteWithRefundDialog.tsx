@@ -15,7 +15,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useStore } from "@/stores/useStore";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { AlertTriangle, CreditCard, Calculator, Trash2 } from "lucide-react";
 import { deleteMemberWithRefund } from "@/lib/adminApi";
 import type { Member, MemberCard } from "@/types";
@@ -43,7 +43,7 @@ export function MemberDeleteWithRefundDialog({
   onOpenChange,
   onDeleted,
 }: MemberDeleteWithRefundDialogProps) {
-  const { toast } = useToast();
+  
   const { deleteMember, cardTemplates } = useStore();
   const [password, setPassword] = useState("");
   const [step, setStep] = useState<"refund" | "confirm">("refund");
@@ -106,21 +106,21 @@ export function MemberDeleteWithRefundDialog({
       );
 
       if (!result.success) {
-        toast({
-          title: result.error === 'Invalid admin password' ? "密码错误" : "操作失败",
-          description: result.error === 'Invalid admin password' 
-            ? "管理员密码不正确，请重试" 
-            : result.error || "删除会员失败，请重试",
-          variant: "destructive",
-        });
+        toast.error(
+          result.error === 'Invalid admin password' ? "密码错误" : "操作失败",
+          {
+            description: result.error === 'Invalid admin password' 
+              ? "管理员密码不正确，请重试" 
+              : result.error || "删除会员失败，请重试",
+          }
+        );
         return;
       }
 
       // Refresh local state by triggering deleteMember (for UI update)
       deleteMember(member.id);
 
-      toast({
-        title: "操作成功",
+      toast.success("操作成功", {
         description: totalRefund > 0 
           ? `已退款 ¥${totalRefund.toFixed(2)}，会员已删除`
           : "会员已删除",

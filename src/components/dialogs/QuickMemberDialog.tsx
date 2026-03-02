@@ -20,7 +20,7 @@ import { LoadingButton } from "@/components/ui/loading-button";
 import { FormField } from "@/components/ui/form-field";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useCardTemplates } from "@/hooks/useCloudData";
 import { memberService } from "@/services/memberService";
 import { transactionService } from "@/services/transactionService";
@@ -33,7 +33,6 @@ interface QuickMemberDialogProps {
 }
 
 export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps) {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: cardTemplates = [] } = useCardTemplates();
 
@@ -74,7 +73,6 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
     } else if (phone.length !== 11) {
       newErrors.phone = "请输入11位手机号";
     } else {
-      // Check phone uniqueness from cloud
       const isUnique = await memberService.isPhoneUnique(phone);
       if (!isUnique) {
         newErrors.phone = "手机号已被其他会员注册";
@@ -99,7 +97,6 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
 
     setIsSubmitting(true);
     try {
-      // Create member in cloud
       const member = await memberService.create({
         phone,
         name: name.trim(),
@@ -107,11 +104,10 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
         balance: 0,
       });
 
-      // Handle recharge
       if (action === "recharge" && rechargeAmount) {
         const amount = parseFloat(rechargeAmount);
         if (amount > 0) {
-          await memberService.updateBalance(member.id, amount);
+          await memberService.incrementBalance(member.id, amount);
           await transactionService.create({
             memberId: member.id,
             memberName: member.name,
@@ -145,14 +141,12 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
         }
       }
 
-      // Invalidate all relevant queries
       queryClient.invalidateQueries({ queryKey: queryKeys.members });
       queryClient.invalidateQueries({ queryKey: queryKeys.transactions });
       queryClient.invalidateQueries({ queryKey: queryKeys.todayStats });
       queryClient.invalidateQueries({ queryKey: queryKeys.cloudCounts });
 
-      toast({
-        title: "开卡成功",
+      toast.success("开卡成功", {
         description: `会员 ${name} 已成功注册`,
       });
 
@@ -160,7 +154,7 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
       onOpenChange(false);
     } catch (error) {
       console.error("Create member error:", error);
-      toast({ title: "开卡失败", description: "请检查网络连接后重试", variant: "destructive" });
+      toast.error("开卡失败", { description: "请检查网络连接后重试" });
     } finally {
       setIsSubmitting(false);
     }

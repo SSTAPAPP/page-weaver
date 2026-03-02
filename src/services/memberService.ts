@@ -202,6 +202,22 @@ export const memberService = {
     if (error) throw error;
   },
 
+  async incrementBalance(memberId: string, amount: number): Promise<void> {
+    const { error } = await supabase.rpc('increment_member_balance', {
+      p_member_id: memberId,
+      p_amount: amount,
+    });
+    if (error) throw error;
+  },
+
+  async decrementBalance(memberId: string, amount: number): Promise<void> {
+    const { error } = await supabase.rpc('decrement_member_balance', {
+      p_member_id: memberId,
+      p_amount: amount,
+    });
+    if (error) throw error;
+  },
+
   async search(query: string): Promise<Member[]> {
     // Sanitize input: escape SQL LIKE special characters and limit length
     const sanitized = query

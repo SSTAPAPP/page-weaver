@@ -21,7 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { LoadingButton } from "@/components/ui/loading-button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { useStore } from "@/stores/useStore";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { CalendarIcon, Search, User } from "lucide-react";
@@ -46,7 +46,7 @@ export function NewAppointmentDialog({
   onOpenChange,
   defaultDate = new Date(),
 }: NewAppointmentDialogProps) {
-  const { toast } = useToast();
+  
   const { members, services, addAppointment } = useStore();
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -102,8 +102,7 @@ export function NewAppointmentDialog({
         status: "pending",
       });
 
-      toast({
-        title: "预约成功",
+      toast.success("预约成功", {
         description: `${selectedMember.name} - ${format(date, "M月d日")} ${time}`,
       });
 

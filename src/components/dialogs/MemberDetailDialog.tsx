@@ -21,7 +21,7 @@ import { useMemberById, useTransactions, useUpdateMember } from "@/hooks/useClou
 import { memberService } from "@/services/memberService";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/hooks/useCloudData";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Phone, Calendar, CreditCard, Wallet, Pencil, Trash2, Save, X, History, ArrowUpCircle, ArrowDownCircle, Link2 } from "lucide-react";
 import { MemberDeleteWithRefundDialog } from "@/components/dialogs/MemberDeleteWithRefundDialog";
 import type { Transaction } from "@/types";
@@ -46,7 +46,7 @@ interface MemberDetailDialogProps {
 }
 
 export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetailDialogProps) {
-  const { toast } = useToast();
+  
   const queryClient = useQueryClient();
   const { data: member, isLoading: isMemberLoading } = useMemberById(memberId);
   const { data: allTransactions = [] } = useTransactions();
@@ -105,18 +105,18 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
   const handleSaveEdit = async () => {
     if (!member) return;
     if (!editName.trim()) {
-      toast({ title: "请输入姓名", variant: "destructive" });
+      toast.error("请输入姓名");
       return;
     }
     if (!editPhone.trim() || editPhone.length !== 11) {
-      toast({ title: "请输入正确的手机号", variant: "destructive" });
+      toast.error("请输入正确的手机号");
       return;
     }
     if (editPhone !== member.phone) {
       const isUnique = await memberService.isPhoneUnique(editPhone, member.id);
       if (!isUnique) {
         setPhoneError("该手机号已被其他会员使用");
-        toast({ title: "手机号重复", description: "该手机号已被其他会员使用", variant: "destructive" });
+        toast.error("手机号重复", { description: "该手机号已被其他会员使用" });
         return;
       }
     }
@@ -126,11 +126,11 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
         id: member.id,
         updates: { name: editName.trim(), phone: editPhone.trim(), gender: editGender },
       });
-      toast({ title: "修改成功", description: "会员信息已更新" });
+      toast.success("修改成功", { description: "会员信息已更新" });
       setIsEditing(false);
       setPhoneError("");
     } catch (error) {
-      toast({ title: "修改失败", variant: "destructive" });
+      toast.error("修改失败");
     }
   };
 

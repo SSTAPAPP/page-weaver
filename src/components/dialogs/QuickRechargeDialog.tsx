@@ -21,7 +21,7 @@ import { LoadingButton } from "@/components/ui/loading-button";
 import { FormField } from "@/components/ui/form-field";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useMembers, useCardTemplates, queryKeys } from "@/hooks/useCloudData";
 import { memberService } from "@/services/memberService";
 import { transactionService } from "@/services/transactionService";
@@ -36,7 +36,6 @@ interface QuickRechargeDialogProps {
 }
 
 export function QuickRechargeDialog({ open, onOpenChange }: QuickRechargeDialogProps) {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: members = [] } = useMembers();
   const { data: cardTemplates = [] } = useCardTemplates();
@@ -83,7 +82,7 @@ export function QuickRechargeDialog({ open, onOpenChange }: QuickRechargeDialogP
     try {
       if (type === "balance") {
         const amount = parseFloat(rechargeAmount);
-        await memberService.updateBalance(selectedMember.id, selectedMember.balance + amount);
+        await memberService.incrementBalance(selectedMember.id, amount);
         await transactionService.create({
           memberId: selectedMember.id,
           memberName: selectedMember.name,
@@ -93,7 +92,7 @@ export function QuickRechargeDialog({ open, onOpenChange }: QuickRechargeDialogP
           description: `充值 ¥${amount}`,
           voided: false,
         });
-        toast({ title: "充值成功", description: `已为 ${selectedMember.name} 充值 ¥${amount}` });
+        toast.success("充值成功", { description: `已为 ${selectedMember.name} 充值 ¥${amount}` });
       } else {
         const template = cardTemplates.find((t) => t.id === selectedTemplate);
         if (template) {
@@ -114,7 +113,7 @@ export function QuickRechargeDialog({ open, onOpenChange }: QuickRechargeDialogP
             description: `购买 ${template.name}`,
             voided: false,
           });
-          toast({ title: "购卡成功", description: `已为 ${selectedMember.name} 购买 ${template.name}` });
+          toast.success("购卡成功", { description: `已为 ${selectedMember.name} 购买 ${template.name}` });
         }
       }
 
@@ -126,7 +125,7 @@ export function QuickRechargeDialog({ open, onOpenChange }: QuickRechargeDialogP
       resetForm();
       onOpenChange(false);
     } catch (error) {
-      toast({ title: "操作失败", description: "请检查网络连接", variant: "destructive" });
+      toast.error("操作失败", { description: "请检查网络连接" });
     } finally {
       setIsSubmitting(false);
     }

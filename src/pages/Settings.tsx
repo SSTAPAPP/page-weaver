@@ -30,7 +30,7 @@ import {
 } from "@/components/ui/select";
 import { useStore } from "@/stores/useStore";
 import { useCloudCounts, useSettings, useUpdateSettings } from "@/hooks/useCloudData";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { useTheme } from "@/hooks/useTheme";
 import { settingsService } from "@/services/settingsService";
 import { cn } from "@/lib/utils";
@@ -80,7 +80,7 @@ const keyboardShortcuts = [
 ];
 
 export default function Settings() {
-  const { toast } = useToast();
+  
   const {
     members, transactions, shopInfo, setShopInfo,
     auditLogs, clearAuditLogs, syncConfig, setSyncConfig
@@ -146,7 +146,7 @@ export default function Settings() {
 
   const handleExportMembers = async () => {
     if (members.length === 0) {
-      toast({ title: "无数据可导出", description: "暂无会员数据", variant: "destructive" });
+      toast.error("无数据可导出", { description: "暂无会员数据" });
       return;
     }
 
@@ -161,11 +161,11 @@ export default function Settings() {
 
       if (exportFormat === "pdf") {
         printReport();
-        toast({ title: "打印预览已打开", description: "请在打印对话框中选择【另存为PDF】" });
+        toast.success("打印预览已打开", { description: "请在打印对话框中选择【另存为PDF】" });
       } else {
         const filename = `会员数据_${new Date().toLocaleDateString("zh-CN")}.csv`;
         exportToCSV(exportData, filename);
-        toast({ title: "导出成功", description: `已导出 ${members.length} 条会员数据` });
+        toast.success("导出成功", { description: `已导出 ${members.length} 条会员数据` });
       }
     } finally {
       setIsExporting(false);
@@ -174,7 +174,7 @@ export default function Settings() {
 
   const handleExportTransactions = async () => {
     if (transactions.length === 0) {
-      toast({ title: "无数据可导出", description: "暂无交易记录", variant: "destructive" });
+      toast.error("无数据可导出", { description: "暂无交易记录" });
       return;
     }
 
@@ -191,7 +191,7 @@ export default function Settings() {
       }));
       const filename = `交易记录_${new Date().toLocaleDateString("zh-CN")}.csv`;
       exportToCSV(exportData, filename);
-      toast({ title: "导出成功", description: `已导出 ${transactions.length} 条交易记录` });
+      toast.success("导出成功", { description: `已导出 ${transactions.length} 条交易记录` });
     } finally {
       setIsExportingTx(false);
     }
@@ -218,7 +218,7 @@ export default function Settings() {
         return;
       }
       setCurrentPassword(""); setNewPassword(""); setConfirmPassword(""); setErrors({});
-      toast({ title: "密码修改成功", description: "管理员密码已更新" });
+      toast.success("密码修改成功", { description: "管理员密码已更新" });
     } finally {
       setIsSaving(false);
     }
@@ -230,9 +230,9 @@ export default function Settings() {
       const shopInfoData = { name: editShopName, address: editShopAddress, phone: editShopPhone };
       await settingsService.update({ shopInfo: shopInfoData });
       setShopInfo(shopInfoData);
-      toast({ title: "保存成功", description: "店铺信息已更新并同步到云端" });
+      toast.success("保存成功", { description: "店铺信息已更新并同步到云端" });
     } catch (error) {
-      toast({ title: "保存失败", description: "请检查网络连接", variant: "destructive" });
+      toast.error("保存失败", { description: "请检查网络连接" });
     } finally {
       setIsSavingShop(false);
     }
@@ -242,9 +242,9 @@ export default function Settings() {
     try {
       await settingsService.update({ syncConfig: { ...syncConfig, apiUrl: syncApiUrl } });
       setSyncConfig({ apiUrl: syncApiUrl });
-      toast({ title: "保存成功", description: "同步配置已更新并保存到云端" });
+      toast.success("保存成功", { description: "同步配置已更新并保存到云端" });
     } catch (error) {
-      toast({ title: "保存失败", variant: "destructive" });
+      toast.error("保存失败");
     }
   };
 
@@ -457,7 +457,7 @@ export default function Settings() {
                 </div>
               </div>
 
-              <Button onClick={() => toast({ title: "设置已保存", description: "通知偏好已更新" })}>
+              <Button onClick={() => toast.success("设置已保存", { description: "通知偏好已更新" })}>
                 <Save className="mr-2 h-4 w-4" />
                 保存通知设置
               </Button>
@@ -514,7 +514,7 @@ export default function Settings() {
                 </Label>
                 {auditLogs.length > 0 && (
                   <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive"
-                    onClick={() => { clearAuditLogs(); toast({ title: "日志已清空" }); }}>
+                    onClick={() => { clearAuditLogs(); toast.success("日志已清空"); }}>
                     <Trash2 className="mr-2 h-4 w-4" />
                     清空日志
                   </Button>

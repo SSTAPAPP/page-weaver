@@ -12,7 +12,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Cloud, Check, AlertCircle, Loader2 } from "lucide-react";
 import { migrationService, MigrationProgress } from "@/lib/migration";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 interface MigrationDialogProps {
   open: boolean;
@@ -21,7 +21,7 @@ interface MigrationDialogProps {
 }
 
 export function MigrationDialog({ open, onOpenChange, onComplete }: MigrationDialogProps) {
-  const { toast } = useToast();
+  
   const [isMigrating, setIsMigrating] = useState(false);
   const [progress, setProgress] = useState<MigrationProgress | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,8 +39,7 @@ export function MigrationDialog({ open, onOpenChange, onComplete }: MigrationDia
 
     if (result.success) {
       setCompleted(true);
-      toast({
-        title: "迁移完成",
+      toast.success("迁移完成", {
         description: "所有数据已成功迁移到云端",
       });
       onComplete?.();

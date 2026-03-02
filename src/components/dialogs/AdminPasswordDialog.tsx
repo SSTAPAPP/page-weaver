@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { verifyAdminPassword } from "@/lib/adminApi";
 
 interface AdminPasswordDialogProps {
@@ -29,7 +29,6 @@ export function AdminPasswordDialog({
   title = "需要管理员验证",
   description = "请输入管理员密码以继续操作",
 }: AdminPasswordDialogProps) {
-  const { toast } = useToast();
   const [password, setPassword] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
 
@@ -38,7 +37,6 @@ export function AdminPasswordDialog({
     setIsVerifying(true);
 
     try {
-      // Use server-side password verification
       const result = await verifyAdminPassword(password);
       
       if (result.success) {
@@ -46,16 +44,14 @@ export function AdminPasswordDialog({
         setPassword("");
         onOpenChange(false);
       } else {
-        toast({
-          title: "密码错误",
+        toast.error("密码错误", {
           description: result.error || "管理员密码不正确，请重试",
-          variant: "destructive",
         });
       }
     } finally {
       setIsVerifying(false);
     }
-  }, [password, onConfirm, onOpenChange, toast, isVerifying]);
+  }, [password, onConfirm, onOpenChange, isVerifying]);
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>

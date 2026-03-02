@@ -28,13 +28,13 @@ import {
   useUpdateCardTemplate,
   useDeleteCardTemplate,
 } from "@/hooks/useCloudData";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { AdminPasswordDialog } from "@/components/dialogs/AdminPasswordDialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { Service, CardTemplate } from "@/types";
 
 export default function Services() {
-  const { toast } = useToast();
+  
   const { data: services = [], isLoading: isServicesLoading } = useServices();
   const { data: cardTemplates = [], isLoading: isCardsLoading } = useCardTemplates();
 
@@ -119,16 +119,16 @@ export default function Services() {
 
       if (editingService) {
         await updateService.mutateAsync({ id: editingService.id, updates: data });
-        toast({ title: "服务已更新" });
+        toast.success("服务已更新");
       } else {
         await createService.mutateAsync(data);
-        toast({ title: "服务已添加" });
+        toast.success("服务已添加");
       }
 
       resetServiceForm();
       setServiceDialogOpen(false);
     } catch (error) {
-      toast({ title: "操作失败", description: "请检查网络连接", variant: "destructive" });
+      toast.error("操作失败", { description: "请检查网络连接" });
     } finally {
       setIsSubmitting(false);
     }
@@ -148,16 +148,16 @@ export default function Services() {
 
       if (editingCard) {
         await updateCardTemplate.mutateAsync({ id: editingCard.id, updates: data });
-        toast({ title: "次卡模板已更新" });
+        toast.success("服务已更新");
       } else {
         await createCardTemplate.mutateAsync(data);
-        toast({ title: "次卡模板已添加" });
+        toast.success("次卡模板已添加");
       }
 
       resetCardForm();
       setCardDialogOpen(false);
     } catch (error) {
-      toast({ title: "操作失败", description: "请检查网络连接", variant: "destructive" });
+      toast.error("操作失败", { description: "请检查网络连接" });
     } finally {
       setIsSubmitting(false);
     }
@@ -189,13 +189,13 @@ export default function Services() {
     try {
       if (deleteTarget.type === "service") {
         await deleteService.mutateAsync(deleteTarget.id);
-        toast({ title: "服务已删除" });
+        toast.success("服务已删除");
       } else {
         await deleteCardTemplate.mutateAsync(deleteTarget.id);
-        toast({ title: "次卡模板已删除" });
+        toast.success("次卡模板已删除");
       }
     } catch (error) {
-      toast({ title: "删除失败", variant: "destructive" });
+      toast.error("删除失败");
     }
     
     setDeleteTarget(null);
