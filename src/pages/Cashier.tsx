@@ -12,15 +12,13 @@ import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Skeleton } from "@/components/ui/skeleton";
 import { LoadingButton } from "@/components/ui/loading-button";
-import { useStore, generateWalkInId } from "@/stores/useStore";
+import { generateWalkInId } from "@/stores/useStore";
 import { useMembers, useServices } from "@/hooks/useCloudData";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Member, Service, MemberCard } from "@/types";
 import { matchMemberSearch } from "@/lib/pinyin";
 import { CheckoutConfirmDialog } from "@/components/dialogs/CheckoutConfirmDialog";
-import { memberService } from "@/services/memberService";
-import { transactionService } from "@/services/transactionService";
-import { orderService } from "@/services/orderService";
+import { processCheckout } from "@/lib/adminApi";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/hooks/useCloudData";
 
@@ -38,13 +36,9 @@ interface CardUsageInfo {
 }
 
 export default function Cashier() {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
   const { data: members = [], isLoading: isMembersLoading } = useMembers();
   const { data: services = [], isLoading: isServicesLoading } = useServices();
-
-  // Keep local store for card/balance mutations that need immediate UI feedback
-  const { deductBalance, deductCard, addTransaction, addOrder } = useStore();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedMember, setSelectedMember] = useState<Member | null>(null);
@@ -89,7 +83,7 @@ export default function Cashier() {
       },
     ]);
 
-    toast({ title: "已添加", description: service.name });
+    toast.success("已添加", { description: service.name });
   };
 
   const removeFromCart = (index: number) => {
@@ -147,7 +141,7 @@ export default function Cashier() {
 
   const handleCheckoutClick = () => {
     if (cart.length === 0) {
-      toast({ title: "请添加服务项目", variant: "destructive" });
+      toast.error("请添加服务项目");
       return;
     }
     setConfirmDialogOpen(true);
@@ -156,90 +150,72 @@ export default function Cashier() {
   const handleConfirmCheckout = async () => {
     setIsCheckingOut(true);
     try {
-      if (selectedMember) {
-        const serviceNames = cart.map(c => c.service.name).join(", ");
-        const subTransactions: { type: 'balance' | 'card' | 'price_diff'; amount: number; paymentMethod?: string; cardId?: string }[] = [];
+      const serviceNames = cart.map(c => c.service.name).join(", ");
 
-        // Process card deductions via cloud
-        for (const item of cart) {
+      // Build card usage map for atomic deduction
+      const cardUsageMap: Record<string, number> = {};
+      const subTransactions: { type: string; amount: number; paymentMethod?: string; cardId?: string }[] = [];
+
+      if (selectedMember) {
+        cart.forEach((item) => {
           if (item.useCard && item.card) {
-            await memberService.updateCard(item.card.id, {
-              remainingCount: item.card.remainingCount - 1,
-            });
+            cardUsageMap[item.card.id] = (cardUsageMap[item.card.id] || 0) + 1;
             subTransactions.push({ type: 'card', amount: item.service.price, cardId: item.card.id });
           }
-        }
+        });
 
-        // Process balance deduction via cloud
         if (balanceDeduct > 0) {
-          await memberService.updateBalance(selectedMember.id, selectedMember.balance - balanceDeduct);
           subTransactions.push({ type: 'balance', amount: balanceDeduct });
         }
-
         if (cashNeed > 0) {
           subTransactions.push({ type: 'price_diff', amount: cashNeed, paymentMethod });
         }
+      }
 
-        const mainTransactionType = cardDeductTotal > 0 ? "card_deduct" : "consume";
-        const mainDescription = cashNeed > 0
-          ? `${serviceNames} (含补差价¥${cashNeed})`
-          : serviceNames;
+      const mainTransactionType = selectedMember
+        ? (cardDeductTotal > 0 ? "card_deduct" : "consume")
+        : "consume";
 
-        // Write transaction to cloud
-        await transactionService.create({
-          memberId: selectedMember.id,
-          memberName: selectedMember.name,
-          type: mainTransactionType,
-          amount: cardDeductTotal + balanceDeduct,
-          paymentMethod: balanceDeduct > 0 ? "balance" : undefined,
-          description: mainDescription,
-          subTransactions,
-          voided: false,
-        });
+      const mainDescription = selectedMember
+        ? (cashNeed > 0 ? `${serviceNames} (含补差价¥${cashNeed})` : serviceNames)
+        : `散客消费 - ${serviceNames}`;
 
-        // Write order to cloud
-        await orderService.create({
-          memberId: selectedMember.id,
-          memberName: selectedMember.name,
-          services: cart.map((item) => ({
-            serviceId: item.service.id,
-            serviceName: item.service.name,
-            price: item.service.price,
-            useCard: item.useCard,
-            cardId: item.card?.id,
-          })),
-          totalAmount: total,
-          payments: [
-            ...(cardDeductTotal > 0 ? [{ method: "card" as const, amount: cardDeductTotal }] : []),
-            ...(balanceDeduct > 0 ? [{ method: "balance" as const, amount: balanceDeduct }] : []),
-            ...(cashNeed > 0 ? [{ method: paymentMethod, amount: cashNeed }] : []),
-          ],
-        });
-      } else {
-        const walkInId = generateWalkInId();
+      const memberId = selectedMember?.id || generateWalkInId();
+      const memberName = selectedMember?.name || "散客";
 
-        await transactionService.create({
-          memberId: walkInId,
-          memberName: "散客",
-          type: "consume",
-          amount: total,
-          paymentMethod,
-          description: `散客消费 - ${cart.map(c => c.service.name).join(", ")}`,
-          voided: false,
-        });
+      const payments: { method: string; amount: number }[] = [
+        ...(cardDeductTotal > 0 ? [{ method: "card" as const, amount: cardDeductTotal }] : []),
+        ...(balanceDeduct > 0 ? [{ method: "balance" as const, amount: balanceDeduct }] : []),
+        ...(cashNeed > 0 ? [{ method: paymentMethod, amount: cashNeed }] : []),
+      ];
 
-        await orderService.create({
-          memberId: walkInId,
-          memberName: "散客",
-          services: cart.map((item) => ({
-            serviceId: item.service.id,
-            serviceName: item.service.name,
-            price: item.service.price,
-            useCard: false,
-          })),
-          totalAmount: total,
-          payments: [{ method: paymentMethod, amount: total }],
-        });
+      // Single atomic call to checkout Edge Function
+      const result = await processCheckout({
+        memberId,
+        memberName,
+        cart: cart.map((item) => ({
+          serviceId: item.service.id,
+          serviceName: item.service.name,
+          price: item.service.price,
+          useCard: item.useCard,
+          cardId: item.card?.id,
+        })),
+        paymentMethod,
+        isWalkIn,
+        balanceDeduct,
+        cardDeductTotal,
+        cashNeed,
+        total,
+        cardUsageMap,
+        subTransactions: selectedMember ? subTransactions : undefined,
+        transactionType: mainTransactionType,
+        transactionDescription: mainDescription,
+        payments,
+      });
+
+      if (!result.success) {
+        toast.error("结账失败", { description: result.error || "请检查网络连接后重试" });
+        return;
       }
 
       // Invalidate cloud queries
@@ -249,8 +225,7 @@ export default function Cashier() {
       queryClient.invalidateQueries({ queryKey: queryKeys.todayStats });
       queryClient.invalidateQueries({ queryKey: queryKeys.cloudCounts });
 
-      toast({
-        title: "结账成功",
+      toast.success("结账成功", {
         description: `${isWalkIn ? "散客" : selectedMember?.name}消费 ¥${total}`,
       });
 
@@ -259,7 +234,7 @@ export default function Cashier() {
       setConfirmDialogOpen(false);
     } catch (error) {
       console.error("Checkout error:", error);
-      toast({ title: "结账失败", description: "请检查网络连接后重试", variant: "destructive" });
+      toast.error("结账失败", { description: "请检查网络连接后重试" });
     } finally {
       setIsCheckingOut(false);
     }

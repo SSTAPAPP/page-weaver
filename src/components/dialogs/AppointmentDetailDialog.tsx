@@ -13,7 +13,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useStore } from "@/stores/useStore";
-import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { Clock, User, Phone, Plus, Calendar, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import type { Appointment } from "@/types";
 import { useState } from "react";
@@ -41,7 +41,7 @@ export function AppointmentDetailDialog({
   onAddAppointment,
   appointments,
 }: AppointmentDetailDialogProps) {
-  const { toast } = useToast();
+  
   const { updateAppointment } = useStore();
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
@@ -50,8 +50,7 @@ export function AppointmentDetailDialog({
     try {
       await new Promise((r) => setTimeout(r, 300));
       updateAppointment(id, { status });
-      toast({
-        title: "状态已更新",
+      toast.success("状态已更新", {
         description: `预约已${statusMap[status].label}`,
       });
     } finally {

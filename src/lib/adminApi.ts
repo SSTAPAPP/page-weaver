@@ -125,6 +125,48 @@ export async function voidTransaction(
   };
 }
 
+/**
+ * Process checkout atomically via Edge Function
+ */
+export interface CheckoutParams {
+  memberId?: string;
+  memberName: string;
+  cart: { serviceId: string; serviceName: string; price: number; useCard: boolean; cardId?: string }[];
+  paymentMethod: string;
+  isWalkIn: boolean;
+  balanceDeduct: number;
+  cardDeductTotal: number;
+  cashNeed: number;
+  total: number;
+  cardUsageMap: Record<string, number>;
+  subTransactions?: { type: string; amount: number; paymentMethod?: string; cardId?: string }[];
+  transactionType?: string;
+  transactionDescription?: string;
+  payments: { method: string; amount: number }[];
+}
+
+export async function processCheckout(
+  params: CheckoutParams
+): Promise<{ success: boolean; error?: string; transaction_id?: string; order_id?: string }> {
+  const checkoutUrl = `${SUPABASE_URL}/functions/v1/checkout`;
+  try {
+    const headers = await getAuthHeaders();
+    const response = await fetch(checkoutUrl, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(params),
+    });
+    const data = await response.json();
+    if (!response.ok) {
+      return { success: false, error: data.error || `Request failed with status ${response.status}` };
+    }
+    return { success: data.success, error: data.error, transaction_id: data.transaction_id, order_id: data.order_id };
+  } catch (error) {
+    console.error('Checkout failed:', error);
+    return { success: false, error: 'Network error. Please check your connection.' };
+  }
+}
+
 export interface RefundSubTransaction {
   type: 'balance' | 'card' | 'price_diff';
   amount: number;
