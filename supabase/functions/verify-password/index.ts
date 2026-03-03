@@ -11,7 +11,7 @@ function getCorsHeaders(): Record<string, string> {
   };
 }
 
-const app = new Hono();
+const app = new Hono().basePath('/verify-password');
 
 // Server-side password hashing with environment salt
 async function hashPassword(password: string): Promise<string> {
