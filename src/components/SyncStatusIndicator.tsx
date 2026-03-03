@@ -117,7 +117,7 @@ export function SyncStatusIndicator({ collapsed }: SyncStatusIndicatorProps) {
               onClick={handleSync}
               disabled={isSyncing || !isOnline}
               className={cn(
-                "flex items-center justify-center rounded-lg border border-border/50 bg-background/50 p-2 transition-colors hover:bg-accent",
+                "flex items-center justify-center rounded-lg border border-sidebar-border/50 bg-sidebar-accent/50 p-2 transition-colors hover:bg-sidebar-accent",
                 getStatusColor()
               )}
             >
@@ -133,7 +133,7 @@ export function SyncStatusIndicator({ collapsed }: SyncStatusIndicatorProps) {
   // Expanded mode
   return (
     <div className="space-y-1">
-      <div className="rounded-lg border border-border/50 bg-background/50 px-3 py-2">
+      <div className="rounded-lg border border-sidebar-border/50 bg-sidebar-accent/50 px-3 py-2">
         {/* Status row */}
         <div className="flex items-center justify-between">
           <div className={cn("flex items-center gap-2", getStatusColor())}>

@@ -118,8 +118,8 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
         )}>
           {!collapsed ? (
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
-                <Sparkles className="h-4 w-4 text-white" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-accent border border-sidebar-border">
+                <Sparkles className="h-4 w-4 text-sidebar-primary" />
               </div>
               <div className="flex flex-col">
                 <span className="font-bold text-sidebar-accent-foreground text-sm leading-tight">FFk Barber</span>
@@ -127,8 +127,8 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
               </div>
             </div>
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary">
-              <Sparkles className="h-4 w-4 text-white" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-accent border border-sidebar-border">
+              <Sparkles className="h-4 w-4 text-sidebar-primary" />
             </div>
           )}
           {!collapsed && (
