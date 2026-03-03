@@ -4,8 +4,8 @@ import {
   Moon, Sun, Type, Store, MapPin, Phone, ChevronRight,
   Building, Palette, Lock, HardDrive, Cloud,
   History, FileSpreadsheet, FileText, Trash2,
-  Upload, Check, Bell, BellOff, Keyboard,
-  Monitor, Smartphone, Globe, Shield, Info
+  Upload, Check, Keyboard,
+  Monitor, Shield, Info, Globe
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -51,12 +51,11 @@ const fontSizeLabels = {
 
 type FontSize = "xs" | "sm" | "base" | "lg" | "xl";
 
-type SettingsCategory = "shop" | "appearance" | "security" | "data" | "notifications" | "about";
+type SettingsCategory = "shop" | "appearance" | "security" | "data" | "about";
 
 const categories = [
   { id: "shop" as const, label: "店铺信息", icon: Building, description: "基本信息设置" },
   { id: "appearance" as const, label: "外观设置", icon: Palette, description: "主题与显示" },
-  { id: "notifications" as const, label: "通知提醒", icon: Bell, description: "消息与提醒" },
   { id: "security" as const, label: "安全设置", icon: Lock, description: "密码与日志" },
   { id: "data" as const, label: "数据管理", icon: HardDrive, description: "导出与同步" },
   { id: "about" as const, label: "关于系统", icon: Info, description: "版本与帮助" },
@@ -116,12 +115,6 @@ export default function Settings() {
   const [editShopPhone, setEditShopPhone] = useState(shopInfo.phone);
   const [isSavingShop, setIsSavingShop] = useState(false);
 
-  // 通知设置
-  const [notifyNewMember, setNotifyNewMember] = useState(true);
-  const [notifyLowBalance, setNotifyLowBalance] = useState(true);
-  const [notifyAppointment, setNotifyAppointment] = useState(true);
-  const [notifyDailyReport, setNotifyDailyReport] = useState(false);
-  const [lowBalanceThreshold, setLowBalanceThreshold] = useState("50");
 
   // 云端同步配置
   const [syncApiUrl, setSyncApiUrl] = useState(syncConfig.apiUrl);
@@ -377,90 +370,6 @@ export default function Settings() {
                   ))}
                 </div>
               </div>
-            </div>
-          </div>
-        );
-
-      case "notifications":
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-semibold mb-1">通知提醒</h3>
-              <p className="text-sm text-muted-foreground">管理系统的消息推送和提醒功能</p>
-            </div>
-            <Separator />
-            <div className="space-y-4 max-w-md">
-              {/* 会员通知 */}
-              <div className="rounded-xl border border-border p-4 space-y-4">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-primary" />
-                  会员相关
-                </h4>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">新会员注册通知</p>
-                    <p className="text-xs text-muted-foreground">有新会员注册时发送提醒</p>
-                  </div>
-                  <Switch checked={notifyNewMember} onCheckedChange={setNotifyNewMember} />
-                </div>
-                <Separator />
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">余额不足提醒</p>
-                    <p className="text-xs text-muted-foreground">会员余额低于阈值时提醒充值</p>
-                  </div>
-                  <Switch checked={notifyLowBalance} onCheckedChange={setNotifyLowBalance} />
-                </div>
-                {notifyLowBalance && (
-                  <div className="flex items-center gap-3 pl-4">
-                    <Label className="text-xs text-muted-foreground shrink-0">提醒阈值</Label>
-                    <div className="flex items-center gap-1">
-                      <span className="text-sm text-muted-foreground">¥</span>
-                      <Input
-                        type="number"
-                        value={lowBalanceThreshold}
-                        onChange={(e) => setLowBalanceThreshold(e.target.value)}
-                        className="w-20 h-8 text-sm"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* 预约通知 */}
-              <div className="rounded-xl border border-border p-4 space-y-4">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-chart-2" />
-                  预约相关
-                </h4>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">预约提醒</p>
-                    <p className="text-xs text-muted-foreground">预约时间前30分钟发送提醒</p>
-                  </div>
-                  <Switch checked={notifyAppointment} onCheckedChange={setNotifyAppointment} />
-                </div>
-              </div>
-
-              {/* 报表通知 */}
-              <div className="rounded-xl border border-border p-4 space-y-4">
-                <h4 className="text-sm font-semibold flex items-center gap-2">
-                  <Bell className="h-4 w-4 text-chart-3" />
-                  经营报表
-                </h4>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm font-medium">每日经营报告</p>
-                    <p className="text-xs text-muted-foreground">每日营业结束后发送经营数据汇总</p>
-                  </div>
-                  <Switch checked={notifyDailyReport} onCheckedChange={setNotifyDailyReport} />
-                </div>
-              </div>
-
-              <Button onClick={() => toast.success("设置已保存", { description: "通知偏好已更新" })}>
-                <Save className="mr-2 h-4 w-4" />
-                保存通知设置
-              </Button>
             </div>
           </div>
         );
