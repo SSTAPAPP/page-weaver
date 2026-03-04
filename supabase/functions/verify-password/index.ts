@@ -2,11 +2,26 @@ import { Hono } from "https://deno.land/x/hono@v3.4.1/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 // Dynamic CORS based on environment
-function getCorsHeaders(): Record<string, string> {
+function getCorsHeaders(requestOrigin?: string): Record<string, string> {
   const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN') || '*';
   const env = Deno.env.get('ENVIRONMENT') || 'development';
+  
+  let origin = '*';
+  if (env === 'production') {
+    // Allow both production domain and Lovable preview domains
+    if (requestOrigin && (
+      requestOrigin === `https://${allowedOrigin}` ||
+      requestOrigin.endsWith('.lovable.app') ||
+      requestOrigin.endsWith('.lovableproject.com')
+    )) {
+      origin = requestOrigin;
+    } else {
+      origin = `https://${allowedOrigin}`;
+    }
+  }
+  
   return {
-    'Access-Control-Allow-Origin': env === 'production' ? allowedOrigin : '*',
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
   };
 }
@@ -68,12 +83,13 @@ function getSupabaseClient() {
 
 // Handle CORS preflight
 app.options('*', (c) => {
-  return new Response(null, { headers: getCorsHeaders() });
+  const origin = c.req.header('origin') || '';
+  return new Response(null, { headers: getCorsHeaders(origin) });
 });
 
 // Verify password endpoint (requires auth)
 app.post('/verify', async (c) => {
-  const corsHeaders = getCorsHeaders();
+  const corsHeaders = getCorsHeaders(c.req.header('origin') || '');
   try {
     const auth = await verifyAuth(c);
     if (!auth) {
@@ -128,7 +144,7 @@ app.post('/verify', async (c) => {
 
 // Update password endpoint (requires auth)
 app.post('/update-password', async (c) => {
-  const corsHeaders = getCorsHeaders();
+  const corsHeaders = getCorsHeaders(c.req.header('origin') || '');
   try {
     const auth = await verifyAuth(c);
     if (!auth) {
@@ -197,7 +213,7 @@ app.post('/update-password', async (c) => {
 
 // Delete member with refund (requires auth)
 app.post('/delete-member', async (c) => {
-  const corsHeaders = getCorsHeaders();
+  const corsHeaders = getCorsHeaders(c.req.header('origin') || '');
   try {
     const auth = await verifyAuth(c);
     if (!auth) {
@@ -253,7 +269,7 @@ app.post('/delete-member', async (c) => {
 
 // Void transaction (requires auth)
 app.post('/void-transaction', async (c) => {
-  const corsHeaders = getCorsHeaders();
+  const corsHeaders = getCorsHeaders(c.req.header('origin') || '');
   try {
     const auth = await verifyAuth(c);
     if (!auth) {
@@ -307,7 +323,7 @@ app.post('/void-transaction', async (c) => {
 
 // Refund transaction (requires auth)
 app.post('/refund-transaction', async (c) => {
-  const corsHeaders = getCorsHeaders();
+  const corsHeaders = getCorsHeaders(c.req.header('origin') || '');
   try {
     const auth = await verifyAuth(c);
     if (!auth) {
@@ -467,7 +483,7 @@ app.get('/', (c) => {
     status: 'ok',
     message: 'Password verification service',
     version: '4.0.3'
-  }, 200, getCorsHeaders());
+  }, 200, getCorsHeaders(c.req.header('origin') || ''));
 });
 
 Deno.serve(app.fetch);

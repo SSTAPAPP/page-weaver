@@ -1,10 +1,24 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
-function getCorsHeaders(): Record<string, string> {
+function getCorsHeaders(requestOrigin?: string): Record<string, string> {
   const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN') || '*';
   const env = Deno.env.get('ENVIRONMENT') || 'development';
+  
+  let origin = '*';
+  if (env === 'production') {
+    if (requestOrigin && (
+      requestOrigin === `https://${allowedOrigin}` ||
+      requestOrigin.endsWith('.lovable.app') ||
+      requestOrigin.endsWith('.lovableproject.com')
+    )) {
+      origin = requestOrigin;
+    } else {
+      origin = `https://${allowedOrigin}`;
+    }
+  }
+  
   return {
-    'Access-Control-Allow-Origin': env === 'production' ? allowedOrigin : '*',
+    'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
   };
 }
@@ -57,7 +71,8 @@ interface CheckoutRequest {
 }
 
 Deno.serve(async (req) => {
-  const corsHeaders = getCorsHeaders();
+  const requestOrigin = req.headers.get('origin') || '';
+  const corsHeaders = getCorsHeaders(requestOrigin);
 
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
