@@ -466,7 +466,7 @@ app.get('/', (c) => {
   return c.json({ 
     status: 'ok',
     message: 'Password verification service',
-    version: '4.0.0'
+    version: '4.0.1'
   }, 200, getCorsHeaders());
 });
 
