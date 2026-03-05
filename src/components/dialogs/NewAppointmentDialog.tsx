@@ -19,14 +19,14 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { LoadingButton } from "@/components/ui/loading-button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { useStore } from "@/stores/useStore";
+import { useMembers, useServices, useCreateAppointment } from "@/hooks/useCloudData";
 import { toast } from "sonner";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { CalendarIcon, Search, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { matchMemberSearch } from "@/lib/pinyin";
+import type { Member } from "@/types";
 
 interface NewAppointmentDialogProps {
   open: boolean;
@@ -46,18 +46,18 @@ export function NewAppointmentDialog({
   onOpenChange,
   defaultDate = new Date(),
 }: NewAppointmentDialogProps) {
-  
-  const { members, services, addAppointment } = useStore();
+  const { data: members = [] } = useMembers();
+  const { data: services = [] } = useServices();
+  const createAppointment = useCreateAppointment();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMember, setSelectedMember] = useState<typeof members[0] | null>(null);
+  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
   const [selectedService, setSelectedService] = useState("");
   const [date, setDate] = useState<Date>(defaultDate);
   const [time, setTime] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // 实时搜索 - 增加结果数量限制
   const searchResults = useMemo(() => {
     if (searchQuery.length < 1) return [];
     return members.filter((m) => matchMemberSearch(m.name, m.phone, searchQuery)).slice(0, 10);
@@ -86,12 +86,10 @@ export function NewAppointmentDialog({
 
     setIsSubmitting(true);
     try {
-      await new Promise((r) => setTimeout(r, 300));
-
       const service = services.find((s) => s.id === selectedService);
       if (!service) return;
 
-      addAppointment({
+      await createAppointment.mutateAsync({
         memberId: selectedMember.id,
         memberName: selectedMember.name,
         memberPhone: selectedMember.phone,
@@ -108,6 +106,8 @@ export function NewAppointmentDialog({
 
       resetForm();
       onOpenChange(false);
+    } catch (error) {
+      toast.error("预约失败", { description: "请检查网络连接后重试" });
     } finally {
       setIsSubmitting(false);
     }
@@ -138,11 +138,7 @@ export function NewAppointmentDialog({
                     <p className="text-sm text-muted-foreground">{selectedMember.phone}</p>
                   </div>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedMember(null)}
-                >
+                <Button variant="ghost" size="sm" onClick={() => setSelectedMember(null)}>
                   更换
                 </Button>
               </div>

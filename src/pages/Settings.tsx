@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useStore } from "@/stores/useStore";
-import { useCloudCounts, useSettings, useUpdateSettings } from "@/hooks/useCloudData";
+import { useCloudCounts, useSettings, useUpdateSettings, useMembers, useTransactions } from "@/hooks/useCloudData";
 import { toast } from "sonner";
 import { useTheme } from "@/hooks/useTheme";
 import { settingsService } from "@/services/settingsService";
@@ -81,9 +81,11 @@ const keyboardShortcuts = [
 export default function Settings() {
   
   const {
-    members, transactions, shopInfo, setShopInfo,
+    shopInfo, setShopInfo,
     auditLogs, clearAuditLogs, syncConfig, setSyncConfig
   } = useStore();
+  const { data: members = [] } = useMembers();
+  const { data: transactions = [] } = useTransactions();
   const { data: cloudCounts } = useCloudCounts();
   const { data: cloudSettings } = useSettings();
   const updateCloudSettings = useUpdateSettings();
@@ -627,7 +629,7 @@ export default function Settings() {
             {/* 系统品牌 */}
             <div className="flex flex-col items-center py-6">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-lg mb-4">
-                <span className="text-2xl font-black text-white">F</span>
+                <span className="text-2xl font-black text-primary-foreground">F</span>
               </div>
               <h2 className="text-xl font-bold">FFk Barber</h2>
               <p className="text-sm text-muted-foreground">理发店会员管理系统</p>

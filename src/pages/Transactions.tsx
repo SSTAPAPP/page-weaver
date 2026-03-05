@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useStore } from "@/stores/useStore";
+// Cloud-first: no local store fallback
 import { useTransactions } from "@/hooks/useCloudData";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TransactionRefundDialog } from "@/components/dialogs/TransactionRefundDialog";
@@ -46,9 +46,7 @@ interface GroupedTransaction {
 }
 
 export default function Transactions() {
-  const { data: cloudTransactions = [] } = useTransactions();
-  const { transactions: localTransactions } = useStore();
-  const transactions = cloudTransactions.length > 0 ? cloudTransactions : localTransactions;
+  const { data: transactions = [] } = useTransactions();
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
