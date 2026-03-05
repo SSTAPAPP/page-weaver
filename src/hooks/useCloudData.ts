@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useEffect, useRef, useCallback } from "react";
+import { useQuery, useMutation, useQueryClient, QueryClient } from "@tanstack/react-query";
 import { memberService } from "@/services/memberService";
 import { transactionService } from "@/services/transactionService";
 import { serviceService } from "@/services/serviceService";
@@ -302,66 +302,112 @@ export function useCloudCounts() {
   });
 }
 
+// ========== Debounced Realtime Invalidation ==========
+// Batches rapid-fire realtime events into a single invalidation pass per table
+type TableName = 'members' | 'transactions' | 'services' | 'card_templates' | 'appointments' | 'orders';
+
+const TABLE_TO_KEYS: Record<TableName, readonly (readonly string[])[]> = {
+  members:        [queryKeys.members, queryKeys.todayStats],
+  transactions:   [queryKeys.transactions, queryKeys.todayStats],
+  services:       [queryKeys.services],
+  card_templates: [queryKeys.cardTemplates],
+  appointments:   [queryKeys.appointments, queryKeys.todayStats],
+  orders:         [queryKeys.orders],
+};
+
+class RealtimeDebouncer {
+  private dirty = new Set<TableName>();
+  private timer: ReturnType<typeof setTimeout> | null = null;
+  private readonly delay = 300; // ms — batch window
+
+  constructor(private qc: QueryClient) {}
+
+  mark(table: TableName) {
+    this.dirty.add(table);
+    if (!this.timer) {
+      this.timer = setTimeout(() => this.flush(), this.delay);
+    }
+  }
+
+  private flush() {
+    this.timer = null;
+    const tables = new Set(this.dirty);
+    this.dirty.clear();
+
+    // Deduplicate query keys across all dirty tables
+    const keysToInvalidate = new Set<string>();
+    let needCounts = false;
+
+    for (const table of tables) {
+      const keys = TABLE_TO_KEYS[table];
+      if (keys) {
+        for (const key of keys) {
+          keysToInvalidate.add(JSON.stringify(key));
+        }
+        needCounts = true; // any table change → refresh counts
+      }
+    }
+
+    for (const keyStr of keysToInvalidate) {
+      this.qc.invalidateQueries({ queryKey: JSON.parse(keyStr) });
+    }
+
+    if (needCounts) {
+      this.qc.invalidateQueries({ queryKey: queryKeys.cloudCounts });
+    }
+  }
+
+  destroy() {
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+    }
+    this.dirty.clear();
+  }
+}
+
 // ========== Realtime Subscriptions ==========
+const REALTIME_TABLES: TableName[] = [
+  'members', 'transactions', 'services', 'card_templates', 'appointments', 'orders'
+];
+
 export function useRealtimeSync(enabled: boolean = true) {
   const qc = useQueryClient();
+  const debouncerRef = useRef<RealtimeDebouncer | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
 
-    const channel = supabase
-      .channel("realtime-sync")
-      .on("postgres_changes", { event: "*", schema: "public", table: "members" }, () => {
-        qc.invalidateQueries({ queryKey: queryKeys.members });
-        qc.invalidateQueries({ queryKey: queryKeys.cloudCounts });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "transactions" }, () => {
-        qc.invalidateQueries({ queryKey: queryKeys.transactions });
-        qc.invalidateQueries({ queryKey: queryKeys.todayStats });
-        qc.invalidateQueries({ queryKey: queryKeys.cloudCounts });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "services" }, () => {
-        qc.invalidateQueries({ queryKey: queryKeys.services });
-        qc.invalidateQueries({ queryKey: queryKeys.cloudCounts });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "card_templates" }, () => {
-        qc.invalidateQueries({ queryKey: queryKeys.cardTemplates });
-        qc.invalidateQueries({ queryKey: queryKeys.cloudCounts });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "appointments" }, () => {
-        qc.invalidateQueries({ queryKey: queryKeys.appointments });
-        qc.invalidateQueries({ queryKey: queryKeys.todayStats });
-      })
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
-        qc.invalidateQueries({ queryKey: queryKeys.orders });
-        qc.invalidateQueries({ queryKey: queryKeys.cloudCounts });
-      })
-      .subscribe();
+    const debouncer = new RealtimeDebouncer(qc);
+    debouncerRef.current = debouncer;
+
+    let channel = supabase.channel("realtime-sync");
+
+    for (const table of REALTIME_TABLES) {
+      channel = channel.on(
+        "postgres_changes",
+        { event: "*", schema: "public", table },
+        () => debouncer.mark(table)
+      );
+    }
+
+    channel.subscribe();
 
     return () => {
+      debouncer.destroy();
+      debouncerRef.current = null;
       supabase.removeChannel(channel);
     };
   }, [enabled, qc]);
 }
 
-// ========== Manual Sync (invalidate all) ==========
+// ========== Manual Sync ==========
 export function useManualSync() {
   const qc = useQueryClient();
 
-  const sync = async () => {
+  return useCallback(async () => {
+    // Single invalidateQueries with the shared "cloud" prefix
+    // triggers refetch of all active queries under that key
     await qc.invalidateQueries({ queryKey: ["cloud"] });
-    await Promise.allSettled([
-      qc.refetchQueries({ queryKey: queryKeys.members }),
-      qc.refetchQueries({ queryKey: queryKeys.transactions }),
-      qc.refetchQueries({ queryKey: queryKeys.services }),
-      qc.refetchQueries({ queryKey: queryKeys.cardTemplates }),
-      qc.refetchQueries({ queryKey: queryKeys.appointments }),
-      qc.refetchQueries({ queryKey: queryKeys.orders }),
-      qc.refetchQueries({ queryKey: queryKeys.cloudCounts }),
-      qc.refetchQueries({ queryKey: queryKeys.todayStats }),
-      qc.refetchQueries({ queryKey: queryKeys.settings }),
-    ]);
-  };
-
-  return sync;
+  }, [qc]);
 }
