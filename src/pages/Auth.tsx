@@ -60,7 +60,7 @@ export default function Auth() {
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg mb-4">
-            <Sparkles className="h-7 w-7 text-white" />
+            <Sparkles className="h-7 w-7 text-primary-foreground" />
           </div>
           <h1 className="text-2xl font-bold text-foreground">FFk Barber</h1>
           <p className="text-sm text-muted-foreground mt-1">理发店会员管理系统</p>

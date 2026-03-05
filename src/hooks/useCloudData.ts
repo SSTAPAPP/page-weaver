@@ -195,6 +195,30 @@ export function useAppointments() {
   });
 }
 
+export function useCreateAppointment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Omit<import("@/types").Appointment, "id" | "createdAt">) =>
+      appointmentService.create(data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.appointments });
+      qc.invalidateQueries({ queryKey: queryKeys.todayStats });
+      qc.invalidateQueries({ queryKey: queryKeys.cloudCounts });
+    },
+  });
+}
+
+export function useUpdateAppointment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, updates }: { id: string; updates: Partial<import("@/types").Appointment> }) =>
+      appointmentService.update(id, updates),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.appointments });
+    },
+  });
+}
+
 // ========== Orders ==========
 export function useOrders() {
   return useQuery({
