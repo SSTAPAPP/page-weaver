@@ -224,6 +224,7 @@ export default function Cashier() {
       queryClient.invalidateQueries({ queryKey: queryKeys.orders });
       queryClient.invalidateQueries({ queryKey: queryKeys.todayStats });
       queryClient.invalidateQueries({ queryKey: queryKeys.cloudCounts });
+      queryClient.invalidateQueries({ queryKey: queryKeys.cardTemplates });
 
       toast.success("结账成功", {
         description: `${isWalkIn ? "散客" : selectedMember?.name}消费 ¥${total}`,
