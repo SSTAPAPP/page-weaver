@@ -168,14 +168,21 @@ Deno.serve(async (req) => {
     }
 
     // 3. Create transaction
+    // For walk-ins: amount = total (the cash amount paid)
+    // For members: amount = cardDeductTotal + balanceDeduct (internal consumption tracked)
+    const txAmount = isWalkIn ? total : (cardDeductTotal + balanceDeduct);
+    const txPaymentMethod = isWalkIn
+      ? paymentMethod
+      : (balanceDeduct > 0 ? 'balance' : (cashNeed > 0 ? paymentMethod : undefined));
+
     const { data: txData, error: txErr } = await supabase
       .from('transactions')
       .insert({
         member_id: memberId || `walk-in-${Date.now()}`,
         member_name: memberName,
         type: transactionType || 'consume',
-        amount: cardDeductTotal + balanceDeduct,
-        payment_method: balanceDeduct > 0 ? 'balance' : (cashNeed > 0 ? paymentMethod : undefined),
+        amount: txAmount,
+        payment_method: txPaymentMethod,
         description: transactionDescription || '',
         sub_transactions: subTransactions || null,
         voided: false,
