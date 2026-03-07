@@ -44,7 +44,8 @@ async function legacySha256Hash(password: string, salt: string): Promise<string>
 
 // bcrypt password hashing (secure)
 async function hashPassword(password: string): Promise<string> {
-  return await bcrypt.hash(password);
+  const salt = bcrypt.genSaltSync(10);
+  return bcrypt.hashSync(password, salt);
 }
 
 // Verify password against stored hash (supports bcrypt + legacy SHA-256 migration)
@@ -60,7 +61,7 @@ async function verifyPasswordAgainstHash(password: string, storedHash: string): 
   }
   // bcrypt verification
   try {
-    const valid = await bcrypt.compare(password, storedHash);
+    const valid = bcrypt.compareSync(password, storedHash);
     return { valid, needsMigration: false };
   } catch {
     return { valid: false, needsMigration: false };
