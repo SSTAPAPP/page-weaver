@@ -118,16 +118,31 @@ async function verifyAuth(c: any): Promise<{ userId: string } | null> {
     return null;
   }
 
-  const token = authHeader.replace('Bearer ', '');
+  const token = authHeader.replace('Bearer ', '').trim();
+  if (!token) {
+    return null;
+  }
+
   const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
   const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
-  const supabase = createClient(supabaseUrl, supabaseAnonKey, {
-    global: { headers: { Authorization: authHeader } }
+
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: supabaseAnonKey,
+      'Content-Type': 'application/json',
+    },
   });
 
-  const { data: { user }, error } = await supabase.auth.getUser(token);
-  if (error || !user) {
-    console.error('Auth verification failed:', error?.message, 'token prefix:', token.substring(0, 20));
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Auth verification failed:', response.status, errorText);
+    return null;
+  }
+
+  const user = await response.json();
+  if (!user?.id) {
     return null;
   }
 
