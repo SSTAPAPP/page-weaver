@@ -127,6 +127,7 @@ async function verifyAuth(c: any): Promise<{ userId: string } | null> {
 
   const { data: { user }, error } = await supabase.auth.getUser(token);
   if (error || !user) {
+    console.error('Auth verification failed:', error?.message, 'token prefix:', token.substring(0, 20));
     return null;
   }
 
