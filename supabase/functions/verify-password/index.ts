@@ -1,5 +1,6 @@
 import { Hono } from "https://deno.land/x/hono@v3.4.1/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import * as bcrypt from "https://deno.land/x/bcrypt@v0.4.1/mod.ts";
 
 // Dynamic CORS based on environment
 function getCorsHeaders(requestOrigin?: string): Record<string, string> {
@@ -8,7 +9,6 @@ function getCorsHeaders(requestOrigin?: string): Record<string, string> {
   
   let origin = '*';
   if (env === 'production') {
-    // Allow both production domain and Lovable preview domains
     if (requestOrigin && (
       requestOrigin === `https://${allowedOrigin}` ||
       requestOrigin.endsWith('.lovable.app') ||
@@ -28,14 +28,86 @@ function getCorsHeaders(requestOrigin?: string): Record<string, string> {
 
 const app = new Hono().basePath('/verify-password');
 
-// Server-side password hashing with environment salt
-async function hashPassword(password: string): Promise<string> {
-  const salt = Deno.env.get('ADMIN_PASSWORD_SALT') || 'ffk-shop-2024-salt';
+// Check if a hash is legacy SHA-256 format (64-char hex)
+function isLegacySha256(hash: string): boolean {
+  return /^[a-f0-9]{64}$/.test(hash);
+}
+
+// Legacy SHA-256 hash for migration purposes only
+async function legacySha256Hash(password: string, salt: string): Promise<string> {
   const encoder = new TextEncoder();
   const data = encoder.encode(password + salt);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// bcrypt password hashing (secure)
+async function hashPassword(password: string): Promise<string> {
+  return await bcrypt.hash(password);
+}
+
+// Verify password against stored hash (supports bcrypt + legacy SHA-256 migration)
+async function verifyPasswordAgainstHash(password: string, storedHash: string): Promise<{ valid: boolean; needsMigration: boolean }> {
+  if (isLegacySha256(storedHash)) {
+    // Legacy SHA-256 verification for migration
+    const salt = Deno.env.get('ADMIN_PASSWORD_SALT');
+    if (!salt) {
+      throw new Error('ADMIN_PASSWORD_SALT env var is required for legacy hash migration');
+    }
+    const inputHash = await legacySha256Hash(password, salt);
+    return { valid: inputHash === storedHash, needsMigration: true };
+  }
+  // bcrypt verification
+  try {
+    const valid = await bcrypt.compare(password, storedHash);
+    return { valid, needsMigration: false };
+  } catch {
+    return { valid: false, needsMigration: false };
+  }
+}
+
+// Fetch stored admin password hash from DB
+async function getStoredPasswordHash(): Promise<string | null> {
+  const supabase = getSupabaseClient();
+  const { data, error } = await supabase.rpc('get_admin_password_hash');
+  if (error) {
+    console.error('Failed to get admin password hash:', error);
+    return null;
+  }
+  return data;
+}
+
+// Update stored hash to bcrypt after migration
+async function updateStoredHash(newHash: string): Promise<void> {
+  const supabase = getSupabaseClient();
+  const { error } = await supabase.rpc('update_admin_password', {
+    new_password_hash: newHash,
+  });
+  if (error) {
+    console.error('Failed to update password hash after migration:', error);
+  }
+}
+
+// Verify admin password with automatic bcrypt migration
+async function verifyAdminPassword(password: string): Promise<boolean> {
+  const storedHash = await getStoredPasswordHash();
+  
+  // No password set = first-time setup, allow access
+  if (!storedHash || storedHash === '') {
+    return true;
+  }
+  
+  const { valid, needsMigration } = await verifyPasswordAgainstHash(password, storedHash);
+  
+  // Auto-migrate SHA-256 to bcrypt on successful verification
+  if (valid && needsMigration) {
+    const bcryptHash = await hashPassword(password);
+    await updateStoredHash(bcryptHash);
+    console.log('Successfully migrated admin password from SHA-256 to bcrypt');
+  }
+  
+  return valid;
 }
 
 // Verify JWT and return authenticated user ID
@@ -59,7 +131,7 @@ async function verifyAuth(c: any): Promise<{ userId: string } | null> {
   return { userId: user.id };
 }
 
-// DB-based rate limiting via check_rate_limit RPC
+// DB-based rate limiting via check_rate_limit RPC — FAIL CLOSED
 async function checkRateLimit(ip: string): Promise<boolean> {
   const supabase = getSupabaseClient();
   const { data, error } = await supabase.rpc('check_rate_limit', {
@@ -69,7 +141,7 @@ async function checkRateLimit(ip: string): Promise<boolean> {
   });
   if (error) {
     console.error('Rate limit check failed:', error);
-    return true; // fail open to avoid blocking legitimate requests
+    return false; // fail closed — deny access on error for security
   }
   return data === true;
 }
@@ -114,23 +186,10 @@ app.post('/verify', async (c) => {
       }, 400, corsHeaders);
     }
     
-    const inputHash = await hashPassword(password);
-    const supabase = getSupabaseClient();
-    
-    const { data, error } = await supabase.rpc('verify_admin_password', {
-      input_password_hash: inputHash
-    });
-    
-    if (error) {
-      console.error('Error verifying password:', error);
-      return c.json({ 
-        success: false, 
-        error: 'Verification failed' 
-      }, 500, corsHeaders);
-    }
+    const isValid = await verifyAdminPassword(password);
     
     return c.json({ 
-      success: data === true
+      success: isValid
     }, 200, corsHeaders);
     
   } catch (error) {
@@ -169,15 +228,10 @@ app.post('/update-password', async (c) => {
       }, 400, corsHeaders);
     }
     
-    const supabase = getSupabaseClient();
-    
+    // Verify current password if provided
     if (currentPassword) {
-      const currentHash = await hashPassword(currentPassword);
-      const { data: isValid, error: verifyError } = await supabase.rpc('verify_admin_password', {
-        input_password_hash: currentHash
-      });
-      
-      if (verifyError || !isValid) {
+      const isValid = await verifyAdminPassword(currentPassword);
+      if (!isValid) {
         return c.json({ 
           success: false, 
           error: 'Current password is incorrect' 
@@ -185,18 +239,9 @@ app.post('/update-password', async (c) => {
       }
     }
     
+    // Hash new password with bcrypt
     const newHash = await hashPassword(newPassword);
-    const { error } = await supabase.rpc('update_admin_password', {
-      new_password_hash: newHash
-    });
-    
-    if (error) {
-      console.error('Error updating password:', error);
-      return c.json({ 
-        success: false, 
-        error: 'Failed to update password' 
-      }, 500, corsHeaders);
-    }
+    await updateStoredHash(newHash);
     
     return c.json({ 
       success: true
@@ -238,25 +283,51 @@ app.post('/delete-member', async (c) => {
       }, 400, corsHeaders);
     }
     
-    const inputHash = await hashPassword(password);
-    const supabase = getSupabaseClient();
-    
-    const { data, error } = await supabase.rpc('admin_delete_member_with_refund', {
-      p_password_hash: inputHash,
-      p_member_id: memberId,
-      p_refund_amount: refundAmount || 0,
-      p_refund_description: refundDescription || 'Member deletion refund'
-    });
-    
-    if (error) {
-      console.error('Error deleting member:', error);
-      return c.json({ 
-        success: false, 
-        error: 'Failed to delete member' 
-      }, 500, corsHeaders);
+    // Verify admin password in edge function
+    const isValid = await verifyAdminPassword(password);
+    if (!isValid) {
+      return c.json({ success: false, error: 'Invalid admin password' }, 401, corsHeaders);
     }
     
-    return c.json(data, 200, corsHeaders);
+    const supabase = getSupabaseClient();
+    
+    // Get member info
+    const { data: member, error: memberErr } = await supabase
+      .from('members')
+      .select('*')
+      .eq('id', memberId)
+      .single();
+    
+    if (memberErr || !member) {
+      return c.json({ success: false, error: 'Member not found' }, 404, corsHeaders);
+    }
+    
+    // Create refund transaction if amount > 0
+    if (refundAmount > 0) {
+      await supabase.from('transactions').insert({
+        member_id: memberId,
+        member_name: member.name,
+        type: 'refund',
+        amount: refundAmount,
+        description: refundDescription || 'Member deletion refund',
+      });
+    }
+    
+    // Delete member cards
+    await supabase.from('member_cards').delete().eq('member_id', memberId);
+    
+    // Delete member
+    await supabase.from('members').delete().eq('id', memberId);
+    
+    // Audit log
+    await supabase.from('audit_logs').insert({
+      action: 'MEMBER_DELETED_WITH_REFUND',
+      category: 'member',
+      details: `Member ${member.name} deleted with refund of ${refundAmount}`,
+      metadata: { member_id: memberId, member_name: member.name, refund_amount: refundAmount },
+    });
+    
+    return c.json({ success: true, member_name: member.name, refund_amount: refundAmount }, 200, corsHeaders);
     
   } catch (error) {
     console.error('Error deleting member:', error);
@@ -294,23 +365,41 @@ app.post('/void-transaction', async (c) => {
       }, 400, corsHeaders);
     }
     
-    const inputHash = await hashPassword(password);
-    const supabase = getSupabaseClient();
-    
-    const { data, error } = await supabase.rpc('admin_void_transaction', {
-      p_password_hash: inputHash,
-      p_transaction_id: transactionId
-    });
-    
-    if (error) {
-      console.error('Error voiding transaction:', error);
-      return c.json({ 
-        success: false, 
-        error: 'Failed to void transaction' 
-      }, 500, corsHeaders);
+    // Verify admin password in edge function
+    const isValid = await verifyAdminPassword(password);
+    if (!isValid) {
+      return c.json({ success: false, error: 'Invalid admin password' }, 401, corsHeaders);
     }
     
-    return c.json(data, 200, corsHeaders);
+    const supabase = getSupabaseClient();
+    
+    // Get transaction
+    const { data: txn, error: txnErr } = await supabase
+      .from('transactions')
+      .select('*')
+      .eq('id', transactionId)
+      .single();
+    
+    if (txnErr || !txn) {
+      return c.json({ success: false, error: 'Transaction not found' }, 404, corsHeaders);
+    }
+    
+    if (txn.voided) {
+      return c.json({ success: false, error: 'Transaction already voided' }, 400, corsHeaders);
+    }
+    
+    // Void the transaction
+    await supabase.from('transactions').update({ voided: true }).eq('id', transactionId);
+    
+    // Audit log
+    await supabase.from('audit_logs').insert({
+      action: 'TRANSACTION_VOIDED',
+      category: 'transaction',
+      details: `Transaction ${transactionId} voided`,
+      metadata: { transaction_id: transactionId, amount: txn.amount, type: txn.type },
+    });
+    
+    return c.json({ success: true, transaction_id: transactionId }, 200, corsHeaders);
     
   } catch (error) {
     console.error('Error voiding transaction:', error);
@@ -357,21 +446,13 @@ app.post('/refund-transaction', async (c) => {
       }, 400, corsHeaders);
     }
     
-    const inputHash = await hashPassword(password);
-    const supabase = getSupabaseClient();
-    
-    // Verify admin password server-side
-    const { data: isValid, error: verifyError } = await supabase.rpc('verify_admin_password', {
-      input_password_hash: inputHash
-    });
-    
-    if (verifyError || !isValid) {
-      return c.json({ 
-        success: false, 
-        error: 'Invalid admin password' 
-      }, 401, corsHeaders);
+    // Verify admin password in edge function
+    const isValid = await verifyAdminPassword(password);
+    if (!isValid) {
+      return c.json({ success: false, error: 'Invalid admin password' }, 401, corsHeaders);
     }
     
+    const supabase = getSupabaseClient();
     const fundTrail: string[] = [];
     let totalRefundAmount = originalAmount || 0;
     
@@ -482,7 +563,7 @@ app.get('/', (c) => {
   return c.json({ 
     status: 'ok',
     message: 'Password verification service',
-    version: '4.0.3'
+    version: '5.0.0'
   }, 200, getCorsHeaders(c.req.header('origin') || ''));
 });
 
