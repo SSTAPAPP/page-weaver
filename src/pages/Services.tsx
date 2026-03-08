@@ -554,13 +554,27 @@ export default function Services() {
         </DialogContent>
       </Dialog>
 
-      {/* Admin Password Dialog for Delete */}
+      {/* Admin Password Dialog */}
       <AdminPasswordDialog
         open={adminPasswordDialogOpen}
         onOpenChange={setAdminPasswordDialogOpen}
-        onConfirm={handleDelete}
-        title={`删除${deleteTarget?.type === "service" ? "服务" : "次卡模板"}`}
-        description={`确定要删除"${deleteTarget?.name}"吗？此操作不可恢复。请输入管理员密码确认。`}
+        onConfirm={() => {
+          if (adminPasswordAction === "delete") handleDelete();
+          else if (adminPasswordAction === "editService") handleServiceEditConfirmed();
+          else if (adminPasswordAction === "editCard") handleCardEditConfirmed();
+        }}
+        title={
+          adminPasswordAction === "delete"
+            ? `删除${deleteTarget?.type === "service" ? "服务" : "次卡模板"}`
+            : adminPasswordAction === "editService"
+            ? "修改服务项目"
+            : "修改次卡模板"
+        }
+        description={
+          adminPasswordAction === "delete"
+            ? `确定要删除"${deleteTarget?.name}"吗？此操作不可恢复。请输入管理员密码确认。`
+            : "修改操作需要管理员密码确认"
+        }
       />
     </div>
   );
