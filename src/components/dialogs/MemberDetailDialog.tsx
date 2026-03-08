@@ -27,6 +27,7 @@ import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
 import { Phone, Calendar, CreditCard, Wallet, Pencil, Trash2, Save, X, History, ArrowUpCircle, ArrowDownCircle, Link2, Tag } from "lucide-react";
 import { MemberDeleteWithRefundDialog } from "@/components/dialogs/MemberDeleteWithRefundDialog";
+import { AdminPasswordDialog } from "@/components/dialogs/AdminPasswordDialog";
 import { MEMBER_TAG_OPTIONS } from "@/types";
 
 // Transaction type mapping for consistent display
@@ -55,6 +56,7 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
   const [editGender, setEditGender] = useState<"male" | "female">("male");
   const [editTag, setEditTag] = useState<string>("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [adminPasswordDialogOpen, setAdminPasswordDialogOpen] = useState(false);
 
   if (!member) return null;
 
@@ -74,7 +76,7 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
     setIsEditing(false);
   };
 
-  const handleSaveEdit = () => {
+  const handleRequestSave = () => {
     if (!editName.trim()) {
       toast({ title: "请输入姓名", variant: "destructive" });
       return;
@@ -83,7 +85,10 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
       toast({ title: "请输入正确的手机号", variant: "destructive" });
       return;
     }
+    setAdminPasswordDialogOpen(true);
+  };
 
+  const handleSaveEdit = () => {
     updateMember(member.id, {
       name: editName.trim(),
       phone: editPhone.trim(),
@@ -343,7 +348,7 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                   <X className="h-4 w-4" />
                   取消
                 </Button>
-                <Button onClick={handleSaveEdit} className="gap-1.5">
+                <Button onClick={handleRequestSave} className="gap-1.5">
                   <Save className="h-4 w-4" />
                   保存
                 </Button>
@@ -374,6 +379,13 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
         onDeleted={handleMemberDeleted}
+      />
+      <AdminPasswordDialog
+        open={adminPasswordDialogOpen}
+        onOpenChange={setAdminPasswordDialogOpen}
+        onConfirm={handleSaveEdit}
+        title="修改会员信息"
+        description="修改会员信息需要管理员密码确认"
       />
     </>
   );

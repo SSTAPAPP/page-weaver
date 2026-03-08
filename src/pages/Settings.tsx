@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { 
   Download, Save, Eye, EyeOff, Shield, Database, AlertTriangle, 
   Moon, Sun, Type, Store, MapPin, Phone, ChevronRight,
@@ -27,6 +27,7 @@ import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
+import { AdminPasswordDialog } from "@/components/dialogs/AdminPasswordDialog";
 
 const fontSizeLabels = {
   xs: "较小",
@@ -60,6 +61,7 @@ export default function Settings() {
   const [isExporting, setIsExporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [shopPasswordDialogOpen, setShopPasswordDialogOpen] = useState(false);
   
   // 店铺信息编辑状态
   const [editShopName, setEditShopName] = useState(shopInfo.name);
@@ -162,6 +164,10 @@ export default function Settings() {
     }
   };
 
+  const handleRequestSaveShopInfo = () => {
+    setShopPasswordDialogOpen(true);
+  };
+
   const handleSaveShopInfo = async () => {
     setIsSavingShop(true);
     try {
@@ -230,7 +236,7 @@ export default function Settings() {
                 />
               </div>
               <LoadingButton 
-                onClick={handleSaveShopInfo} 
+                onClick={handleRequestSaveShopInfo} 
                 loading={isSavingShop}
                 className="mt-4"
               >
@@ -530,6 +536,14 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+
+      <AdminPasswordDialog
+        open={shopPasswordDialogOpen}
+        onOpenChange={setShopPasswordDialogOpen}
+        onConfirm={handleSaveShopInfo}
+        title="修改店铺信息"
+        description="修改店铺信息需要管理员密码确认"
+      />
     </div>
   );
 }

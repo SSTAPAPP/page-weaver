@@ -38,6 +38,7 @@ export default function Services() {
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [cardDialogOpen, setCardDialogOpen] = useState(false);
   const [adminPasswordDialogOpen, setAdminPasswordDialogOpen] = useState(false);
+  const [adminPasswordAction, setAdminPasswordAction] = useState<"delete" | "editService" | "editCard">("delete");
   const [deleteTarget, setDeleteTarget] = useState<{ type: "service" | "card"; id: string; name: string } | null>(null);
   const [editingService, setEditingService] = useState<typeof services[0] | null>(null);
   const [editingCard, setEditingCard] = useState<typeof cardTemplates[0] | null>(null);
@@ -93,61 +94,84 @@ export default function Services() {
     return Object.keys(errors).length === 0;
   };
 
+  // Pending data for password-protected edits
+  const [pendingServiceData, setPendingServiceData] = useState<any>(null);
+  const [pendingCardData, setPendingCardData] = useState<any>(null);
+
   const handleServiceSubmit = async () => {
     if (!validateServiceForm()) return;
 
-    setIsSubmitting(true);
-    try {
-      await new Promise((r) => setTimeout(r, 300));
-      
-      const data = {
-        name: serviceName.trim(),
-        price: parseFloat(servicePrice),
-        duration: parseInt(serviceDuration) || 30,
-        category: serviceCategory.trim() || "其他",
-      };
+    const data = {
+      name: serviceName.trim(),
+      price: parseFloat(servicePrice),
+      duration: parseInt(serviceDuration) || 30,
+      category: serviceCategory.trim() || "其他",
+    };
 
-      if (editingService) {
-        updateService(editingService.id, data);
-        toast({ title: "服务已更新" });
-      } else {
+    if (editingService) {
+      // Editing requires admin password
+      setPendingServiceData(data);
+      setAdminPasswordAction("editService");
+      setAdminPasswordDialogOpen(true);
+    } else {
+      setIsSubmitting(true);
+      try {
+        await new Promise((r) => setTimeout(r, 300));
         addService(data);
         toast({ title: "服务已添加" });
+        resetServiceForm();
+        setServiceDialogOpen(false);
+      } finally {
+        setIsSubmitting(false);
       }
+    }
+  };
 
+  const handleServiceEditConfirmed = () => {
+    if (editingService && pendingServiceData) {
+      updateService(editingService.id, pendingServiceData);
+      toast({ title: "服务已更新" });
       resetServiceForm();
       setServiceDialogOpen(false);
-    } finally {
-      setIsSubmitting(false);
+      setPendingServiceData(null);
     }
   };
 
   const handleCardSubmit = async () => {
     if (!validateCardForm()) return;
 
-    setIsSubmitting(true);
-    try {
-      await new Promise((r) => setTimeout(r, 300));
-      
-      const data = {
-        name: cardName.trim(),
-        price: parseFloat(cardPrice),
-        totalCount: parseInt(cardCount),
-        serviceIds: selectedServices,
-      };
+    const data = {
+      name: cardName.trim(),
+      price: parseFloat(cardPrice),
+      totalCount: parseInt(cardCount),
+      serviceIds: selectedServices,
+    };
 
-      if (editingCard) {
-        updateCardTemplate(editingCard.id, data);
-        toast({ title: "次卡模板已更新" });
-      } else {
+    if (editingCard) {
+      setPendingCardData(data);
+      setAdminPasswordAction("editCard");
+      setAdminPasswordDialogOpen(true);
+    } else {
+      setIsSubmitting(true);
+      try {
+        await new Promise((r) => setTimeout(r, 300));
         addCardTemplate(data);
         toast({ title: "次卡模板已添加" });
+        resetCardForm();
+        setCardDialogOpen(false);
+      } finally {
+        setIsSubmitting(false);
       }
+    }
+  };
 
+  const handleCardEditConfirmed = () => {
+    if (editingCard && pendingCardData) {
+      updateCardTemplate(editingCard.id, pendingCardData);
+      toast({ title: "次卡模板已更新" });
       resetCardForm();
       setCardDialogOpen(false);
-    } finally {
-      setIsSubmitting(false);
+      setPendingCardData(null);
     }
   };
 
@@ -187,6 +211,7 @@ export default function Services() {
 
   const handleRequestDelete = (type: "service" | "card", id: string, name: string) => {
     setDeleteTarget({ type, id, name });
+    setAdminPasswordAction("delete");
     setAdminPasswordDialogOpen(true);
   };
 
@@ -530,13 +555,27 @@ export default function Services() {
         </DialogContent>
       </Dialog>
 
-      {/* Admin Password Dialog for Delete */}
+      {/* Admin Password Dialog */}
       <AdminPasswordDialog
         open={adminPasswordDialogOpen}
         onOpenChange={setAdminPasswordDialogOpen}
-        onConfirm={handleDelete}
-        title={`删除${deleteTarget?.type === "service" ? "服务" : "次卡模板"}`}
-        description={`确定要删除"${deleteTarget?.name}"吗？此操作不可恢复。请输入管理员密码确认。`}
+        onConfirm={() => {
+          if (adminPasswordAction === "delete") handleDelete();
+          else if (adminPasswordAction === "editService") handleServiceEditConfirmed();
+          else if (adminPasswordAction === "editCard") handleCardEditConfirmed();
+        }}
+        title={
+          adminPasswordAction === "delete"
+            ? `删除${deleteTarget?.type === "service" ? "服务" : "次卡模板"}`
+            : adminPasswordAction === "editService"
+            ? "修改服务项目"
+            : "修改次卡模板"
+        }
+        description={
+          adminPasswordAction === "delete"
+            ? `确定要删除"${deleteTarget?.name}"吗？此操作不可恢复。请输入管理员密码确认。`
+            : "修改操作需要管理员密码确认"
+        }
       />
     </div>
   );
