@@ -127,6 +127,8 @@ export const useStore = create<Store>()(
           remainingCount: template.totalCount,
           services: template.serviceIds,
           createdAt: new Date(),
+          originalPrice: template.price,
+          originalTotalCount: template.totalCount,
         };
         
         set((state) => ({

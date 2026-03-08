@@ -18,6 +18,8 @@ export interface MemberCard {
   remainingCount: number;
   services: string[];
   createdAt: Date;
+  originalPrice: number;
+  originalTotalCount: number;
 }
 
 // 次卡模板

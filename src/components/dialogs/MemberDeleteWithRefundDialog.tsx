@@ -52,9 +52,10 @@ export function MemberDeleteWithRefundDialog({
     if (!member) return [];
     
     return member.cards.map((card) => {
+      // 优先使用卡片自身保存的原始价格和总次数，其次从模板获取
       const template = cardTemplates.find((t) => t.id === card.templateId);
-      const originalPrice = template?.price || 0;
-      const totalCount = template?.totalCount || card.remainingCount;
+      const originalPrice = card.originalPrice ?? template?.price ?? 0;
+      const totalCount = card.originalTotalCount ?? template?.totalCount ?? card.remainingCount;
       const usedCount = totalCount - card.remainingCount;
       const refundRatio = totalCount > 0 ? card.remainingCount / totalCount : 0;
       const refundAmount = originalPrice * refundRatio;

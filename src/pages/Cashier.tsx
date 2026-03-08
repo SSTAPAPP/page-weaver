@@ -191,9 +191,39 @@ export default function Cashier() {
           });
         }
 
-        // 创建合并的交易记录
-        const mainTransactionType = cardDeductTotal > 0 ? "card_deduct" : "consume";
-        const mainDescription = cashNeed > 0 
+        // 判断交易类型和支付方式
+        const hasCardDeduct = cardDeductTotal > 0;
+        const hasBalanceDeduct = balanceDeduct > 0;
+        const hasCashNeed = cashNeed > 0;
+
+        // 确定交易类型
+        let mainTransactionType: 'card_deduct' | 'consume';
+        let mainPaymentMethod: string | undefined;
+        let mainAmount: number;
+
+        if (hasCardDeduct) {
+          // 有次卡消费
+          mainTransactionType = "card_deduct";
+          mainPaymentMethod = hasBalanceDeduct ? "balance" : undefined;
+          mainAmount = total; // 使用总金额
+        } else if (hasBalanceDeduct && !hasCashNeed) {
+          // 纯余额支付
+          mainTransactionType = "consume";
+          mainPaymentMethod = "balance";
+          mainAmount = balanceDeduct;
+        } else if (!hasBalanceDeduct && hasCashNeed) {
+          // 会员纯现金/微信/支付宝支付（无余额无次卡）
+          mainTransactionType = "consume";
+          mainPaymentMethod = paymentMethod;
+          mainAmount = cashNeed;
+        } else {
+          // 余额 + 补差价混合
+          mainTransactionType = "consume";
+          mainPaymentMethod = "balance";
+          mainAmount = total;
+        }
+
+        const mainDescription = hasCashNeed && (hasCardDeduct || hasBalanceDeduct)
           ? `${serviceNames} (含补差价¥${cashNeed})`
           : serviceNames;
         
@@ -201,10 +231,10 @@ export default function Cashier() {
           memberId: selectedMember.id,
           memberName: selectedMember.name,
           type: mainTransactionType,
-          amount: cardDeductTotal + balanceDeduct,
-          paymentMethod: balanceDeduct > 0 ? "balance" : undefined,
+          amount: mainAmount,
+          paymentMethod: mainPaymentMethod,
           description: mainDescription,
-          subTransactions,
+          subTransactions: subTransactions.length > 0 ? subTransactions : undefined,
         });
 
         // 添加订单
