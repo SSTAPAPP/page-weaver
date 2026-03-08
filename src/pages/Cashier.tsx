@@ -673,7 +673,7 @@ export default function Cashier() {
                   </div>
 
                   {/* 底部结账栏 */}
-                  <div className="px-4 py-4 border-t border-muted/20 space-y-3">
+                  <div className="px-4 py-4 border-t border-border space-y-3">
                     <div className="flex items-baseline justify-between">
                       <span className="font-medium">合计</span>
                       <span className="text-2xl font-bold text-primary tabular-nums">¥{total}</span>
