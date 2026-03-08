@@ -223,15 +223,16 @@ export default function Transactions() {
           <Card>
             <CardContent className="p-3 sm:p-4">
               <div className="divide-y divide-border">
-                {paginatedGroups.map((group) => {
+                {paginatedGroups.map((group, idx) => {
                   const tx = group.mainTransaction;
                   const refundTx = group.refundTransaction;
                   const hasRefund = !!refundTx;
+                  const rowNumber = startIndex + idx + 1;
 
                   return (
                     <div key={tx.id}>
                       <div className="relative">
-                        {renderRow(tx)}
+                        {renderRow(tx, rowNumber)}
                         {hasRefund && !tx.voided && (
                           <div className="absolute right-2 top-3">
                             <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 font-normal text-chart-4 border-chart-4/30">
@@ -241,7 +242,7 @@ export default function Transactions() {
                           </div>
                         )}
                       </div>
-                      {refundTx && renderRow(refundTx, true)}
+                      {refundTx && renderRow(refundTx, rowNumber, true)}
                     </div>
                   );
                 })}
