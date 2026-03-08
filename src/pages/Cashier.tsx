@@ -756,36 +756,6 @@ export default function Cashier() {
         paymentMethod={paymentMethod}
         cardUsageInfo={cardUsageInfo}
       />
-
-      {/* 结账成功弹窗 */}
-      <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader className="text-center sm:text-center">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-chart-2/10">
-              <CheckCircle2 className="h-8 w-8 text-chart-2" />
-            </div>
-            <DialogTitle className="text-xl">结账成功</DialogTitle>
-            <DialogDescription>
-              {lastReceiptData && (
-                <span className="text-foreground font-medium">
-                  {lastReceiptData.isWalkIn ? "散客" : lastReceiptData.memberName} 消费 
-                  <span className="text-primary ml-1">¥{lastReceiptData.total.toFixed(2)}</span>
-                </span>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter className="flex-col gap-2 sm:flex-col">
-            {lastReceiptData && <CheckoutReceipt data={lastReceiptData} />}
-            <Button
-              variant="ghost"
-              onClick={() => setSuccessDialogOpen(false)}
-              className="w-full"
-            >
-              完成
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
