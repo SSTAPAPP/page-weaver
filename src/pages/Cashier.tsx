@@ -502,7 +502,9 @@ export default function Cashier() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-10 w-10"
                           onClick={() => removeFromCart(index)}
+                          aria-label={`移除${item.service.name}`}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
