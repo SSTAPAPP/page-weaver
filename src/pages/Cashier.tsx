@@ -525,14 +525,11 @@ export default function Cashier() {
                             </span>
                           </div>
                           {item.card && item.useCard ? (
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <Badge variant="secondary" className="text-xs py-0 h-5">
-                                <CreditCard className="mr-1 h-3 w-3" />
-                                {item.card.templateName}
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs font-medium text-chart-2">{item.card.templateName}</span>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal">
+                                {item.card.remainingCount}次
                               </Badge>
-                              <span className="text-xs text-muted-foreground">
-                                余{item.card.remainingCount}次
-                              </span>
                             </div>
                           ) : (
                             <p className="text-xs text-muted-foreground mt-0.5">
