@@ -94,32 +94,46 @@ export default function Services() {
     return Object.keys(errors).length === 0;
   };
 
+  // Pending data for password-protected edits
+  const [pendingServiceData, setPendingServiceData] = useState<any>(null);
+  const [pendingCardData, setPendingCardData] = useState<any>(null);
+
   const handleServiceSubmit = async () => {
     if (!validateServiceForm()) return;
 
-    setIsSubmitting(true);
-    try {
-      await new Promise((r) => setTimeout(r, 300));
-      
-      const data = {
-        name: serviceName.trim(),
-        price: parseFloat(servicePrice),
-        duration: parseInt(serviceDuration) || 30,
-        category: serviceCategory.trim() || "其他",
-      };
+    const data = {
+      name: serviceName.trim(),
+      price: parseFloat(servicePrice),
+      duration: parseInt(serviceDuration) || 30,
+      category: serviceCategory.trim() || "其他",
+    };
 
-      if (editingService) {
-        updateService(editingService.id, data);
-        toast({ title: "服务已更新" });
-      } else {
+    if (editingService) {
+      // Editing requires admin password
+      setPendingServiceData(data);
+      setAdminPasswordAction("editService");
+      setAdminPasswordDialogOpen(true);
+    } else {
+      setIsSubmitting(true);
+      try {
+        await new Promise((r) => setTimeout(r, 300));
         addService(data);
         toast({ title: "服务已添加" });
+        resetServiceForm();
+        setServiceDialogOpen(false);
+      } finally {
+        setIsSubmitting(false);
       }
+    }
+  };
 
+  const handleServiceEditConfirmed = () => {
+    if (editingService && pendingServiceData) {
+      updateService(editingService.id, pendingServiceData);
+      toast({ title: "服务已更新" });
       resetServiceForm();
       setServiceDialogOpen(false);
-    } finally {
-      setIsSubmitting(false);
+      setPendingServiceData(null);
     }
   };
 
