@@ -60,7 +60,7 @@ export function TransactionRefundDialog({
   onOpenChange,
 }: TransactionRefundDialogProps) {
   const { toast } = useToast();
-  const { adminPassword, refundBalance, refundCard, addTransaction, voidTransaction, getRelatedTransactions } = useStore();
+  const { adminPassword, refundBalance, refundCard, addTransaction, voidTransaction, getRelatedTransactions, shopInfo } = useStore();
   const [password, setPassword] = useState("");
   const [isRefunding, setIsRefunding] = useState(false);
   const [passwordError, setPasswordError] = useState("");
