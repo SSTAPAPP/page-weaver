@@ -106,10 +106,9 @@ export default function Transactions() {
     setRefundDialogOpen(true);
   };
 
-  const renderRow = (tx: Transaction, isRefundRow = false) => {
+  const renderRow = (tx: Transaction, index: number, isRefundRow = false) => {
     const info = typeMap[tx.type] || typeMap.consume;
     const isVoided = tx.voided;
-    const isIncome = tx.type === "recharge" || tx.type === "refund";
     const methodLabel = tx.paymentMethod ? paymentMethodMap[tx.paymentMethod] : null;
 
     // 构建副标题：会员 · 时间 · 支付方式
@@ -125,6 +124,14 @@ export default function Transactions() {
         )}
         onClick={() => handleTransactionClick(tx)}
       >
+        {/* 编号 */}
+        {!isRefundRow && (
+          <span className="text-xs text-muted-foreground tabular-nums w-6 shrink-0">
+            {index}
+          </span>
+        )}
+        {isRefundRow && <span className="w-6 shrink-0" />}
+
         {/* Left: description + meta */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
