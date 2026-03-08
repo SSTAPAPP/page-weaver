@@ -159,7 +159,9 @@ export default function Appointments() {
             <Button
               variant="ghost"
               size="icon"
+              className="h-10 w-10"
               onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              aria-label="上个月"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
