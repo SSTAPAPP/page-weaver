@@ -186,6 +186,12 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                       <Badge variant={member.gender === "male" ? "secondary" : "outline"} className="shrink-0 text-xs">
                         {member.gender === "male" ? "男" : "女"}
                       </Badge>
+                      {member.tag && (
+                        <Badge variant="outline" className="shrink-0 text-xs">
+                          <Tag className="h-3 w-3 mr-0.5" />
+                          {member.tag}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                       <span className="flex items-center gap-1">

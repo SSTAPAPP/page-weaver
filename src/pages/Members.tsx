@@ -152,6 +152,11 @@ export default function Members() {
                         </div>
                       </div>
                     </div>
+                    {member.tag && (
+                      <Badge variant="outline" className={`text-[10px] font-semibold border ${TAG_COLORS[member.tag] || 'bg-muted text-muted-foreground border-border'}`}>
+                        {member.tag}
+                      </Badge>
+                    )}
                   </div>
 
                   <Separator className="my-3" />
