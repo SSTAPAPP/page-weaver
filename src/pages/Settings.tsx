@@ -27,6 +27,7 @@ import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
+import { AdminPasswordDialog } from "@/components/dialogs/AdminPasswordDialog";
 
 const fontSizeLabels = {
   xs: "较小",
