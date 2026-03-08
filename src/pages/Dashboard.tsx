@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Users,
   Wallet,
@@ -11,7 +11,9 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
-  
+  Receipt,
+  Activity,
+  PiggyBank,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
