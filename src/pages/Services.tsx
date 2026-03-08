@@ -344,53 +344,90 @@ export default function Services() {
             />
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {cardTemplates.map((template) => (
-                <Card key={template.id} className="transition-shadow hover:shadow-md">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-semibold">{template.name}</p>
-                        <p className="text-2xl font-bold text-primary">
-                          ¥{template.price}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          共 {template.totalCount} 次
-                        </p>
+              {cardTemplates.map((template) => {
+                const unitPrice = template.totalCount > 0 ? (template.price / template.totalCount) : 0;
+                const serviceNames = template.serviceIds
+                  .map(sid => services.find(s => s.id === sid)?.name)
+                  .filter(Boolean);
+                
+                return (
+                  <div
+                    key={template.id}
+                    className="group relative overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:border-primary/50 hover:shadow-md"
+                  >
+                    {/* 顶部装饰条 */}
+                    <div className="h-1.5 bg-gradient-to-r from-primary/60 via-primary/30 to-transparent" />
+                    
+                    <div className="p-4">
+                      {/* 头部：名称 + 操作 */}
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
+                            <CreditCard className="h-4.5 w-4.5 text-primary" />
+                          </div>
+                          <div>
+                            <p className="font-semibold text-sm leading-tight">{template.name}</p>
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              均价 ¥{unitPrice.toFixed(1)}/次
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => openEditCard(template)}
+                            aria-label={`编辑${template.name}`}
+                          >
+                            <Edit className="h-3.5 w-3.5" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8"
+                            onClick={() => handleRequestDelete("card", template.id, template.name)}
+                            aria-label={`删除${template.name}`}
+                          >
+                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-10 w-10"
-                          onClick={() => openEditCard(template)}
-                          aria-label={`编辑${template.name}`}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-10 w-10"
-                          onClick={() => handleRequestDelete("card", template.id, template.name)}
-                          aria-label={`删除${template.name}`}
-                        >
-                          <Trash2 className="h-4 w-4 text-destructive" />
-                        </Button>
+                      
+                      {/* 核心数据 */}
+                      <div className="grid grid-cols-2 gap-3 mb-3">
+                        <div className="rounded-lg bg-muted/50 p-2.5 text-center">
+                          <p className="text-[10px] text-muted-foreground leading-tight">售价</p>
+                          <p className="text-lg font-bold tabular-nums mt-0.5">¥{template.price}</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/50 p-2.5 text-center">
+                          <p className="text-[10px] text-muted-foreground leading-tight">总次数</p>
+                          <p className="text-lg font-bold tabular-nums mt-0.5">{template.totalCount}<span className="text-xs font-normal text-muted-foreground ml-0.5">次</span></p>
+                        </div>
                       </div>
+
+                      {/* 适用服务 */}
+                      {serviceNames.length > 0 && (
+                        <div>
+                          <p className="text-[10px] text-muted-foreground mb-1.5">适用服务</p>
+                          <div className="flex flex-wrap gap-1">
+                            {serviceNames.slice(0, 4).map((name, i) => (
+                              <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
+                                {name}
+                              </Badge>
+                            ))}
+                            {serviceNames.length > 4 && (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground">
+                                +{serviceNames.length - 4}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                    <div className="mt-3 flex flex-wrap gap-1">
-                      {template.serviceIds.map((sid) => {
-                        const service = services.find((s) => s.id === sid);
-                        return service ? (
-                          <Badge key={sid} variant="secondary" className="text-xs">
-                            {service.name}
-                          </Badge>
-                        ) : null;
-                      })}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </TabsContent>
