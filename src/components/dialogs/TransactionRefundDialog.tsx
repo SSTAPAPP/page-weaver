@@ -362,6 +362,15 @@ export function TransactionRefundDialog({
         </div>
 
         <DialogFooter>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => printTransactionReceipt(transaction, shopInfo, refundTransaction)}
+            className="gap-1.5 mr-auto"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            打印凭证
+          </Button>
           <Button variant="outline" onClick={handleClose}>
             {canRefund ? "取消" : "关闭"}
           </Button>
