@@ -11,11 +11,17 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
+  Dot,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 const navGroups = [
   {
@@ -34,7 +40,7 @@ const navGroups = [
     ],
   },
   {
-    label: "数据 & 系统",
+    label: "数据与分析",
     items: [
       { title: "数据报表", url: "/reports", icon: BarChart3 },
       { title: "交易流水", url: "/transactions", icon: FileText },
@@ -48,96 +54,123 @@ export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
 
-  const renderNavItem = (item: { title: string; url: string; icon: React.ComponentType<{ className?: string }> }) => {
+  const NavItem = ({ item }: { item: { title: string; url: string; icon: React.ComponentType<{ className?: string }> } }) => {
     const isActive = location.pathname === item.url;
-    return (
+
+    const content = (
       <NavLink
-        key={item.url}
         to={item.url}
         className={cn(
-          "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-          "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-          isActive && "bg-sidebar-accent text-sidebar-primary font-semibold"
+          "group relative flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-150",
+          "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent",
+          isActive && "bg-sidebar-accent text-sidebar-foreground font-semibold",
+          collapsed && "justify-center px-0"
         )}
-        title={collapsed ? item.title : undefined}
       >
-        <item.icon className={cn("h-4.5 w-4.5 shrink-0", isActive && "text-sidebar-primary")} />
-        {!collapsed && <span>{item.title}</span>}
+        {/* Active indicator bar */}
+        {isActive && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-sidebar-primary" />
+        )}
+        <item.icon className={cn(
+          "h-[18px] w-[18px] shrink-0 transition-colors",
+          isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"
+        )} />
+        {!collapsed && <span className="truncate">{item.title}</span>}
       </NavLink>
     );
+
+    if (collapsed) {
+      return (
+        <Tooltip delayDuration={0}>
+          <TooltipTrigger asChild>{content}</TooltipTrigger>
+          <TooltipContent side="right" sideOffset={12} className="text-xs font-medium">
+            {item.title}
+          </TooltipContent>
+        </Tooltip>
+      );
+    }
+
+    return content;
   };
 
   return (
-    <aside
-      className={cn(
-        "flex h-screen flex-col border-r border-border bg-sidebar transition-all duration-300 relative",
-        collapsed ? "w-16" : "w-56"
-      )}
-    >
-      {/* Logo */}
-      <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-3">
-        {!collapsed && (
+    <TooltipProvider>
+      <aside
+        className={cn(
+          "flex h-screen flex-col border-r border-border bg-sidebar transition-all duration-200 relative select-none",
+          collapsed ? "w-[60px]" : "w-56"
+        )}
+      >
+        {/* Brand header */}
+        <div className={cn(
+          "flex h-14 items-center border-b border-sidebar-border shrink-0",
+          collapsed ? "justify-center px-2" : "justify-between px-4"
+        )}>
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground">
-              <span className="text-base font-black text-background" style={{ fontFamily: 'Lora, serif' }}>F</span>
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground shrink-0">
+              <span className="text-sm font-black text-background" style={{ fontFamily: 'Lora, serif' }}>F</span>
             </div>
-            <span className="font-bold text-sidebar-foreground text-base tracking-tight">FFk</span>
-          </div>
-        )}
-        {collapsed && (
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground mx-auto">
-            <span className="text-base font-black text-background" style={{ fontFamily: 'Lora, serif' }}>F</span>
-          </div>
-        )}
-        {!collapsed && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCollapsed(true)}
-            className="h-7 w-7 shrink-0 text-sidebar-foreground/50 hover:text-sidebar-foreground"
-          >
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
-
-      {/* Expand button when collapsed */}
-      {collapsed && (
-        <div className="flex justify-center py-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setCollapsed(false)}
-            className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground"
-          >
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
-      {/* Grouped Navigation */}
-      <nav className="flex-1 overflow-y-auto px-2 py-2">
-        {navGroups.map((group, idx) => (
-          <div key={group.label}>
             {!collapsed && (
-              <div className="px-3 pt-4 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
-                {group.label}
+              <div className="flex flex-col">
+                <span className="font-bold text-sidebar-foreground text-[15px] leading-tight tracking-tight">FFk</span>
+                <span className="text-[10px] text-sidebar-foreground/40 leading-tight">Management</span>
               </div>
             )}
-            {collapsed && idx > 0 && (
-              <Separator className="my-2 mx-auto w-8 bg-sidebar-border" />
-            )}
-            <div className="space-y-0.5">
-              {group.items.map(renderNavItem)}
-            </div>
           </div>
-        ))}
-      </nav>
+          {!collapsed && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCollapsed(true)}
+              className="h-7 w-7 shrink-0 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
 
-      {/* Settings at bottom */}
-      <div className="border-t border-sidebar-border p-2">
-        {renderNavItem(settingsItem)}
-      </div>
-    </aside>
+        {/* Expand toggle when collapsed */}
+        {collapsed && (
+          <div className="flex justify-center pt-2 pb-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCollapsed(false)}
+              className="h-7 w-7 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
+
+        {/* Grouped Navigation */}
+        <nav className="flex-1 overflow-y-auto py-3 px-2">
+          {navGroups.map((group, idx) => (
+            <div key={group.label} className={cn(idx > 0 && "mt-5")}>
+              {!collapsed ? (
+                <div className="flex items-center gap-2 px-3 mb-1.5">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/35">
+                    {group.label}
+                  </span>
+                  <div className="flex-1 h-px bg-sidebar-border/60" />
+                </div>
+              ) : (
+                idx > 0 && <div className="mx-auto my-2 w-6 h-px bg-sidebar-border" />
+              )}
+              <div className="space-y-0.5">
+                {group.items.map((item) => (
+                  <NavItem key={item.url} item={item} />
+                ))}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        {/* Bottom settings */}
+        <div className="shrink-0 border-t border-sidebar-border p-2">
+          <NavItem item={settingsItem} />
+        </div>
+      </aside>
+    </TooltipProvider>
   );
 }
