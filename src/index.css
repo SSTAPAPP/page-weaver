@@ -189,7 +189,13 @@
 @layer utilities {
   /* Glass morphism utility */
   .glass {
-    @apply bg-white/70 dark:bg-card/70 backdrop-blur-xl;
+    @apply bg-card/70 backdrop-blur-xl;
+  }
+
+  /* Extra-small text for badges and annotations */
+  .text-2xs {
+    font-size: 0.625rem; /* 10px */
+    line-height: 0.875rem; /* 14px */
   }
 
   /* Gradient text */
