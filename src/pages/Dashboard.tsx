@@ -55,12 +55,28 @@ function StatCardWithTooltip({ title, value, description, icon: Icon, color, hid
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { getTodayStats, members, transactions, hiddenSections, toggleSectionVisibility } = useStore();
+  const { getTodayStats, members, transactions, appointments: allAppointments, hiddenSections, toggleSectionVisibility } = useStore();
   const stats = getTodayStats();
   const [memberDialogOpen, setMemberDialogOpen] = useState(false);
   const [rechargeDialogOpen, setRechargeDialogOpen] = useState(false);
 
   const isHidden = (sectionId: string) => hiddenSections.includes(sectionId);
+
+  const extraStats = useMemo(() => {
+    const todayTx = transactions.filter(
+      (t) => !t.voided && isToday(new Date(t.createdAt))
+    );
+    const todayConsumeTx = todayTx.filter(
+      (t) => t.type === "consume" || t.type === "card_deduct"
+    );
+    const txCount = todayConsumeTx.length;
+    const avgSpend = txCount > 0
+      ? todayConsumeTx.reduce((s, t) => s + t.amount, 0) / txCount
+      : 0;
+    const totalBalance = members.reduce((s, m) => s + m.balance, 0);
+    const totalCards = members.reduce((s, m) => s + m.cards.filter(c => c.remainingCount > 0).length, 0);
+    return { txCount, avgSpend, totalBalance, totalCards };
+  }, [transactions, members]);
 
   const statCards = [
     {
@@ -88,6 +104,22 @@ export default function Dashboard() {
       color: "text-chart-3",
     },
     {
+      id: "txCount",
+      title: "交易笔数",
+      value: extraStats.txCount.toString(),
+      icon: Receipt,
+      description: "今日消费单数",
+      color: "text-chart-5",
+    },
+    {
+      id: "avgSpend",
+      title: "客单价",
+      value: `¥${extraStats.avgSpend.toFixed(0)}`,
+      icon: Activity,
+      description: "今日平均消费",
+      color: "text-chart-1",
+    },
+    {
       id: "newMembers",
       title: "新增会员",
       value: stats.newMembers.toString(),
@@ -102,6 +134,14 @@ export default function Dashboard() {
       icon: Calendar,
       description: "待服务预约",
       color: "text-chart-5",
+    },
+    {
+      id: "totalBalance",
+      title: "储值总余额",
+      value: `¥${extraStats.totalBalance.toFixed(0)}`,
+      icon: PiggyBank,
+      description: `${members.length}位会员`,
+      color: "text-chart-2",
     },
   ];
 
