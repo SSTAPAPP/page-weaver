@@ -79,7 +79,7 @@ export default function Members() {
       </PageHeader>
 
       {/* Search */}
-      <div className="relative max-w-md">
+      <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="输入姓名或手机号搜索"
@@ -96,7 +96,7 @@ export default function Members() {
 
       {/* Members grid */}
       {isLoading ? (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
               <CardContent className="p-0">
@@ -124,7 +124,7 @@ export default function Members() {
         />
       ) : (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {paginatedMembers.map((member) => (
               <Card
                 key={member.id}
@@ -133,7 +133,7 @@ export default function Members() {
               >
                 <CardContent className="p-0">
                   {/* Top row */}
-                  <div className="flex items-center justify-between px-4 py-3">
+                   <div className="flex items-center justify-between px-3 py-2.5 sm:px-4 sm:py-3">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-sm font-medium">
                         {member.name.charAt(0)}
@@ -152,7 +152,7 @@ export default function Members() {
                   </div>
 
                   {/* Bottom row */}
-                  <div className="border-t border-border/60 px-4 py-3 flex items-center justify-between bg-muted/20">
+                  <div className="border-t border-border/60 px-3 py-2.5 sm:px-4 sm:py-3 flex items-center justify-between bg-muted/20">
                     <div>
                       <p className="text-xs text-muted-foreground">余额</p>
                       <p className="text-sm font-semibold tabular-nums">¥{member.balance.toFixed(2)}</p>

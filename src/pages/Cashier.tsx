@@ -230,9 +230,9 @@ export default function Cashier() {
     <div className="space-y-6">
       <PageHeader title="收银台" description="选择顾客 → 添加服务 → 确认结账" />
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Left: Customer + Services */}
-        <div className="space-y-6 lg:col-span-2">
+        <div className="space-y-4 sm:space-y-6 lg:col-span-2">
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-2">
               <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-2xs font-semibold mr-1.5">1</span>
