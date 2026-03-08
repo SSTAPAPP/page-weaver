@@ -22,14 +22,29 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
-const navItems = [
-  { title: "仪表盘", url: "/", icon: LayoutDashboard },
-  { title: "收银台", url: "/cashier", icon: ShoppingCart },
-  { title: "会员管理", url: "/members", icon: Users },
-  { title: "预约管理", url: "/appointments", icon: Calendar },
-  { title: "服务管理", url: "/services", icon: Scissors },
-  { title: "数据报表", url: "/reports", icon: BarChart3 },
-  { title: "交易流水", url: "/transactions", icon: FileText },
+const navGroups = [
+  {
+    label: "工作台",
+    items: [
+      { title: "仪表盘", url: "/", icon: LayoutDashboard },
+      { title: "收银台", url: "/cashier", icon: ShoppingCart },
+    ],
+  },
+  {
+    label: "业务管理",
+    items: [
+      { title: "会员管理", url: "/members", icon: Users },
+      { title: "预约管理", url: "/appointments", icon: Calendar },
+      { title: "服务管理", url: "/services", icon: Scissors },
+    ],
+  },
+  {
+    label: "数据 & 系统",
+    items: [
+      { title: "数据报表", url: "/reports", icon: BarChart3 },
+      { title: "交易流水", url: "/transactions", icon: FileText },
+    ],
+  },
 ];
 
 const settingsItem = { title: "系统设置", url: "/settings", icon: Settings };
