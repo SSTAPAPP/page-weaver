@@ -423,7 +423,7 @@ export default function Cashier() {
                                   )}
                                 </div>
                               </div>
-                              <Button variant="ghost" size="icon" className="shrink-0">
+                              <Button variant="ghost" size="icon" className="shrink-0 h-10 w-10" aria-label={`添加${service.name}到购物车`}>
                                 <ShoppingCart className="h-4 w-4" />
                               </Button>
                             </div>
