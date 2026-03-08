@@ -25,18 +25,18 @@ import {
 } from "@/components/ui/select";
 import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, Calendar, CreditCard, Wallet, Pencil, Trash2, Save, X, History, ArrowUpCircle, ArrowDownCircle, Link2, Tag } from "lucide-react";
+import { Phone, Calendar, CreditCard, Wallet, Pencil, Trash2, Save, X, History, Tag } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { MemberDeleteWithRefundDialog } from "@/components/dialogs/MemberDeleteWithRefundDialog";
 import { AdminPasswordDialog } from "@/components/dialogs/AdminPasswordDialog";
 import { MEMBER_TAG_OPTIONS } from "@/types";
 
-// Transaction type mapping for consistent display
-const typeMap = {
-  recharge: { label: "充值", color: "bg-chart-2/10 text-chart-2 border-chart-2/20" },
-  consume: { label: "消费", color: "bg-destructive/10 text-destructive border-destructive/20" },
-  card_deduct: { label: "次卡", color: "bg-chart-3/10 text-chart-3 border-chart-3/20" },
-  refund: { label: "退款", color: "bg-chart-4/10 text-chart-4 border-chart-4/20" },
-  price_diff: { label: "补差价", color: "bg-chart-1/10 text-chart-1 border-chart-1/20" },
+const typeMap: Record<string, { label: string; sign: string; color: string }> = {
+  recharge: { label: "充值", sign: "+", color: "text-chart-2" },
+  consume: { label: "消费", sign: "-", color: "text-foreground" },
+  card_deduct: { label: "次卡", sign: "-", color: "text-foreground" },
+  refund: { label: "退款", sign: "+", color: "text-chart-4" },
+  price_diff: { label: "补差价", sign: "-", color: "text-chart-1" },
 };
 
 interface MemberDetailDialogProps {
