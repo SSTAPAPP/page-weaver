@@ -406,7 +406,10 @@ export default function Cashier() {
                             <div
                               key={service.id}
                               onClick={() => addToCart(service)}
-                              className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 transition-all hover:border-primary/50 hover:bg-muted/30"
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addToCart(service); } }}
+                              className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 min-h-[44px] transition-colors duration-150 hover:border-primary/50 hover:bg-muted/30"
                             >
                               <div>
                                 <p className="font-medium">{service.name}</p>
