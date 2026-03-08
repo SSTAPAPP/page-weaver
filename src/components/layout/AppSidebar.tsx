@@ -147,7 +147,7 @@ export function AppSidebar({ forceExpanded, defaultCollapsed, onNavigate }: AppS
                   className="font-bold text-foreground text-[15px] leading-tight tracking-tight"
                   style={{ fontFamily: "Lora, serif" }}
                 >
-                  理发店管理
+                  FFk
                 </span>
               </div>
             )}
