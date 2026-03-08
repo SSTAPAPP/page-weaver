@@ -61,7 +61,7 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
         to={item.url}
         onClick={onNavigate}
         className={cn(
-          "group relative flex items-center gap-3 rounded-lg min-h-10 text-base font-medium transition-colors duration-150",
+          "group relative flex items-center gap-3 rounded-lg min-h-10 text-[15px] font-medium transition-colors duration-150",
           isCollapsed ? "justify-center w-10 h-10 mx-auto" : "px-3 py-2",
           isActive
             ? "bg-muted text-sidebar-foreground font-semibold"
