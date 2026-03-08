@@ -15,17 +15,17 @@ export function PageHeader({
   className,
 }: PageHeaderProps) {
   return (
-    <div className={cn("flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between", className)}>
+    <div className={cn("flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between", className)}>
       <div className="min-w-0">
-        <h1 className="text-lg sm:text-xl font-semibold tracking-tight text-foreground">
+        <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-foreground">
           {title}
         </h1>
         {description && (
-          <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2 sm:truncate">{description}</p>
+          <p className="mt-1 text-sm text-muted-foreground">{description}</p>
         )}
       </div>
       {children && (
-        <div className="flex items-center gap-2 shrink-0">{children}</div>
+        <div className="flex items-center gap-2.5 shrink-0">{children}</div>
       )}
     </div>
   );

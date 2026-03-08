@@ -28,12 +28,12 @@ function Metric({ label, value, sub, loading, infoKey }: {
 }) {
   const info = infoKey ? metricsInfo[infoKey] : undefined;
   const content = (
-    <div className="px-4 py-3 cursor-default">
-      <p className="text-xs text-muted-foreground">{label}</p>
-      {loading ? <Skeleton className="h-6 w-20 mt-1" /> : (
-        <p className="text-lg font-semibold tabular-nums mt-0.5">{value}</p>
+    <div className="p-5 cursor-default">
+      <p className="text-xs text-muted-foreground mb-1">{label}</p>
+      {loading ? <Skeleton className="h-7 w-24 mt-1" /> : (
+        <p className="text-xl font-bold tabular-nums">{value}</p>
       )}
-      <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
+      <p className="text-xs text-muted-foreground mt-1">{sub}</p>
     </div>
   );
 
@@ -42,8 +42,8 @@ function Metric({ label, value, sub, loading, infoKey }: {
       <HoverCard openDelay={100} closeDelay={50}>
         <HoverCardTrigger asChild>{content}</HoverCardTrigger>
         <HoverCardContent className="w-64 text-sm" side="bottom" align="start">
-          <p className="font-medium text-xs mb-1">{info.title}</p>
-          <div className="rounded bg-muted/50 p-2 mb-1.5">
+          <p className="font-semibold text-xs mb-1.5">{info.title}</p>
+          <div className="rounded-lg bg-accent/50 p-2.5 mb-2">
             <p className="font-mono text-xs">{info.formula}</p>
           </div>
           <p className="text-xs text-muted-foreground">{info.note}</p>
@@ -105,41 +105,43 @@ export default function Reports() {
   const hasData = transactions.length > 0;
 
   return (
-    <div className="space-y-6 print-report">
+    <div className="space-y-8 print-report">
       <PageHeader title="数据报表" description="近30天经营数据">
-        <Button variant="outline" size="sm" className="h-8 text-xs no-print" onClick={printReport}>
-          <Printer className="mr-1 h-3 w-3" />打印
+        <Button variant="outline" size="sm" className="no-print" onClick={printReport}>
+          <Printer className="mr-1.5 h-3.5 w-3.5" />打印
         </Button>
       </PageHeader>
 
-      <Card>
-        <CardContent className="p-0">
-          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-y sm:divide-y-0 divide-border">
-            <Metric label="今日实收" value={`¥${(todayStats?.revenue ?? 0).toFixed(0)}`} sub={`累计 ¥${totalStats.revenue.toFixed(0)}`} loading={isLoading} infoKey="今日实收" />
-            <Metric label="今日充值" value={`¥${(todayStats?.recharge ?? 0).toFixed(0)}`} sub={`累计 ¥${totalStats.recharge.toFixed(0)}`} loading={isLoading} infoKey="今日充值" />
-            <Metric label="今日消耗" value={`¥${(todayStats?.consumption ?? 0).toFixed(0)}`} sub={`累计 ¥${totalStats.consumption.toFixed(0)}`} loading={isLoading} infoKey="今日消耗" />
-            <Metric label="会员总数" value={members.length.toString()} sub={`今日新增 ${todayStats?.newMembers ?? 0}`} loading={isLoading} />
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        {[
+          { label: "今日实收", value: `¥${(todayStats?.revenue ?? 0).toFixed(0)}`, sub: `累计 ¥${totalStats.revenue.toFixed(0)}`, infoKey: "今日实收" },
+          { label: "今日充值", value: `¥${(todayStats?.recharge ?? 0).toFixed(0)}`, sub: `累计 ¥${totalStats.recharge.toFixed(0)}`, infoKey: "今日充值" },
+          { label: "今日消耗", value: `¥${(todayStats?.consumption ?? 0).toFixed(0)}`, sub: `累计 ¥${totalStats.consumption.toFixed(0)}`, infoKey: "今日消耗" },
+          { label: "会员总数", value: members.length.toString(), sub: `今日新增 ${todayStats?.newMembers ?? 0}` },
+        ].map((m) => (
+          <Card key={m.label}>
+            <Metric label={m.label} value={m.value} sub={m.sub} loading={isLoading} infoKey={m.infoKey} />
+          </Card>
+        ))}
+      </div>
 
       {!hasData ? (
         <EmptyState icon={Printer} title="暂无数据" description="产生交易后自动生成报表" />
       ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2">
           <Card>
-            <CardContent className="pt-4">
-              <p className="text-xs font-medium text-muted-foreground mb-3">30天收入趋势</p>
-              <div className="h-[260px]">
+            <CardContent className="pt-5">
+              <p className="text-sm font-medium text-muted-foreground mb-4">30天收入趋势</p>
+              <div className="h-[280px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={trendData}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} className="fill-muted-foreground" />
-                    <YAxis fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `¥${v}`} className="fill-muted-foreground" />
-                    <RechartsTooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)", fontSize: "12px" }} formatter={(v: number) => [`¥${v}`, ""]} />
-                    <Legend wrapperStyle={{ fontSize: "11px" }} />
-                    <Line type="monotone" dataKey="实收" stroke="hsl(var(--chart-1))" strokeWidth={1.5} dot={false} />
-                    <Line type="monotone" dataKey="充值" stroke="hsl(var(--chart-3))" strokeWidth={1.5} dot={false} />
+                    <XAxis dataKey="date" fontSize={11} tickLine={false} axisLine={false} className="fill-muted-foreground" />
+                    <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `¥${v}`} className="fill-muted-foreground" />
+                    <RechartsTooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px", boxShadow: "var(--shadow-md)" }} formatter={(v: number) => [`¥${v}`, ""]} />
+                    <Legend wrapperStyle={{ fontSize: "12px" }} />
+                    <Line type="monotone" dataKey="实收" stroke="hsl(var(--chart-1))" strokeWidth={2} dot={false} />
+                    <Line type="monotone" dataKey="充值" stroke="hsl(var(--chart-3))" strokeWidth={2} dot={false} />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -147,16 +149,16 @@ export default function Reports() {
           </Card>
 
           <Card>
-            <CardContent className="pt-4">
-              <p className="text-xs font-medium text-muted-foreground mb-3">30天消耗趋势</p>
-              <div className="h-[260px]">
+            <CardContent className="pt-5">
+              <p className="text-sm font-medium text-muted-foreground mb-4">30天消耗趋势</p>
+              <div className="h-[280px]">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={trendData}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis dataKey="date" fontSize={10} tickLine={false} axisLine={false} className="fill-muted-foreground" />
-                    <YAxis fontSize={10} tickLine={false} axisLine={false} tickFormatter={(v) => `¥${v}`} className="fill-muted-foreground" />
-                    <RechartsTooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "var(--radius)", fontSize: "12px" }} formatter={(v: number) => [`¥${v}`, ""]} />
-                    <Bar dataKey="消耗" fill="hsl(var(--chart-2))" radius={[3, 3, 0, 0]} />
+                    <XAxis dataKey="date" fontSize={11} tickLine={false} axisLine={false} className="fill-muted-foreground" />
+                    <YAxis fontSize={11} tickLine={false} axisLine={false} tickFormatter={(v) => `¥${v}`} className="fill-muted-foreground" />
+                    <RechartsTooltip contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: "12px", fontSize: "12px", boxShadow: "var(--shadow-md)" }} formatter={(v: number) => [`¥${v}`, ""]} />
+                    <Bar dataKey="消耗" fill="hsl(var(--chart-2))" radius={[6, 6, 0, 0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>

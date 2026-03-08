@@ -91,21 +91,21 @@ export default function Transactions() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <PageHeader
         title="交易流水"
         description={`${filteredGroups.length} 条记录`}
       />
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
-          <Input placeholder="搜索会员或描述" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9 h-9 text-sm" />
+          <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder="搜索会员或描述" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-11 h-10" />
         </div>
         <div className="flex gap-2">
           <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger className="w-full sm:w-28 h-9 text-xs">
-              <Filter className="mr-1 h-3 w-3" />
+            <SelectTrigger className="w-full sm:w-32 h-10">
+              <Filter className="mr-1.5 h-3.5 w-3.5" />
               <SelectValue placeholder="全部" />
             </SelectTrigger>
             <SelectContent>
@@ -117,8 +117,8 @@ export default function Transactions() {
             </SelectContent>
           </Select>
           {hasFilters && (
-            <Button variant="ghost" size="icon" className="h-9 w-9" onClick={clearFilters}>
-              <X className="h-3.5 w-3.5" />
+            <Button variant="ghost" size="icon" className="h-10 w-10" onClick={clearFilters}>
+              <X className="h-4 w-4" />
             </Button>
           )}
         </div>
@@ -129,11 +129,11 @@ export default function Transactions() {
           icon={CreditCard}
           title={hasFilters ? "未找到匹配记录" : "暂无交易记录"}
           description={hasFilters ? "尝试其他筛选条件" : "交易流水将在这里显示"}
-          action={hasFilters ? <Button variant="outline" size="sm" className="h-8 text-xs" onClick={clearFilters}>清除筛选</Button> : undefined}
+          action={hasFilters ? <Button variant="outline" size="sm" onClick={clearFilters}>清除筛选</Button> : undefined}
         />
       ) : (
         <>
-          <div className="divide-y divide-border rounded-lg border">
+          <div className="space-y-1">
             {paginatedGroups.map((group) => {
               const tx = group.mainTransaction;
               const refundTx = group.refundTransaction;
@@ -144,48 +144,48 @@ export default function Transactions() {
                 <div key={tx.id}>
                   <div
                     className={cn(
-                      "flex items-center justify-between px-3 py-3 cursor-pointer transition-colors hover:bg-muted/20 min-h-[48px]",
-                      isVoided && "opacity-30"
+                      "flex items-center justify-between px-4 py-3.5 cursor-pointer rounded-xl transition-colors hover:bg-accent/40 min-h-[52px]",
+                      isVoided && "opacity-25"
                     )}
                     onClick={() => handleTransactionClick(tx)}
                   >
                     <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className={cn("text-sm font-medium truncate", isVoided && "line-through")}>
                           {tx.description}
                         </p>
-                        <Badge variant="secondary" className="text-2xs font-normal shrink-0 px-1.5 py-0">{info.label}</Badge>
-                        {isVoided && <Badge variant="destructive" className="text-2xs shrink-0 px-1.5 py-0">已作废</Badge>}
+                        <Badge variant="secondary" className="text-2xs font-normal shrink-0">{info.label}</Badge>
+                        {isVoided && <Badge variant="destructive" className="text-2xs shrink-0">已作废</Badge>}
                         {refundTx && (
-                          <Badge variant="outline" className="text-2xs shrink-0 px-1.5 py-0">
+                          <Badge variant="outline" className="text-2xs shrink-0">
                             <Link2 className="h-2.5 w-2.5 mr-0.5" />已退款
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground mt-0.5">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                         <span>{tx.memberName}</span>
-                        <span className="text-border">·</span>
+                        <span className="text-muted-foreground/30">·</span>
                         <span>{format(new Date(tx.createdAt), "MM-dd HH:mm")}</span>
                         {tx.paymentMethod && (
-                          <><span className="text-border">·</span><span>{paymentMethodMap[tx.paymentMethod]}</span></>
+                          <><span className="text-muted-foreground/30">·</span><span>{paymentMethodMap[tx.paymentMethod]}</span></>
                         )}
                       </div>
                     </div>
-                    <span className={cn("text-sm font-medium tabular-nums shrink-0 ml-3", isVoided && "line-through text-muted-foreground")}>
+                    <span className={cn("text-sm font-semibold tabular-nums shrink-0 ml-4", isVoided && "line-through text-muted-foreground")}>
                       {info.prefix}¥{tx.amount.toFixed(2)}
                     </span>
                   </div>
 
                   {refundTx && (
                     <div
-                      className="flex items-center justify-between px-3 py-2 ml-5 mr-3 mb-2 rounded-md bg-muted/30 border-l-2 border-foreground/10 cursor-pointer hover:bg-muted/50 transition-colors min-h-[40px]"
+                      className="flex items-center justify-between px-4 py-2.5 ml-6 mr-4 mb-1 rounded-lg bg-accent/30 border-l-2 border-foreground/8 cursor-pointer hover:bg-accent/50 transition-colors"
                       onClick={() => handleTransactionClick(refundTx)}
                     >
                       <div className="flex items-center gap-2">
-                        <ArrowUpCircle className="h-3 w-3 text-muted-foreground" />
+                        <ArrowUpCircle className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="text-xs text-muted-foreground">退款 · {format(new Date(refundTx.createdAt), "MM-dd HH:mm")}</span>
                       </div>
-                      <span className="text-xs font-medium tabular-nums">+¥{refundTx.amount.toFixed(2)}</span>
+                      <span className="text-xs font-semibold tabular-nums">+¥{refundTx.amount.toFixed(2)}</span>
                     </div>
                   )}
                 </div>
@@ -194,15 +194,15 @@ export default function Transactions() {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-2">
-              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
-                <ChevronLeft className="h-3.5 w-3.5 mr-1" />上一页
+            <div className="flex items-center justify-center gap-3 pt-4">
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                <ChevronLeft className="h-4 w-4 mr-1" />上一页
               </Button>
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {currentPage}/{totalPages}
+              <span className="text-sm text-muted-foreground tabular-nums">
+                {currentPage} / {totalPages}
               </span>
-              <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
-                下一页<ChevronRight className="h-3.5 w-3.5 ml-1" />
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                下一页<ChevronRight className="h-4 w-4 ml-1" />
               </Button>
             </div>
           )}

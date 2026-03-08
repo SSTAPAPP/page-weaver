@@ -25,16 +25,16 @@ export function QuickActions({
   ];
 
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2.5">
       {actions.map((action) => (
         <Button
           key={action.label}
           variant={action.primary ? "default" : "outline"}
           size="sm"
-          className="h-8 text-xs"
+          className="h-9 text-[13px] gap-2"
           onClick={action.onClick}
         >
-          <action.icon className="mr-1.5 h-3 w-3" />
+          <action.icon className="h-3.5 w-3.5" />
           {action.label}
         </Button>
       ))}

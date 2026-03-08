@@ -1,6 +1,5 @@
 import { CreditCard, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { EmptyState } from "@/components/ui/empty-state";
 import { cn } from "@/lib/utils";
@@ -23,28 +22,28 @@ export function RecentTransactions({
   const recent = transactions.slice(0, 6);
 
   return (
-    <section className={cn("transition-opacity duration-300", hidden && "opacity-20")}>
-      <div className="flex items-center justify-between mb-2">
-        <h2 className="text-sm font-medium">最近交易</h2>
+    <section className={cn("transition-opacity duration-500", hidden && "opacity-15")}>
+      <div className="flex items-center justify-between mb-3">
+        <h2 className="text-sm font-semibold tracking-tight">最近交易</h2>
         <Button
           variant="ghost"
           size="sm"
-          className="gap-1 text-muted-foreground text-xs h-6 px-2"
+          className="gap-1.5 text-muted-foreground text-xs h-7 px-2.5"
           onClick={onViewAll}
         >
-          全部 <ArrowRight className="h-3 w-3" />
+          全部 <ArrowRight className="h-3.5 w-3.5" />
         </Button>
       </div>
 
       {isLoading ? (
-        <div className="divide-y divide-border rounded-lg border">
+        <div className="space-y-3">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-between px-3 py-2.5">
-              <div className="space-y-1">
-                <Skeleton className="h-3.5 w-28" />
-                <Skeleton className="h-3 w-16" />
+            <div key={i} className="flex items-center justify-between py-2">
+              <div className="space-y-1.5">
+                <Skeleton className="h-3.5 w-32" />
+                <Skeleton className="h-3 w-20" />
               </div>
-              <Skeleton className="h-3.5 w-14" />
+              <Skeleton className="h-4 w-16" />
             </div>
           ))}
         </div>
@@ -55,7 +54,7 @@ export function RecentTransactions({
           description="完成第一笔收银后显示"
         />
       ) : (
-        <div className="divide-y divide-border rounded-lg border">
+        <div className="space-y-1">
           {recent.map((tx) => {
             const isIncome = tx.type === "recharge" || tx.type === "refund";
             const isExpense = tx.type === "consume" || tx.type === "card_deduct";
@@ -64,8 +63,8 @@ export function RecentTransactions({
               <div
                 key={tx.id}
                 className={cn(
-                  "flex items-center justify-between px-3 py-2.5",
-                  tx.voided && "opacity-30"
+                  "flex items-center justify-between rounded-xl px-3 py-3",
+                  tx.voided && "opacity-25"
                 )}
               >
                 <div className="min-w-0 flex-1">
@@ -75,12 +74,12 @@ export function RecentTransactions({
                   )}>
                     {hidden ? "****" : tx.description}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground mt-0.5">
                     {hidden ? "***" : tx.memberName} · {format(new Date(tx.createdAt), "HH:mm")}
                   </p>
                 </div>
                 <span className={cn(
-                  "text-sm font-medium tabular-nums shrink-0 ml-3",
+                  "text-sm font-semibold tabular-nums shrink-0 ml-3",
                   tx.voided && "line-through text-muted-foreground",
                   !tx.voided && isExpense && "text-destructive",
                   !tx.voided && isIncome && "text-foreground",

@@ -7,7 +7,6 @@ import { zhCN } from "date-fns/locale";
 import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { useAppointments } from "@/hooks/useCloudData";
 import { NewAppointmentDialog } from "@/components/dialogs/NewAppointmentDialog";
@@ -18,8 +17,8 @@ import type { Appointment } from "@/types";
 const statusMap: Record<string, { label: string; color: string }> = {
   pending: { label: "待确认", color: "bg-muted-foreground/30" },
   confirmed: { label: "已确认", color: "bg-foreground" },
-  cancelled: { label: "已取消", color: "bg-muted-foreground/20" },
-  completed: { label: "已完成", color: "bg-foreground/60" },
+  cancelled: { label: "已取消", color: "bg-muted-foreground/15" },
+  completed: { label: "已完成", color: "bg-foreground/50" },
   noshow: { label: "已爽约", color: "bg-destructive" },
 };
 
@@ -75,24 +74,24 @@ export default function Appointments() {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <PageHeader title="预约管理" description={`本月 ${monthStats.total} 预约${monthStats.pending > 0 ? ` · ${monthStats.pending} 待确认` : ""}`}>
-        <Button size="sm" className="h-8 text-xs" onClick={() => setDialogOpen(true)}>
-          <Plus className="mr-1 h-3 w-3" />新增预约
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
+          <Plus className="mr-1.5 h-3.5 w-3.5" />新增预约
         </Button>
       </PageHeader>
 
       <Card>
         <CardContent className="p-0">
           {/* Month nav */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-border">
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
+          <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <span className="text-sm font-medium">
+            <span className="text-sm font-semibold tracking-tight">
               {format(currentMonth, "yyyy年 M月", { locale: zhCN })}
             </span>
-            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
               <ChevronRight className="h-4 w-4" />
             </Button>
           </div>
@@ -101,8 +100,8 @@ export default function Appointments() {
           <div className="grid grid-cols-7 border-b border-border">
             {WEEKDAYS.map((day, i) => (
               <div key={day} className={cn(
-                "py-2 text-center text-xs font-medium",
-                (i === 0 || i === 6) ? "text-muted-foreground/50" : "text-muted-foreground"
+                "py-2.5 text-center text-xs font-medium",
+                (i === 0 || i === 6) ? "text-muted-foreground/40" : "text-muted-foreground"
               )}>
                 {day}
               </div>
@@ -121,21 +120,21 @@ export default function Appointments() {
                   key={day.toISOString()}
                   onClick={() => { setSelectedDate(day); setDetailDialogOpen(true); }}
                   className={cn(
-                    "min-h-[64px] sm:min-h-[72px] cursor-pointer border-b border-r border-border p-1 transition-colors hover:bg-muted/20",
-                    !isCurrentMonth && "opacity-30",
-                    isSelected && "bg-muted/40"
+                    "min-h-[72px] sm:min-h-[80px] cursor-pointer border-b border-r border-border p-1.5 transition-colors hover:bg-accent/30",
+                    !isCurrentMonth && "opacity-25",
+                    isSelected && "bg-accent/40"
                   )}
                 >
                   <span className={cn(
-                    "inline-flex h-6 w-6 items-center justify-center rounded-full text-xs",
-                    isToday(day) ? "bg-foreground text-background font-medium" : "text-foreground"
+                    "inline-flex h-7 w-7 items-center justify-center rounded-full text-xs",
+                    isToday(day) ? "bg-foreground text-background font-semibold" : "text-foreground"
                   )}>
                     {format(day, "d")}
                   </span>
                   <div className="mt-0.5 space-y-0.5">
                     {dayAppointments.slice(0, 2).map((apt) => (
                       <div key={apt.id} className={cn(
-                        "truncate rounded px-1 py-0.5 text-2xs text-background",
+                        "truncate rounded-md px-1 py-0.5 text-2xs text-background",
                         statusMap[apt.status]?.color || "bg-muted"
                       )}>
                         {apt.time} {apt.memberName}
