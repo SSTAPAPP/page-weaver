@@ -144,34 +144,32 @@ export default function Dashboard() {
   const recentTransactions = transactions.filter(t => !t.voided).slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header - 移动端更紧凑 */}
+      <div className="flex flex-col gap-1 sm:gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">仪表盘</h1>
-          <p className="text-muted-foreground">实时掌握今日营收、会员动态与预约概况</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">仪表盘</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">实时掌握今日营收、会员动态与预约概况</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="font-normal">
-            {format(new Date(), "yyyy年M月d日 EEEE", { locale: zhCN })}
-          </Badge>
-        </div>
+        <Badge variant="outline" className="font-normal text-xs self-start sm:self-auto">
+          {format(new Date(), "M月d日 EEEE", { locale: zhCN })}
+        </Badge>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - 移动端2列紧凑 */}
       <div className={`transition-opacity duration-200 ${isHidden("stats") ? "opacity-30" : ""}`}>
-        <div className="mb-2 flex items-center justify-end">
+        <div className="mb-1.5 flex items-center justify-end">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 opacity-30 hover:opacity-100"
+            className="h-7 w-7 opacity-30 hover:opacity-100"
             onClick={() => toggleSectionVisibility("stats")}
             aria-label={isHidden("stats") ? "显示统计数据" : "隐藏统计数据"}
           >
-            {isHidden("stats") ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            {isHidden("stats") ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
           </Button>
         </div>
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-2 sm:gap-4 grid-cols-2 lg:grid-cols-5">
           {statCards.map((stat) => (
             <StatCardWithTooltip
               key={stat.title}
@@ -186,21 +184,22 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - 移动端横向滚动 */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">快捷操作</CardTitle>
+        <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+          <CardTitle className="text-base sm:text-lg">快捷操作</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
+        <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-1 -mx-1 px-1">
             {quickActions.map((action) => (
               <Button
                 key={action.title}
                 variant={action.variant}
                 onClick={action.onClick}
-                className="gap-2 min-h-[44px]"
+                className="gap-1.5 sm:gap-2 min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm whitespace-nowrap shrink-0"
+                size="sm"
               >
-                <action.icon className="h-4 w-4" />
+                <action.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 {action.title}
               </Button>
             ))}
