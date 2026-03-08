@@ -27,9 +27,11 @@ import {
   ArrowRight,
   Wallet,
   Banknote,
-  Link2
+  Link2,
+  Printer
 } from "lucide-react";
 import type { Transaction } from "@/types";
+import { printTransactionReceipt } from "@/components/receipt/TransactionReceipt";
 
 const typeMap = {
   recharge: { label: "充值", icon: ArrowUpCircle, color: "text-chart-2", bgColor: "bg-chart-2/10" },
