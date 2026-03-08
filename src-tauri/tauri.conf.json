@@ -14,7 +14,17 @@
       "all": false,
       "shell": {
         "open": true
+      },
+      "process": {
+        "relaunch": true
       }
+    },
+    "updater": {
+      "active": true,
+      "dialog": false,
+      "endpoints": [
+        "https://github.com/SSTAPAPP/page-weaver/releases/latest/download/latest.json"
+      ]
     },
     "bundle": {
       "active": true,
