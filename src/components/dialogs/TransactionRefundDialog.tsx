@@ -69,11 +69,14 @@ export function TransactionRefundDialog({
   const TypeIcon = typeInfo.icon;
   const isVoided = transaction.voided;
   const isRefundType = transaction.type === 'refund';
-  const canRefund = !isVoided && !isRefundType && (transaction.type === "consume" || transaction.type === "card_deduct" || transaction.type === "price_diff");
-
+  
   // 获取关联交易
   const relatedTransactions = getRelatedTransactions(transaction.id);
   const refundTransaction = relatedTransactions.find(t => t.type === 'refund' && t.relatedTransactionId === transaction.id);
+  
+  // 防重复退款：已作废、已退款、退款类型交易均不可再退
+  const hasRefunded = !!refundTransaction;
+  const canRefund = !isVoided && !isRefundType && !hasRefunded && (transaction.type === "consume" || transaction.type === "card_deduct" || transaction.type === "price_diff");
 
   const handleRefund = async () => {
     if (password !== adminPassword) {
