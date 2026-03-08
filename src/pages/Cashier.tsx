@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { Search, ShoppingCart, Trash2, CreditCard, Wallet, UserX, AlertCircle, Clock, DollarSign, Plus, Printer } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
