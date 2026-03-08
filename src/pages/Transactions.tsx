@@ -45,7 +45,7 @@ interface GroupedTransaction {
 }
 
 export default function Transactions() {
-  const { transactions } = useStore();
+  const { transactions, shopInfo } = useStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
