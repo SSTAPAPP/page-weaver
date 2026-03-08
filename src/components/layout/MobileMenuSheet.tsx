@@ -54,7 +54,7 @@ export function MobileMenuSheet({ open, onOpenChange }: MobileMenuSheetProps) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="bottom" className="rounded-t-xl pb-8">
         <SheetHeader className="pb-2">
-          <SheetTitle className="text-base font-serif">更多功能</SheetTitle>
+          <SheetTitle className="text-base font-semibold">更多功能</SheetTitle>
         </SheetHeader>
 
         <div className="grid grid-cols-4 gap-3 py-4">
