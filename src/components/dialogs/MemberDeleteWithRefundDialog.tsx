@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useStore } from "@/stores/useStore";
@@ -149,7 +149,7 @@ export function MemberDeleteWithRefundDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <div className="flex-1 min-h-0 -mx-6 px-6 overflow-y-auto overflow-x-hidden scroll-hint-bottom">
           {step === "refund" ? (
             <div className="space-y-4 pb-4">
               {/* 会员信息 */}
@@ -265,7 +265,7 @@ export function MemberDeleteWithRefundDialog({
               </div>
             </div>
           )}
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="pt-4 border-t border-border gap-2 sm:gap-2">
           {step === "refund" ? (
