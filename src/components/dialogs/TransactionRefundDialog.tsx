@@ -330,13 +330,25 @@ export function TransactionRefundDialog({
                 )}
                 <Alert>
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">
-                    退款后将作废此交易。
-                    {transaction.subTransactions?.some(s => s.type === 'card') && " 次卡次数将自动退回。"}
-                    {transaction.subTransactions?.some(s => s.type === 'balance') && " 余额将退回会员账户。"}
-                    {transaction.subTransactions?.some(s => s.type === 'price_diff') && " 补差价部分请手动退还。"}
-                    {!transaction.subTransactions && transaction.paymentMethod === 'balance' && " 余额将退回会员账户。"}
-                    {!transaction.subTransactions && transaction.paymentMethod && transaction.paymentMethod !== 'balance' && " 请手动退还现金/在线支付。"}
+                  <AlertDescription className="text-xs space-y-1">
+                    <p className="font-medium">退款将按原路返回：</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {transaction.subTransactions?.some(s => s.type === 'card') && (
+                        <li>次卡消费 → 次数自动退回原卡</li>
+                      )}
+                      {transaction.subTransactions?.some(s => s.type === 'balance') && (
+                        <li>余额消费 → 金额自动退回会员账户</li>
+                      )}
+                      {transaction.subTransactions?.some(s => s.type === 'price_diff') && (
+                        <li>补差价部分 → 需手动通过{paymentMethodMap[transaction.subTransactions?.find(s => s.type === 'price_diff')?.paymentMethod || 'cash']}退还</li>
+                      )}
+                      {!transaction.subTransactions && transaction.paymentMethod === 'balance' && (
+                        <li>余额消费 → 金额自动退回会员账户</li>
+                      )}
+                      {!transaction.subTransactions && transaction.paymentMethod && transaction.paymentMethod !== 'balance' && (
+                        <li>{paymentMethodMap[transaction.paymentMethod]}支付 → 需手动原路退还给顾客</li>
+                      )}
+                    </ul>
                   </AlertDescription>
                 </Alert>
               </div>
