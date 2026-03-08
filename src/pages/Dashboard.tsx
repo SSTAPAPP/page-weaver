@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   Users,
   Wallet,
@@ -141,7 +141,33 @@ export default function Dashboard() {
     },
   ];
 
-  const recentTransactions = transactions.slice(0, 5);
+  // 分组交易：主交易 + 关联退款
+  const recentGroupedTransactions = useMemo(() => {
+    const groups: { mainTransaction: typeof transactions[0]; refundTransaction?: typeof transactions[0] }[] = [];
+    const processedIds = new Set<string>();
+    const refundMap = new Map<string, typeof transactions[0]>();
+    
+    transactions.forEach((tx) => {
+      if (tx.type === 'refund' && tx.relatedTransactionId) {
+        refundMap.set(tx.relatedTransactionId, tx);
+      }
+    });
+    
+    transactions.forEach((tx) => {
+      if (processedIds.has(tx.id)) return;
+      if (tx.type === 'refund') {
+        if (!tx.relatedTransactionId) groups.push({ mainTransaction: tx });
+        processedIds.add(tx.id);
+        return;
+      }
+      const refundTx = refundMap.get(tx.id);
+      groups.push({ mainTransaction: tx, refundTransaction: refundTx });
+      processedIds.add(tx.id);
+      if (refundTx) processedIds.add(refundTx.id);
+    });
+    
+    return groups.slice(0, 5);
+  }, [transactions]);
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -310,7 +336,7 @@ export default function Dashboard() {
             </div>
           </CardHeader>
           <CardContent className="pt-2 sm:pt-3 px-3 sm:px-6 pb-3 sm:pb-6">
-            {recentTransactions.length === 0 ? (
+            {recentGroupedTransactions.length === 0 ? (
               <EmptyState
                 icon={CreditCard}
                 title="暂无交易"
@@ -318,58 +344,84 @@ export default function Dashboard() {
               />
             ) : (
               <div className="divide-y divide-border">
-                {recentTransactions.map((tx, idx) => {
-                  const isIncome = tx.type === "recharge" || tx.type === "refund";
-                  const isVoided = tx.voided;
-                  const typeLabel = tx.type === "recharge" ? "充值" : tx.type === "consume" ? "消费" : tx.type === "card_deduct" ? "次卡" : tx.type === "refund" ? "退款" : "其他";
-                  return (
-                    <div
-                      key={tx.id}
-                      className={cn(
-                        "flex items-center justify-between py-2 sm:py-3 first:pt-0 last:pb-0",
-                        isVoided && "opacity-50"
-                      )}
-                    >
-                      {/* 序号 */}
-                      <span className="text-xs text-muted-foreground tabular-nums w-5 shrink-0">
-                        {idx + 1}
-                      </span>
-                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1">
-                            <p className={cn(
-                              "text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none",
-                              isVoided && "line-through text-muted-foreground"
-                            )}>
-                              {isHidden("transactions") ? "****" : tx.description}
-                            </p>
-                            <Badge variant="secondary" className="text-[9px] sm:text-[10px] px-1 py-0 h-3.5 sm:h-4 font-normal shrink-0">
-                              {typeLabel}
-                            </Badge>
-                            {isVoided && (
-                              <Badge variant="destructive" className="text-[9px] sm:text-[10px] px-1 py-0 h-3.5 sm:h-4 font-normal shrink-0">
-                                已作废
-                              </Badge>
-                            )}
-                          </div>
-                          <p className="text-[10px] sm:text-xs text-muted-foreground">
-                            {isHidden("transactions") ? "***" : tx.memberName}
-                            <span className="mx-0.5 sm:mx-1">·</span>
-                            {format(new Date(tx.createdAt), "HH:mm")}
-                          </p>
-                        </div>
-                      </div>
-                      <span
+                {recentGroupedTransactions.map((group, idx) => {
+                  const tx = group.mainTransaction;
+                  const refundTx = group.refundTransaction;
+                  const hasRefund = !!refundTx;
+                  
+                  const renderTxRow = (transaction: typeof tx, isRefundRow = false) => {
+                    const isIncome = transaction.type === "recharge" || transaction.type === "refund";
+                    const isVoided = transaction.voided;
+                    const typeLabel = transaction.type === "recharge" ? "充值" : transaction.type === "consume" ? "消费" : transaction.type === "card_deduct" ? "次卡" : transaction.type === "refund" ? "退款" : "其他";
+                    
+                    return (
+                      <div
                         className={cn(
-                          "text-xs sm:text-sm font-medium tabular-nums shrink-0 ml-2",
-                          isVoided ? "line-through text-muted-foreground" : (isIncome ? "text-chart-2" : "text-foreground")
+                          "flex items-center justify-between py-2 sm:py-3",
+                          isVoided && "opacity-50",
+                          isRefundRow && "ml-4 sm:ml-6"
                         )}
                       >
-                        {isHidden("transactions") 
-                          ? "****" 
-                          : `${isIncome ? "+" : "-"}¥${tx.amount.toFixed(0)}`
-                        }
-                      </span>
+                        {/* 序号 - 只在主交易显示 */}
+                        {!isRefundRow && (
+                          <span className="text-xs text-muted-foreground tabular-nums w-5 shrink-0">
+                            {idx + 1}
+                          </span>
+                        )}
+                        {isRefundRow && <span className="w-5 shrink-0" />}
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-1">
+                              <p className={cn(
+                                "text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none",
+                                isVoided && "line-through text-muted-foreground"
+                              )}>
+                                {isHidden("transactions") ? "****" : transaction.description}
+                              </p>
+                              <Badge variant="secondary" className="text-[9px] sm:text-[10px] px-1 py-0 h-3.5 sm:h-4 font-normal shrink-0">
+                                {typeLabel}
+                              </Badge>
+                              {isVoided && (
+                                <Badge variant="destructive" className="text-[9px] sm:text-[10px] px-1 py-0 h-3.5 sm:h-4 font-normal shrink-0">
+                                  已作废
+                                </Badge>
+                              )}
+                            </div>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground">
+                              {isHidden("transactions") ? "***" : transaction.memberName}
+                              <span className="mx-0.5 sm:mx-1">·</span>
+                              {format(new Date(transaction.createdAt), "HH:mm")}
+                            </p>
+                          </div>
+                        </div>
+                        <span
+                          className={cn(
+                            "text-xs sm:text-sm font-medium tabular-nums shrink-0 ml-2",
+                            isVoided ? "line-through text-muted-foreground" : (isIncome ? "text-chart-2" : "text-foreground")
+                          )}
+                        >
+                          {isHidden("transactions") 
+                            ? "****" 
+                            : `${isIncome ? "+" : "-"}¥${transaction.amount.toFixed(0)}`
+                          }
+                        </span>
+                      </div>
+                    );
+                  };
+                  
+                  return (
+                    <div key={tx.id}>
+                      <div className="relative">
+                        {renderTxRow(tx)}
+                        {hasRefund && !tx.voided && (
+                          <div className="absolute right-0 top-2">
+                            <Badge variant="outline" className="text-[9px] px-1 py-0 h-3.5 font-normal text-chart-4 border-chart-4/30">
+                              已退款
+                            </Badge>
+                          </div>
+                        )}
+                      </div>
+                      {refundTx && renderTxRow(refundTx, true)}
                     </div>
                   );
                 })}
