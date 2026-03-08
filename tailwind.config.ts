@@ -64,6 +64,10 @@ export default {
   			warning: {
   				DEFAULT: 'hsl(var(--warning))',
   				foreground: 'hsl(var(--warning-foreground))'
+  			},
+  			brand: {
+  				DEFAULT: 'hsl(var(--brand))',
+  				foreground: 'hsl(var(--brand-foreground))'
   			}
   		},
   		borderRadius: {
@@ -97,6 +101,10 @@ export default {
   			'slide-up': {
   				from: { opacity: '0', transform: 'translateY(8px)' },
   				to: { opacity: '1', transform: 'translateY(0)' }
+  			},
+  			'undo-countdown': {
+  				from: { transform: 'scaleX(1)' },
+  				to: { transform: 'scaleX(0)' }
   			}
   		},
   		animation: {
@@ -105,7 +113,8 @@ export default {
   			'fade-in': 'fade-in var(--duration-normal, 200ms) var(--ease-out, ease-out)',
   			'slide-in-right': 'slide-in-right var(--duration-normal, 200ms) var(--ease-out, ease-out)',
   			'scale-in': 'scale-in var(--duration-fast, 120ms) var(--ease-out, ease-out)',
-  			'slide-up': 'slide-up var(--duration-normal, 200ms) var(--ease-out, ease-out) both'
+  			'slide-up': 'slide-up var(--duration-normal, 200ms) var(--ease-out, ease-out) both',
+  			'undo-countdown': 'undo-countdown 5s linear forwards'
   		},
   		boxShadow: {
   			'2xs': 'var(--shadow-2xs)',

@@ -197,14 +197,14 @@ export default function Transactions() {
                   {/* Linked refund */}
                   {refundTx && (
                     <div
-                      className="flex items-center justify-between px-4 py-2.5 bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors ml-6 mr-4 mb-2 rounded-md"
+                      className="flex items-center justify-between px-4 py-2.5 bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors ml-6 mr-4 mb-2 rounded-md border-l-2 border-brand/30 min-h-[44px]"
                       onClick={() => handleTransactionClick(refundTx)}
                     >
                       <div className="flex items-center gap-2">
-                        <ArrowUpCircle className="h-3.5 w-3.5 text-muted-foreground" />
-                        <span className="text-xs">退款 · {format(new Date(refundTx.createdAt), "MM-dd HH:mm", { locale: zhCN })}</span>
+                        <ArrowUpCircle className="h-3.5 w-3.5 text-brand/60" />
+                        <span className="text-xs text-muted-foreground">退款 · {format(new Date(refundTx.createdAt), "MM-dd HH:mm", { locale: zhCN })}</span>
                       </div>
-                      <span className="text-xs font-medium tabular-nums">+¥{refundTx.amount.toFixed(2)}</span>
+                      <span className="text-xs font-medium tabular-nums text-brand">+¥{refundTx.amount.toFixed(2)}</span>
                     </div>
                   )}
                 </div>

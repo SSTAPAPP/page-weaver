@@ -30,6 +30,29 @@ const transformDbTransaction = (db: DbTransaction): Transaction => ({
   createdAt: new Date(db.created_at),
 });
 
+function computeTransactionStats(transactions: Transaction[]): {
+  revenue: number;
+  recharge: number;
+  consumption: number;
+} {
+  let revenue = transactions
+    .filter(t => t.type === 'consume' && t.paymentMethod !== 'balance' && t.paymentMethod !== undefined)
+    .reduce((sum, t) => sum + t.amount, 0);
+  transactions.forEach(t => {
+    if (t.type !== 'refund' && t.subTransactions) {
+      t.subTransactions.forEach(sub => {
+        if (sub.type === 'price_diff') { revenue += sub.amount; }
+      });
+    }
+  });
+  revenue += transactions.filter(t => t.type === 'price_diff').reduce((sum, t) => sum + t.amount, 0);
+  const recharge = transactions.filter(t => t.type === 'recharge').reduce((sum, t) => sum + t.amount, 0);
+  const consumption = transactions
+    .filter(t => (t.type === 'consume' && t.paymentMethod === 'balance') || t.type === 'card_deduct')
+    .reduce((sum, t) => sum + t.amount, 0);
+  return { revenue, recharge, consumption };
+}
+
 export const transactionService = {
   async getAll(): Promise<Transaction[]> {
     const { data, error } = await supabase
@@ -111,52 +134,27 @@ export const transactionService = {
   }> {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
     const { data, error } = await supabase
       .from('transactions')
       .select('*')
       .gte('created_at', today.toISOString())
       .eq('voided', false);
-
     if (error) throw error;
+    return computeTransactionStats((data || []).map(t => transformDbTransaction(t as DbTransaction)));
+  },
 
-    const transactions = (data || []).map(t => transformDbTransaction(t as DbTransaction));
-
-    let revenue = transactions
-      .filter(t => 
-        t.type === 'consume' && 
-        t.paymentMethod !== 'balance' &&
-        t.paymentMethod !== undefined
-      )
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    // Add price_diff from subTransactions
-    transactions.forEach(t => {
-      if (t.type !== 'refund' && t.subTransactions) {
-        t.subTransactions.forEach(sub => {
-          if (sub.type === 'price_diff') {
-            revenue += sub.amount;
-          }
-        });
-      }
-    });
-
-    // Legacy price_diff transactions
-    revenue += transactions
-      .filter(t => t.type === 'price_diff')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const recharge = transactions
-      .filter(t => t.type === 'recharge')
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    const consumption = transactions
-      .filter(t => 
-        (t.type === 'consume' && t.paymentMethod === 'balance') || 
-        t.type === 'card_deduct'
-      )
-      .reduce((sum, t) => sum + t.amount, 0);
-
-    return { revenue, recharge, consumption };
+  async getStatsForDateRange(startDate: Date, endDate: Date): Promise<{
+    revenue: number;
+    recharge: number;
+    consumption: number;
+  }> {
+    const { data, error } = await supabase
+      .from('transactions')
+      .select('*')
+      .gte('created_at', startDate.toISOString())
+      .lte('created_at', endDate.toISOString())
+      .eq('voided', false);
+    if (error) throw error;
+    return computeTransactionStats((data || []).map(t => transformDbTransaction(t as DbTransaction)));
   },
 };

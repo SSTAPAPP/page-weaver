@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, Fragment } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { generateWalkInId } from "@/stores/useStore";
 import { useMembers, useServices } from "@/hooks/useCloudData";
@@ -12,6 +12,9 @@ import { queryKeys } from "@/hooks/useCloudData";
 import { CustomerSelector } from "@/components/cashier/CustomerSelector";
 import { ServiceList } from "@/components/cashier/ServiceList";
 import { CartPanel, type CartItem } from "@/components/cashier/CartPanel";
+import { MobileCheckoutBar } from "@/components/cashier/MobileCheckoutBar";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { cn } from "@/lib/utils";
 
 interface CardUsageInfo {
   cardName: string;
@@ -20,8 +23,40 @@ interface CardUsageInfo {
   remainingCount: number;
 }
 
+function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
+  const steps = [
+    { num: 1 as const, label: "选顾客" },
+    { num: 2 as const, label: "选服务" },
+    { num: 3 as const, label: "结算" },
+  ];
+  return (
+    <div className="flex items-center gap-0.5 sm:gap-1">
+      {steps.map((s, i) => (
+        <Fragment key={s.num}>
+          {i > 0 && <span className="text-muted-foreground/30 text-xs mx-0.5">→</span>}
+          <span className={cn(
+            "inline-flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-full text-xs transition-colors",
+            step >= s.num
+              ? step === s.num ? "bg-brand/10 text-brand font-medium" : "text-foreground"
+              : "text-muted-foreground/50"
+          )}>
+            <span className={cn(
+              "inline-flex items-center justify-center h-4 w-4 rounded-full text-2xs font-semibold",
+              step >= s.num
+                ? step === s.num ? "bg-brand text-brand-foreground" : "bg-muted-foreground/20 text-foreground"
+                : "bg-muted text-muted-foreground/50"
+            )}>{s.num}</span>
+            {s.label}
+          </span>
+        </Fragment>
+      ))}
+    </div>
+  );
+}
+
 export default function Cashier() {
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   const { data: members = [], isLoading: isMembersLoading } = useMembers();
   const { data: services = [], isLoading: isServicesLoading } = useServices();
 
@@ -35,6 +70,13 @@ export default function Cashier() {
   const undoTimerRef = useRef<ReturnType<typeof setTimeout>>();
 
   const isWalkIn = !selectedMember;
+
+  // Current step for indicator
+  const currentStep = useMemo((): 1 | 2 | 3 => {
+    if (cart.length > 0) return 3;
+    if (selectedMember) return 2;
+    return 1;
+  }, [selectedMember, cart.length]);
 
   // --- Search ---
   const searchResults = useMemo(() => {
@@ -80,7 +122,6 @@ export default function Cashier() {
       const removed = prev[index];
       if (removed) {
         setLastRemoved({ item: removed, index });
-        // Auto-clear undo after 5s
         clearTimeout(undoTimerRef.current);
         undoTimerRef.current = setTimeout(() => setLastRemoved(null), 5000);
       }
@@ -104,7 +145,6 @@ export default function Cashier() {
       setCart([]);
       return;
     }
-    // For 2+ items, use toast confirmation
     toast("确认清空购物车？", {
       action: {
         label: "清空",
@@ -226,71 +266,75 @@ export default function Cashier() {
     ).length;
   };
 
+  const cartPanelProps = {
+    cart,
+    isWalkIn,
+    memberBalance: selectedMember?.balance ?? 0,
+    paymentMethod,
+    isCheckingOut,
+    lastRemoved,
+    getEffectiveRemaining,
+    onToggleCardUse: toggleCardUse,
+    onRemoveItem: removeFromCart,
+    onUndoRemove: undoRemove,
+    onClearCart: clearCart,
+    onPaymentMethodChange: setPaymentMethod,
+    onCheckout: handleCheckoutClick,
+    cardDeductTotal,
+    balanceDeduct,
+    cashNeed,
+    total,
+  };
+
   return (
-    <div className="space-y-6">
-      <PageHeader title="收银台" description="选择顾客 → 添加服务 → 确认结账" />
+    <div className={cn("space-y-4 sm:space-y-6", isMobile && cart.length > 0 && "pb-20")}>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <PageHeader title="收银台" />
+        <StepIndicator step={currentStep} />
+      </div>
 
       <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
         {/* Left: Customer + Services */}
         <div className="space-y-4 sm:space-y-6 lg:col-span-2">
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-2">
-              <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-2xs font-semibold mr-1.5">1</span>
-              选择顾客
-            </p>
-            <CustomerSelector
-              selectedMember={selectedMember}
-              searchQuery={searchQuery}
-              searchResults={searchResults}
-              onSearchChange={setSearchQuery}
-              onSelectMember={selectMember}
-              onClearMember={clearMember}
-            />
-          </div>
+          <CustomerSelector
+            selectedMember={selectedMember}
+            searchQuery={searchQuery}
+            searchResults={searchResults}
+            onSearchChange={setSearchQuery}
+            onSelectMember={selectMember}
+            onClearMember={clearMember}
+          />
 
-          <div>
-            <p className="text-xs font-medium text-muted-foreground mb-2">
-              <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-2xs font-semibold mr-1.5">2</span>
-              选择服务
-            </p>
-            <ServiceList
-              servicesByCategory={servicesByCategory}
-              isLoading={isMembersLoading || isServicesLoading}
-              selectedMember={selectedMember}
-              cartCounts={cartCounts}
-              getEffectiveRemainingCount={getEffectiveRemainingCount}
-              onAddToCart={addToCart}
-            />
-          </div>
-        </div>
-
-        {/* Right: Cart */}
-        <div>
-          <p className="text-xs font-medium text-muted-foreground mb-2 lg:hidden">
-            <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-2xs font-semibold mr-1.5">3</span>
-            结算
-          </p>
-          <CartPanel
-            cart={cart}
-            isWalkIn={isWalkIn}
-            memberBalance={selectedMember?.balance ?? 0}
-            paymentMethod={paymentMethod}
-            isCheckingOut={isCheckingOut}
-            lastRemoved={lastRemoved}
-            getEffectiveRemaining={getEffectiveRemaining}
-            onToggleCardUse={toggleCardUse}
-            onRemoveItem={removeFromCart}
-            onUndoRemove={undoRemove}
-            onClearCart={clearCart}
-            onPaymentMethodChange={setPaymentMethod}
-            onCheckout={handleCheckoutClick}
-            cardDeductTotal={cardDeductTotal}
-            balanceDeduct={balanceDeduct}
-            cashNeed={cashNeed}
-            total={total}
+          <ServiceList
+            servicesByCategory={servicesByCategory}
+            isLoading={isMembersLoading || isServicesLoading}
+            selectedMember={selectedMember}
+            cartCounts={cartCounts}
+            getEffectiveRemainingCount={getEffectiveRemainingCount}
+            onAddToCart={addToCart}
           />
         </div>
+
+        {/* Right: Cart — desktop only */}
+        {!isMobile && (
+          <div>
+            <CartPanel {...cartPanelProps} />
+          </div>
+        )}
       </div>
+
+      {/* Mobile: fixed bottom bar + drawer */}
+      {isMobile && (
+        <MobileCheckoutBar
+          cartCount={cart.length}
+          total={total}
+          cashNeed={cashNeed}
+          isCheckingOut={isCheckingOut}
+          onCheckout={handleCheckoutClick}
+        >
+          <CartPanel {...cartPanelProps} />
+        </MobileCheckoutBar>
+      )}
 
       <CheckoutConfirmDialog
         open={confirmDialogOpen}
