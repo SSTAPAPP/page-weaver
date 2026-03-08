@@ -159,18 +159,18 @@ export default function Members() {
                   </div>
 
                   {/* Stats Row */}
-                  <div className="grid grid-cols-3 divide-x divide-border border-y border-border bg-muted/30">
-                    <div className="py-2.5 px-3 text-center">
+                  <div className="grid grid-cols-3 gap-2 mx-4 mb-3">
+                    <div className="rounded-md bg-muted/50 py-2 px-2 text-center">
                       <p className="text-[10px] text-muted-foreground leading-tight">储值余额</p>
                       <p className="text-sm font-bold tabular-nums mt-0.5">¥{member.balance.toFixed(0)}</p>
                     </div>
-                    <div className="py-2.5 px-3 text-center">
+                    <div className="rounded-md bg-muted/50 py-2 px-2 text-center">
                       <p className="text-[10px] text-muted-foreground leading-tight">次卡余次</p>
                       <p className="text-sm font-bold tabular-nums mt-0.5">
                         {totalCardRemaining}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">次</span>
                       </p>
                     </div>
-                    <div className="py-2.5 px-3 text-center">
+                    <div className="rounded-md bg-muted/50 py-2 px-2 text-center">
                       <p className="text-[10px] text-muted-foreground leading-tight">到店次数</p>
                       <p className="text-sm font-bold tabular-nums mt-0.5">{consumeCount}</p>
                     </div>
