@@ -1,73 +1,34 @@
-# Welcome to your Lovable project
+# FFk 理发店管理系统
 
-## Project info
+专业的理发店会员管理与收银系统，涵盖会员开卡、储值充值、次卡消费、预约管理、收银结账、数据报表等完整业务闭环。
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## 功能模块
 
-## How can I edit this code?
+- **仪表盘** — 实时营收、会员动态与预约概览
+- **收银台** — 多种支付方式快速结账（余额 / 次卡 / 现金 / 微信 / 支付宝）
+- **会员管理** — 开卡、充值、查询、编辑与删除
+- **预约管理** — 按日历查看与管理客户预约
+- **服务管理** — 维护服务项目与次卡模板
+- **数据报表** — 营收趋势、充值消耗分析与会员增长统计
+- **交易流水** — 完整的充值、消费、退款记录与作废操作
+- **系统设置** — 店铺信息、主题切换、管理员密码与数据管理
 
-There are several ways of editing your application.
+## 技术栈
 
-**Use Lovable**
+- React 18 + TypeScript
+- Vite
+- Tailwind CSS + shadcn/ui
+- Zustand 状态管理
+- Recharts 数据可视化
+- Lovable Cloud 后端服务
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
-
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+## 开发
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 构建
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+项目通过 GitHub Actions 自动构建与发布，本地无需执行 `npm run build`。
