@@ -209,7 +209,7 @@ export default function Transactions() {
               return (
                 <Card
                   key={tx.id}
-                  className={`transition-colors hover:bg-muted/30 ${isVoided ? "opacity-60" : ""}`}
+                  className={`transition-colors duration-150 hover:bg-muted/30 ${isVoided ? "opacity-60" : ""}`}
                 >
                   <CardContent className="p-0">
                     {/* 主交易 */}

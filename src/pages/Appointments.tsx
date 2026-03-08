@@ -206,7 +206,10 @@ export default function Appointments() {
                 <div
                   key={day.toISOString()}
                   onClick={() => handleDateClick(day)}
-                  className={`min-h-[80px] cursor-pointer border-b border-r border-border p-1.5 transition-all hover:bg-muted/50 ${
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleDateClick(day); } }}
+                  className={`min-h-[80px] cursor-pointer border-b border-r border-border p-1.5 transition-colors duration-150 hover:bg-muted/50 ${
                     !isCurrentMonth ? "bg-muted/20" : ""
                   } ${isSelected ? "bg-primary/10 ring-2 ring-inset ring-primary" : ""}`}
                 >

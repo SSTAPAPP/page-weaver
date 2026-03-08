@@ -336,14 +336,18 @@ export default function Services() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-10 w-10"
                           onClick={() => openEditCard(template)}
+                          aria-label={`编辑${template.name}`}
                         >
                           <Edit className="h-4 w-4" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-10 w-10"
                           onClick={() => handleRequestDelete("card", template.id, template.name)}
+                          aria-label={`删除${template.name}`}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>

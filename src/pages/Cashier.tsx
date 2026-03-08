@@ -474,7 +474,7 @@ export default function Cashier() {
                     {cart.map((item, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/30"
+                        className="flex items-center justify-between rounded-lg border border-border p-3 min-h-[44px] transition-colors duration-150 hover:bg-muted/30"
                       >
                         <div className="flex-1">
                           <p className="font-medium">{item.service.name}</p>
