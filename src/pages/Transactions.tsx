@@ -110,68 +110,53 @@ export default function Transactions() {
     const info = typeMap[tx.type] || typeMap.consume;
     const isVoided = tx.voided;
     const isIncome = tx.type === "recharge" || tx.type === "refund";
+    const methodLabel = tx.paymentMethod ? paymentMethodMap[tx.paymentMethod] : null;
+
+    // 构建副标题：会员 · 时间 · 支付方式
+    const metaParts = [tx.memberName, format(new Date(tx.createdAt), "MM-dd HH:mm", { locale: zhCN })];
+    if (methodLabel) metaParts.push(methodLabel);
 
     return (
       <div
         className={cn(
-          "flex items-center justify-between py-3 cursor-pointer transition-colors duration-150 hover:bg-muted/30 -mx-2 px-2 rounded-md",
+          "flex items-center gap-3 py-3 cursor-pointer transition-colors duration-150 hover:bg-muted/30 -mx-2 px-2 rounded-md",
           isVoided && "opacity-50",
-          isRefundRow && "ml-6"
+          isRefundRow && "ml-8"
         )}
         onClick={() => handleTransactionClick(tx)}
       >
-        <div className="flex items-center gap-3 min-w-0">
-          <div className={cn(
-            "flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium shrink-0",
-            isIncome ? "bg-chart-2/10 text-chart-2" : "bg-muted text-muted-foreground"
-          )}>
-            {isIncome ? "+" : "−"}
-          </div>
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <p className={cn(
-                "text-sm font-medium truncate",
-                isVoided && "line-through text-muted-foreground"
-              )}>
-                {tx.description}
-              </p>
-              <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 font-normal shrink-0">
-                {info.label}
-              </Badge>
-              {isVoided && (
-                <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4 font-normal shrink-0">
-                  已作废
-                </Badge>
-              )}
-              {tx.paymentMethod && (
-                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 font-normal shrink-0">
-                  {paymentMethodMap[tx.paymentMethod]}
-                </Badge>
-              )}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {tx.memberName}
-              <span className="mx-1">·</span>
-              {format(new Date(tx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
+        {/* Left: description + meta */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-1.5">
+            <p className={cn(
+              "text-sm font-medium truncate",
+              isVoided && "line-through text-muted-foreground"
+            )}>
+              {tx.description}
             </p>
-            {tx.subTransactions && tx.subTransactions.length > 0 && (
-              <div className="mt-1 flex flex-wrap gap-1">
-                {tx.subTransactions.map((sub, index) => (
-                  <Badge key={index} variant="outline" className="text-[10px] px-1 py-0 h-4 font-normal">
-                    {sub.type === 'balance' ? '余额' : sub.type === 'card' ? '次卡' : '补差价'}
-                    ¥{sub.amount}
-                  </Badge>
-                ))}
-              </div>
+            {isVoided && (
+              <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4 font-normal shrink-0">
+                已作废
+              </Badge>
             )}
           </div>
+          <p className="text-xs text-muted-foreground truncate">
+            {metaParts.join(" · ")}
+          </p>
         </div>
-        <span className={cn(
-          "text-sm font-medium tabular-nums shrink-0 ml-3",
-          isVoided ? "line-through text-muted-foreground" : info.color
-        )}>
-          {info.sign}¥{tx.amount.toFixed(2)}
-        </span>
+
+        {/* Right: amount + type */}
+        <div className="flex items-center gap-2 shrink-0">
+          <span className={cn(
+            "text-sm font-medium tabular-nums",
+            isVoided ? "line-through text-muted-foreground" : info.color
+          )}>
+            {info.sign}¥{tx.amount.toFixed(2)}
+          </span>
+          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal w-8 justify-center">
+            {info.label}
+          </Badge>
+        </div>
       </div>
     );
   };
