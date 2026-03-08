@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ShoppingCart } from "lucide-react";
+import { ShoppingCart, ChevronUp } from "lucide-react";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { LoadingButton } from "@/components/ui/loading-button";
 
@@ -27,29 +27,29 @@ export function MobileCheckoutBar({
   return (
     <>
       {/* Fixed bottom bar above mobile nav (52px) */}
-      <div className="fixed bottom-[52px] left-0 right-0 z-40 border-t bg-background/95 backdrop-blur-sm px-4 py-2.5 safe-area-bottom">
+      <div className="fixed bottom-[52px] left-0 right-0 z-40 border-t border-border bg-background px-4 py-3 safe-area-bottom">
         <div className="flex items-center gap-3">
           <button
             type="button"
-            className="flex items-center gap-2.5 flex-1 min-w-0 min-h-[44px]"
+            className="flex items-center gap-3 flex-1 min-w-0 min-h-[44px] active:opacity-70 transition-opacity"
             onClick={() => setDrawerOpen(true)}
           >
             <div className="relative shrink-0">
-              <ShoppingCart className="h-5 w-5" />
-              <span className="absolute -top-1.5 -right-2 flex h-4 min-w-[16px] items-center justify-center rounded-full bg-brand text-2xs font-bold text-brand-foreground px-0.5">
+              <ShoppingCart className="h-5 w-5 text-foreground" />
+              <span className="absolute -top-2 -right-2.5 flex h-4.5 min-w-[18px] items-center justify-center rounded-full bg-foreground text-2xs font-bold text-background px-1">
                 {cartCount}
               </span>
             </div>
             <div className="text-left min-w-0">
-              <p className="text-sm font-semibold tabular-nums">¥{total.toFixed(2)}</p>
+              <p className="text-base font-bold tabular-nums tracking-tight">¥{total.toFixed(2)}</p>
               {cashNeed > 0 && cashNeed !== total && (
                 <p className="text-2xs text-muted-foreground">需付 ¥{cashNeed.toFixed(2)}</p>
               )}
             </div>
+            <ChevronUp className="h-4 w-4 text-muted-foreground/40 ml-auto" />
           </button>
           <LoadingButton
-            size="sm"
-            className="shrink-0 px-6 min-h-[44px]"
+            className="shrink-0 px-6 h-11 text-sm font-semibold"
             onClick={onCheckout}
             loading={isCheckingOut}
           >
@@ -60,9 +60,9 @@ export function MobileCheckoutBar({
 
       {/* Drawer with full CartPanel */}
       <Drawer open={drawerOpen} onOpenChange={setDrawerOpen}>
-        <DrawerContent className="max-h-[80vh]">
+        <DrawerContent className="max-h-[85vh]">
           <DrawerTitle className="sr-only">结算详情</DrawerTitle>
-          <div className="overflow-auto px-2 pb-6">
+          <div className="overflow-auto pb-6">
             {children}
           </div>
         </DrawerContent>

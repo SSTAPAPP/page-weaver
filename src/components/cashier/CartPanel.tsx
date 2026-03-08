@@ -1,10 +1,9 @@
-import { ShoppingCart, Trash2, UserX, Undo2 } from "lucide-react";
+import { ShoppingCart, Trash2, UserX, Undo2, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { cn } from "@/lib/utils";
@@ -30,7 +29,6 @@ interface CartPanelProps {
   onClearCart: () => void;
   onPaymentMethodChange: (method: "wechat" | "alipay" | "cash") => void;
   onCheckout: () => void;
-  // Calculated values
   cardDeductTotal: number;
   balanceDeduct: number;
   cashNeed: number;
@@ -60,14 +58,14 @@ export function CartPanel({
 
   return (
     <Card className="sticky top-6">
-      <CardContent className="p-4 space-y-3">
+      <CardContent className="p-0">
         {/* Header */}
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-border">
           <div className="flex items-center gap-2">
-            <p className="text-xs font-medium text-muted-foreground">结算清单</p>
+            <h3 className="text-sm font-semibold">结算清单</h3>
             {cart.length > 0 && (
-              <Badge variant="secondary" className="text-2xs px-1.5 py-0 tabular-nums">
-                {cart.length}项
+              <Badge variant="secondary" className="text-2xs px-1.5 py-0 tabular-nums rounded-md">
+                {cart.length}
               </Badge>
             )}
           </div>
@@ -79,7 +77,7 @@ export function CartPanel({
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 text-2xs text-muted-foreground hover:text-destructive px-2"
+                className="h-7 text-xs text-muted-foreground hover:text-destructive px-2"
                 onClick={onClearCart}
               >
                 清空
@@ -90,169 +88,180 @@ export function CartPanel({
 
         {/* Undo bar */}
         {lastRemoved && (
-          <div className="relative flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-xs overflow-hidden">
+          <div className="relative flex items-center justify-between bg-muted/50 px-4 py-2 text-xs overflow-hidden border-b border-border">
             <span className="text-muted-foreground truncate">
               已移除 {lastRemoved.item.service.name}
             </span>
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 gap-1 text-xs text-brand px-2 shrink-0"
+              className="h-6 gap-1 text-xs text-foreground px-2 shrink-0"
               onClick={onUndoRemove}
             >
               <Undo2 className="h-3 w-3" />撤销
             </Button>
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand/30 origin-left animate-undo-countdown" />
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-foreground/20 origin-left animate-undo-countdown" />
           </div>
         )}
 
-        {/* Empty state */}
-        {cart.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
-            <ShoppingCart className="mb-2 h-8 w-8 text-muted-foreground/20" />
-            <p className="text-sm text-muted-foreground">点击左侧服务添加</p>
-          </div>
-        ) : (
-          <>
-            {/* Walk-in notice */}
-            {isWalkIn && (
-              <Alert className="py-2 [&>svg]:h-3.5 [&>svg]:w-3.5">
-                <UserX className="h-3.5 w-3.5" />
-                <AlertDescription className="text-xs">
+        {/* Body */}
+        <div className="px-4">
+          {/* Empty state */}
+          {cart.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="h-12 w-12 rounded-full bg-muted/50 flex items-center justify-center mb-3">
+                <ShoppingCart className="h-5 w-5 text-muted-foreground/30" />
+              </div>
+              <p className="text-sm text-muted-foreground">暂无服务项目</p>
+              <p className="text-xs text-muted-foreground/60 mt-0.5">点击左侧服务添加到清单</p>
+            </div>
+          ) : (
+            <>
+              {/* Walk-in notice */}
+              {isWalkIn && (
+                <div className="flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2 mt-3 text-xs text-muted-foreground">
+                  <UserX className="h-3.5 w-3.5 shrink-0" />
                   散客结账，无法使用余额和次卡
-                </AlertDescription>
-              </Alert>
-            )}
+                </div>
+              )}
 
-            {/* Cart items */}
-            <div className="space-y-0 max-h-[280px] overflow-auto -mx-1 px-1">
-              {cart.map((item, index) => {
-                const remaining = getEffectiveRemaining(item, index);
-                return (
-                  <div
-                    key={index}
-                    className="group flex items-center gap-2 rounded-md px-2 py-2 transition-colors hover:bg-muted/30"
-                  >
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{item.service.name}</p>
-                      {item.card && item.useCard ? (
-                        <p className="text-xs text-muted-foreground">
-                          次卡抵扣 · 剩{remaining}次
-                        </p>
-                      ) : (
-                        <p className="text-xs text-muted-foreground tabular-nums">
-                          ¥{item.service.price}
-                        </p>
-                      )}
-                      {item.card && !isWalkIn && (
-                        <button
-                          type="button"
-                          className="text-xs text-primary hover:underline mt-0.5"
-                          onClick={() => onToggleCardUse(index)}
-                        >
-                          {item.useCard ? "改为现金" : "使用次卡"}
-                        </button>
-                      )}
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={() => onRemoveItem(index)}
-                      title="移除"
+              {/* Cart items */}
+              <div className="py-3 space-y-0 max-h-[320px] overflow-auto">
+                {cart.map((item, index) => {
+                  const remaining = getEffectiveRemaining(item, index);
+                  return (
+                    <div
+                      key={index}
+                      className="group flex items-center gap-2 rounded-lg px-2 py-2.5 transition-colors hover:bg-muted/30 -mx-2"
                     >
-                      <Trash2 className="h-3.5 w-3.5 text-destructive/60" />
-                    </Button>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-sm font-medium truncate">{item.service.name}</p>
+                        </div>
+                        {item.card && item.useCard ? (
+                          <p className="text-xs text-muted-foreground">
+                            次卡抵扣 · 剩余{remaining}次
+                          </p>
+                        ) : (
+                          <p className="text-xs text-muted-foreground tabular-nums">
+                            ¥{item.service.price}
+                          </p>
+                        )}
+                        {item.card && !isWalkIn && (
+                          <button
+                            type="button"
+                            className="text-xs text-foreground/60 hover:text-foreground hover:underline mt-0.5 transition-colors"
+                            onClick={() => onToggleCardUse(index)}
+                          >
+                            {item.useCard ? "改为现金" : "使用次卡"}
+                          </button>
+                        )}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => onRemoveItem(index)}
+                        title="移除"
+                      >
+                        <Minus className="h-3.5 w-3.5 text-muted-foreground" />
+                      </Button>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <Separator />
+
+              {/* Payment breakdown */}
+              <div className="space-y-2 py-3 text-sm">
+                {cardDeductTotal > 0 && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">次卡抵扣</span>
+                    <span className="tabular-nums text-muted-foreground">-¥{cardDeductTotal}</span>
                   </div>
-                );
-              })}
-            </div>
+                )}
+                {balanceDeduct > 0 && (
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">余额支付</span>
+                    <span className="tabular-nums">¥{balanceDeduct}</span>
+                  </div>
+                )}
 
-            <Separator />
+                {hasBalanceWarning && (
+                  <p className="text-xs text-warning bg-warning/10 rounded-lg px-3 py-2">
+                    余额不足，需补差价 ¥{cashNeed}
+                  </p>
+                )}
 
-            {/* Payment breakdown */}
-            <div className="space-y-1.5 text-sm">
-              {cardDeductTotal > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">次卡抵扣</span>
-                  <span className="tabular-nums text-muted-foreground">-¥{cardDeductTotal}</span>
-                </div>
-              )}
-              {balanceDeduct > 0 && (
-                <div className="flex justify-between text-xs">
-                  <span className="text-muted-foreground">余额支付</span>
-                  <span className="tabular-nums">¥{balanceDeduct}</span>
-                </div>
-              )}
+                {cashNeed > 0 && (
+                  <div className="rounded-lg bg-muted/40 p-3">
+                    <div className="flex justify-between items-baseline">
+                      <span className="text-xs text-muted-foreground">
+                        {isWalkIn ? "应付金额" : "需补差价"}
+                      </span>
+                      <span className="text-xl font-bold tabular-nums tracking-tight">
+                        ¥{cashNeed.toFixed(2)}
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
 
-              {/* Balance warning */}
-              {hasBalanceWarning && (
-                <p className="text-xs text-warning-foreground bg-warning/10 rounded px-2 py-1.5">
-                  余额不足，需补差价 ¥{cashNeed}
-                </p>
-              )}
-
-              {/* Amount due */}
+              {/* Payment method */}
               {cashNeed > 0 && (
-                <div className="rounded-md bg-muted/50 p-2.5">
-                  <div className="flex justify-between items-baseline">
-                    <span className="text-xs text-muted-foreground">
-                      {isWalkIn ? "应付" : "需补"}
-                    </span>
-                    <span className="text-lg font-semibold tabular-nums">
-                      ¥{cashNeed.toFixed(2)}
-                    </span>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Payment method */}
-            {cashNeed > 0 && (
-              <div className="space-y-1.5">
-                <Label className="text-xs">支付方式</Label>
-                <RadioGroup
-                  value={paymentMethod}
-                  onValueChange={(v) =>
-                    onPaymentMethodChange(v as "wechat" | "alipay" | "cash")
-                  }
-                  className="flex gap-4"
-                >
-                  {[
-                    { value: "wechat", label: "微信" },
-                    { value: "alipay", label: "支付宝" },
-                    { value: "cash", label: "现金" },
-                  ].map((m) => (
-                    <div key={m.value} className="flex items-center space-x-1.5">
-                      <RadioGroupItem value={m.value} id={`c-${m.value}`} />
-                      <Label htmlFor={`c-${m.value}`} className="cursor-pointer text-sm">
+                <div className="pb-3">
+                  <Label className="text-xs text-muted-foreground mb-2 block">支付方式</Label>
+                  <RadioGroup
+                    value={paymentMethod}
+                    onValueChange={(v) =>
+                      onPaymentMethodChange(v as "wechat" | "alipay" | "cash")
+                    }
+                    className="flex gap-1"
+                  >
+                    {[
+                      { value: "wechat", label: "微信" },
+                      { value: "alipay", label: "支付宝" },
+                      { value: "cash", label: "现金" },
+                    ].map((m) => (
+                      <Label
+                        key={m.value}
+                        htmlFor={`c-${m.value}`}
+                        className={cn(
+                          "flex-1 flex items-center justify-center gap-1.5 rounded-lg border px-3 py-2.5 text-sm cursor-pointer transition-all min-h-[44px]",
+                          paymentMethod === m.value
+                            ? "border-foreground bg-foreground text-background"
+                            : "border-border hover:bg-muted/40"
+                        )}
+                      >
+                        <RadioGroupItem value={m.value} id={`c-${m.value}`} className="sr-only" />
                         {m.label}
                       </Label>
-                    </div>
-                  ))}
-                </RadioGroup>
-              </div>
-            )}
+                    ))}
+                  </RadioGroup>
+                </div>
+              )}
 
-            <Separator />
+              <Separator />
 
-            {/* Total + checkout */}
-            <div className="space-y-2.5">
-              <div className="flex items-baseline justify-between">
-                <span className="text-sm font-medium">合计</span>
-                <span className="text-xl font-bold tabular-nums">¥{total.toFixed(2)}</span>
+              {/* Total + checkout */}
+              <div className="py-4 space-y-3">
+                <div className="flex items-baseline justify-between">
+                  <span className="text-sm text-muted-foreground">合计</span>
+                  <span className="text-2xl font-bold tabular-nums tracking-tight">¥{total.toFixed(2)}</span>
+                </div>
+                <LoadingButton
+                  className="w-full h-12 text-base font-semibold"
+                  onClick={onCheckout}
+                  loading={isCheckingOut}
+                  disabled={cart.length === 0}
+                >
+                  确认结账
+                </LoadingButton>
               </div>
-              <LoadingButton
-                className="w-full"
-                onClick={onCheckout}
-                loading={isCheckingOut}
-                disabled={cart.length === 0}
-              >
-                确认结账
-              </LoadingButton>
-            </div>
-          </>
-        )}
+            </>
+          )}
+        </div>
       </CardContent>
     </Card>
   );

@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef, Fragment } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { PageHeader } from "@/components/ui/page-header";
 import { generateWalkInId } from "@/stores/useStore";
 import { useMembers, useServices } from "@/hooks/useCloudData";
@@ -15,6 +15,7 @@ import { CartPanel, type CartItem } from "@/components/cashier/CartPanel";
 import { MobileCheckoutBar } from "@/components/cashier/MobileCheckoutBar";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
+import { Check } from "lucide-react";
 
 interface CardUsageInfo {
   cardName: string;
@@ -25,31 +26,47 @@ interface CardUsageInfo {
 
 function StepIndicator({ step }: { step: 1 | 2 | 3 }) {
   const steps = [
-    { num: 1 as const, label: "选顾客" },
-    { num: 2 as const, label: "选服务" },
+    { num: 1 as const, label: "顾客" },
+    { num: 2 as const, label: "服务" },
     { num: 3 as const, label: "结算" },
   ];
+
   return (
-    <div className="flex items-center gap-0.5 sm:gap-1">
-      {steps.map((s, i) => (
-        <Fragment key={s.num}>
-          {i > 0 && <span className="text-muted-foreground/30 text-xs mx-0.5">→</span>}
-          <span className={cn(
-            "inline-flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-full text-xs transition-colors",
-            step >= s.num
-              ? step === s.num ? "bg-brand/10 text-brand font-medium" : "text-foreground"
-              : "text-muted-foreground/50"
-          )}>
-            <span className={cn(
-              "inline-flex items-center justify-center h-4 w-4 rounded-full text-2xs font-semibold",
-              step >= s.num
-                ? step === s.num ? "bg-brand text-brand-foreground" : "bg-muted-foreground/20 text-foreground"
-                : "bg-muted text-muted-foreground/50"
-            )}>{s.num}</span>
-            {s.label}
-          </span>
-        </Fragment>
-      ))}
+    <div className="flex items-center">
+      {steps.map((s, i) => {
+        const isCompleted = step > s.num;
+        const isCurrent = step === s.num;
+        const isUpcoming = step < s.num;
+
+        return (
+          <div key={s.num} className="flex items-center">
+            {i > 0 && (
+              <div className={cn(
+                "h-px w-6 sm:w-10 mx-1",
+                isCompleted || isCurrent ? "bg-foreground" : "bg-border"
+              )} />
+            )}
+            <div className="flex items-center gap-1.5">
+              <div className={cn(
+                "flex items-center justify-center h-6 w-6 rounded-full text-xs font-medium transition-all",
+                isCompleted && "bg-foreground text-background",
+                isCurrent && "bg-foreground text-background ring-2 ring-foreground/20 ring-offset-2 ring-offset-background",
+                isUpcoming && "border border-border text-muted-foreground"
+              )}>
+                {isCompleted ? <Check className="h-3.5 w-3.5" /> : s.num}
+              </div>
+              <span className={cn(
+                "text-xs hidden sm:inline",
+                isCurrent && "font-medium text-foreground",
+                isCompleted && "text-foreground",
+                isUpcoming && "text-muted-foreground"
+              )}>
+                {s.label}
+              </span>
+            </div>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -71,7 +88,6 @@ export default function Cashier() {
 
   const isWalkIn = !selectedMember;
 
-  // Current step for indicator
   const currentStep = useMemo((): 1 | 2 | 3 => {
     if (cart.length > 0) return 3;
     if (selectedMember) return 2;
@@ -174,14 +190,12 @@ export default function Cashier() {
     return { cardDeductTotal, balanceDeduct, cashNeed, total: cardDeductTotal + needPayTotal };
   }, [cart, isWalkIn, selectedMember]);
 
-  // --- Cart counts for service badges ---
   const cartCounts = useMemo(() => {
     const map = new Map<string, number>();
     cart.forEach(item => map.set(item.service.id, (map.get(item.service.id) || 0) + 1));
     return map;
   }, [cart]);
 
-  // --- Card usage info ---
   const cardUsageInfo = useMemo((): CardUsageInfo[] => {
     if (!selectedMember) return [];
     const cardUsageMap = new Map<string, { card: MemberCard; count: number }>();
@@ -200,7 +214,6 @@ export default function Cashier() {
     }));
   }, [cart, selectedMember]);
 
-  // --- Services by category ---
   const servicesByCategory = useMemo(() => {
     const categories = [...new Set(services.map((s) => s.category))];
     return categories.map((category) => ({
@@ -287,15 +300,16 @@ export default function Cashier() {
   };
 
   return (
-    <div className={cn("space-y-4 sm:space-y-6", isMobile && cart.length > 0 && "pb-20")}>
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <PageHeader title="收银台" />
+    <div className={cn("space-y-5 sm:space-y-6", isMobile && cart.length > 0 && "pb-24")}>
+      {/* Header row */}
+      <div className="flex items-center justify-between">
+        <PageHeader title="收银台" description="选择顾客、添加服务、完成结算" />
         <StepIndicator step={currentStep} />
       </div>
 
-      <div className="grid gap-4 sm:gap-6 lg:grid-cols-3">
+      <div className="grid gap-5 sm:gap-6 lg:grid-cols-[1fr_340px]">
         {/* Left: Customer + Services */}
-        <div className="space-y-4 sm:space-y-6 lg:col-span-2">
+        <div className="space-y-5">
           <CustomerSelector
             selectedMember={selectedMember}
             searchQuery={searchQuery}
@@ -317,7 +331,7 @@ export default function Cashier() {
 
         {/* Right: Cart — desktop only */}
         {!isMobile && (
-          <div>
+          <div className="relative">
             <CartPanel {...cartPanelProps} />
           </div>
         )}
