@@ -45,26 +45,88 @@ git commit -m "Initial commit: Add Tauri desktop app configuration"
 git push origin main
 ```
 
-### 步骤 2：添加 GitHub Secrets
+### 步骤 2：添加 GitHub Secrets（详细步骤）
 
-GitHub Actions 需要环境变量才能成功构建。按以下步骤添加：
+GitHub Actions 需要环境变量才能成功构建。**这一步非常重要**，缺少 Secrets 会导致构建失败。
 
-1. **进入 GitHub 仓库**
-   - 打开仓库主页 → Settings → Secrets and variables → Actions
+#### 2.1 获取 Secret 值
 
-2. **添加以下 Secret（3 个）**
+首先，在你的项目中找到 `.env` 文件，获取需要的值：
 
-   | 名称 | 值 | 获取方式 |
-   |------|-----|---------|
-   | `VITE_SUPABASE_URL` | `https://xweeutzonpebdaijmbof.supabase.co` | 项目 `.env` 文件 |
-   | `VITE_SUPABASE_PUBLISHABLE_KEY` | `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...` | 项目 `.env` 文件 |
-   | `GITHUB_TOKEN` | **自动提供** | 无需手动添加 |
+```
+# .env 文件内容（示例）
+VITE_SUPABASE_PROJECT_ID="xweeutzonpebdaijmbof"
+VITE_SUPABASE_PUBLISHABLE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3ZWV1dHpvbnBlYmRhaWptYm9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMTA2NDksImV4cCI6MjA4NTY4NjY0OX0.Tv3jPoTJrYl5OVrx18LOmW5wpN6qxwEgabUhqIxY4QA"
+VITE_SUPABASE_URL="https://xweeutzonpebdaijmbof.supabase.co"
+```
 
-3. **添加方法**
-   - 点击 "New repository secret"
-   - Name 输入上表中的名称
-   - Value 输入对应的值
-   - 点击 "Add secret"
+你需要复制 `VITE_SUPABASE_URL` 和 `VITE_SUPABASE_PUBLISHABLE_KEY` 的值。
+
+#### 2.2 打开 GitHub 仓库 Settings
+
+1. 登录 GitHub → 打开你的仓库
+2. 点击顶部的 **Settings** 标签
+3. 在左侧菜单找到 **Secrets and variables** → 点击 **Actions**
+
+#### 2.3 添加第一个 Secret：`VITE_SUPABASE_URL`
+
+1. 点击 **New repository secret** 按钮（绿色）
+2. **Name** 字段输入：
+   ```
+   VITE_SUPABASE_URL
+   ```
+3. **Secret** 字段输入（从 `.env` 文件复制）：
+   ```
+   https://xweeutzonpebdaijmbof.supabase.co
+   ```
+4. 点击 **Add secret** 保存
+
+**效果**：屏幕上会显示 ✅ "Secret VITE_SUPABASE_URL created"
+
+#### 2.4 添加第二个 Secret：`VITE_SUPABASE_PUBLISHABLE_KEY`
+
+1. 再次点击 **New repository secret**
+2. **Name** 字段输入：
+   ```
+   VITE_SUPABASE_PUBLISHABLE_KEY
+   ```
+3. **Secret** 字段输入（从 `.env` 文件复制）：
+   ```
+   eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh3ZWV1dHpvbnBlYmRhaWptYm9mIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzAxMTA2NDksImV4cCI6MjA4NTY4NjY0OX0.Tv3jPoTJrYl5OVrx18LOmW5wpN6qxwEgabUhqIxY4QA
+   ```
+4. 点击 **Add secret** 保存
+
+**效果**：屏幕上会显示 ✅ "Secret VITE_SUPABASE_PUBLISHABLE_KEY created"
+
+#### 2.5 验证 Secrets 已添加
+
+添加完成后，你会在 "Actions secrets and variables" 列表中看到：
+
+```
+Repository secrets (2)
+├── VITE_SUPABASE_PUBLISHABLE_KEY  (Updated just now)
+└── VITE_SUPABASE_URL              (Updated just now)
+```
+
+> ⚠️ **注意**：出于安全考虑，GitHub 不会显示 Secret 的实际值，只显示名称和更新时间。
+
+#### 2.6 Secrets 说明表
+
+| 名称 | 值 | 用途 | 必需 |
+|------|-----|------|------|
+| `VITE_SUPABASE_URL` | `https://xweeutzonpebdaijmbof.supabase.co` | 构建时指定 Supabase 后端地址 | ✅ 是 |
+| `VITE_SUPABASE_PUBLISHABLE_KEY` | `eyJhbGciOi...` | 构建时指定 Supabase 公钥 | ✅ 是 |
+| `GITHUB_TOKEN` | *自动注入* | GitHub Actions 自动提供，无需手动添加 | ✅ 自动 |
+
+#### 2.7 常见错误排查
+
+如果构建失败，检查以下问题：
+
+| 错误信息 | 原因 | 解决方案 |
+|---------|------|---------|
+| "VITE_SUPABASE_URL is not defined" | Secret 未添加或名称不正确 | 确认 Secret 名称完全匹配 `VITE_SUPABASE_URL` |
+| "Invalid JWT token" | Publishable Key 值错误或不完整 | 重新从 `.env` 文件复制，确保没有多余空格 |
+| "Cannot find module" | 依赖未安装或构建环境不完整 | GitHub Actions 会自动运行 `npm ci`，通常不是问题 |
 
 ---
 
