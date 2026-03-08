@@ -17,6 +17,7 @@ import { LoadingButton } from "@/components/ui/loading-button";
 import { FormField } from "@/components/ui/form-field";
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Progress } from "@/components/ui/progress";
 import {
   Select,
   SelectContent,
