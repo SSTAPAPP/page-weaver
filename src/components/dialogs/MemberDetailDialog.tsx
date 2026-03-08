@@ -160,6 +160,20 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                       </div>
                     </RadioGroup>
                   </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">会员标签</Label>
+                    <Select value={editTag} onValueChange={setEditTag}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="选择标签（可选）" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">无标签</SelectItem>
+                        {MEMBER_TAG_OPTIONS.map((tag) => (
+                          <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-3 rounded-lg border border-border p-3">
