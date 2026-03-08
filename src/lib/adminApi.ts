@@ -134,15 +134,6 @@ export interface CheckoutParams {
   cart: { serviceId: string; serviceName: string; price: number; useCard: boolean; cardId?: string }[];
   paymentMethod: string;
   isWalkIn: boolean;
-  balanceDeduct: number;
-  cardDeductTotal: number;
-  cashNeed: number;
-  total: number;
-  cardUsageMap: Record<string, number>;
-  subTransactions?: { type: string; amount: number; paymentMethod?: string; cardId?: string }[];
-  transactionType?: string;
-  transactionDescription?: string;
-  payments: { method: string; amount: number }[];
 }
 
 export async function processCheckout(
