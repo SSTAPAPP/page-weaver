@@ -11,16 +11,17 @@ import {
   ArrowRight,
   Eye,
   EyeOff,
+  Info,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/ui/empty-state";
 import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useStore } from "@/stores/useStore";
 import { QuickMemberDialog } from "@/components/dialogs/QuickMemberDialog";
 import { QuickRechargeDialog } from "@/components/dialogs/QuickRechargeDialog";
@@ -63,66 +64,59 @@ interface StatCardWithTooltipProps {
 
 function StatCardWithTooltip({ title, value, description, icon: Icon, color, hidden }: StatCardWithTooltipProps) {
   const metricInfo = metricsInfo[title];
-  
-  const cardContent = (
-    <Card className="relative overflow-hidden transition-shadow hover:shadow-md cursor-pointer group">
+
+  return (
+    <Card className="relative overflow-hidden transition-shadow duration-200 hover:shadow-md">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+        <p className="text-sm font-medium text-muted-foreground">
           {title}
         </p>
-        <Icon className={`h-4 w-4 ${color}`} />
+        <div className="flex items-center gap-1">
+          {metricInfo && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground/60 hover:text-muted-foreground" aria-label={`${title}指标说明`}>
+                  <Info className="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72" side="bottom" align="end">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-muted`}>
+                      <Icon className={`h-4 w-4 ${color}`} />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{metricInfo.title}</p>
+                      <p className="text-xs text-muted-foreground">{metricInfo.brief}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="rounded-md bg-muted/50 p-2">
+                      <p className="font-medium text-xs text-muted-foreground mb-1">计算公式</p>
+                      <p className="font-mono text-xs">{metricInfo.formula}</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-xs text-muted-foreground mb-1">示例</p>
+                      <p className="text-xs">{metricInfo.example}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground/80 italic flex items-start gap-1">
+                      <span>💡</span>
+                      <span>{metricInfo.note}</span>
+                    </p>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+          <Icon className={`h-4 w-4 ${color}`} />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{hidden ? "****" : value}</div>
         <p className="text-xs text-muted-foreground">{description}</p>
       </CardContent>
-      {metricInfo && (
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-      )}
     </Card>
   );
-  
-  if (metricInfo) {
-    return (
-      <HoverCard openDelay={100} closeDelay={50}>
-        <HoverCardTrigger asChild>
-          {cardContent}
-        </HoverCardTrigger>
-        <HoverCardContent className="w-80" side="bottom" align="start">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                title === "今日实收" ? "bg-chart-1/10" : 
-                title === "今日充值" ? "bg-chart-2/10" : "bg-chart-3/10"
-              }`}>
-                <Icon className={`h-4 w-4 ${color}`} />
-              </div>
-              <div>
-                <p className="font-semibold">{metricInfo.title}</p>
-                <p className="text-xs text-muted-foreground">{metricInfo.brief}</p>
-              </div>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="rounded-md bg-muted/50 p-2">
-                <p className="font-medium text-xs text-muted-foreground mb-1">计算公式</p>
-                <p className="font-mono text-xs">{metricInfo.formula}</p>
-              </div>
-              <div>
-                <p className="font-medium text-xs text-muted-foreground mb-1">示例</p>
-                <p className="text-xs">{metricInfo.example}</p>
-              </div>
-              <p className="text-xs text-muted-foreground/80 italic flex items-start gap-1">
-                <span>💡</span>
-                <span>{metricInfo.note}</span>
-              </p>
-            </div>
-          </div>
-        </HoverCardContent>
-      </HoverCard>
-    );
-  }
-
-  return cardContent;
 }
 
 export default function Dashboard() {
@@ -210,18 +204,17 @@ export default function Dashboard() {
     },
   ];
 
-  // 最近交易
   const recentTransactions = transactions.filter(t => !t.voided).slice(0, 5);
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">仪表盘</h1>
-          <p className="text-muted-foreground">今日经营数据一览 · 鼠标移至卡片查看指标说明</p>
+          <p className="text-muted-foreground">今日经营数据一览</p>
         </div>
-        <div className="hidden items-center gap-2 sm:flex">
+        <div className="flex items-center gap-2">
           <Badge variant="outline" className="font-normal">
             {format(new Date(), "yyyy年M月d日 EEEE", { locale: zhCN })}
           </Badge>
@@ -229,18 +222,19 @@ export default function Dashboard() {
       </div>
 
       {/* Stats Grid */}
-      <div className={`transition-all ${isHidden("stats") ? "opacity-30" : ""}`}>
+      <div className={`transition-opacity duration-200 ${isHidden("stats") ? "opacity-30" : ""}`}>
         <div className="mb-2 flex items-center justify-end">
           <Button
             variant="ghost"
             size="icon"
-            className="h-6 w-6 opacity-30 hover:opacity-100"
+            className="h-8 w-8 opacity-30 hover:opacity-100"
             onClick={() => toggleSectionVisibility("stats")}
+            aria-label={isHidden("stats") ? "显示统计数据" : "隐藏统计数据"}
           >
             {isHidden("stats") ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
           </Button>
         </div>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
           {statCards.map((stat) => (
             <StatCardWithTooltip
               key={stat.title}
@@ -267,7 +261,7 @@ export default function Dashboard() {
                 key={action.title}
                 variant={action.variant}
                 onClick={action.onClick}
-                className="gap-2 transition-all hover:scale-105"
+                className="gap-2 min-h-[44px]"
               >
                 <action.icon className="h-4 w-4" />
                 {action.title}
@@ -279,22 +273,23 @@ export default function Dashboard() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Members */}
-        <Card className={`transition-all ${isHidden("members") ? "opacity-30" : ""}`}>
+        <Card className={`transition-opacity duration-200 ${isHidden("members") ? "opacity-30" : ""}`}>
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="text-lg">最近会员</CardTitle>
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 opacity-30 hover:opacity-100"
+                className="h-8 w-8 opacity-30 hover:opacity-100"
                 onClick={() => toggleSectionVisibility("members")}
+                aria-label={isHidden("members") ? "显示会员列表" : "隐藏会员列表"}
               >
                 {isHidden("members") ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-1"
+                className="gap-1 min-h-[44px]"
                 onClick={() => navigate("/members")}
               >
                 查看全部
@@ -321,7 +316,10 @@ export default function Dashboard() {
                   <div
                     key={member.id}
                     onClick={() => navigate("/members")}
-                    className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 transition-all hover:border-primary/50 hover:bg-muted/50"
+                    role="button"
+                    tabIndex={0}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate("/members"); } }}
+                    className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 min-h-[44px] transition-colors duration-150 hover:border-primary/50 hover:bg-muted/50"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
@@ -350,22 +348,23 @@ export default function Dashboard() {
         </Card>
 
         {/* Recent Transactions */}
-        <Card className={`transition-all ${isHidden("transactions") ? "opacity-30" : ""}`}>
+        <Card className={`transition-opacity duration-200 ${isHidden("transactions") ? "opacity-30" : ""}`}>
           <CardHeader className="flex flex-row items-center justify-between pb-3">
             <CardTitle className="text-lg">最近交易</CardTitle>
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-6 w-6 opacity-30 hover:opacity-100"
+                className="h-8 w-8 opacity-30 hover:opacity-100"
                 onClick={() => toggleSectionVisibility("transactions")}
+                aria-label={isHidden("transactions") ? "显示交易列表" : "隐藏交易列表"}
               >
                 {isHidden("transactions") ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-1"
+                className="gap-1 min-h-[44px]"
                 onClick={() => navigate("/transactions")}
               >
                 查看全部
@@ -385,7 +384,7 @@ export default function Dashboard() {
                 {recentTransactions.map((tx) => (
                   <div
                     key={tx.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/50"
+                    className="flex items-center justify-between rounded-lg border border-border p-3 min-h-[44px] transition-colors duration-150 hover:bg-muted/50"
                   >
                     <div>
                       <p className="font-medium">

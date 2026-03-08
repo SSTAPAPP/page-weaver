@@ -1,21 +1,17 @@
 import { useMemo } from "react";
 import { format, subDays, startOfDay, endOfDay } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { TrendingUp, Wallet, CreditCard, Users, DollarSign, PiggyBank, Activity } from "lucide-react";
+import { TrendingUp, Wallet, CreditCard, Users, Info } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Badge } from "@/components/ui/badge";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  HoverCard,
-  HoverCardContent,
-  HoverCardTrigger,
-} from "@/components/ui/hover-card";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useStore } from "@/stores/useStore";
 import {
   LineChart,
@@ -64,64 +60,52 @@ interface StatCardWithTooltipProps {
 
 function StatCardWithTooltip({ title, value, total, icon: Icon, color }: StatCardWithTooltipProps) {
   const metricInfo = metricsInfo[title];
-  
-  if (metricInfo) {
-    return (
-      <HoverCard openDelay={100} closeDelay={50}>
-        <HoverCardTrigger asChild>
-          <Card className="relative overflow-hidden transition-shadow hover:shadow-md cursor-pointer group">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
-                {title}
-              </p>
-              <Icon className={`h-4 w-4 ${color}`} />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{value}</div>
-              <p className="text-xs text-muted-foreground">{total}</p>
-            </CardContent>
-            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-          </Card>
-        </HoverCardTrigger>
-        <HoverCardContent className="w-80" side="bottom" align="start">
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              <div className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                title === "今日实收" ? "bg-chart-1/10" : 
-                title === "今日充值" ? "bg-chart-2/10" : "bg-chart-3/10"
-              }`}>
-                <Icon className={`h-4 w-4 ${color}`} />
-              </div>
-              <div>
-                <p className="font-semibold">{metricInfo.title}</p>
-                <p className="text-xs text-muted-foreground">{metricInfo.brief}</p>
-              </div>
-            </div>
-            <div className="space-y-2 text-sm">
-              <div className="rounded-md bg-muted/50 p-2">
-                <p className="font-medium text-xs text-muted-foreground mb-1">计算公式</p>
-                <p className="font-mono text-xs">{metricInfo.formula}</p>
-              </div>
-              <div>
-                <p className="font-medium text-xs text-muted-foreground mb-1">示例</p>
-                <p className="text-xs">{metricInfo.example}</p>
-              </div>
-              <p className="text-xs text-muted-foreground/80 italic flex items-start gap-1">
-                <span>💡</span>
-                <span>{metricInfo.note}</span>
-              </p>
-            </div>
-          </div>
-        </HoverCardContent>
-      </HoverCard>
-    );
-  }
 
   return (
-    <Card className="relative overflow-hidden transition-shadow hover:shadow-md">
+    <Card className="relative overflow-hidden transition-shadow duration-200 hover:shadow-md">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <p className="text-sm font-medium text-muted-foreground">{title}</p>
-        <Icon className={`h-4 w-4 ${color}`} />
+        <p className="text-sm font-medium text-muted-foreground">
+          {title}
+        </p>
+        <div className="flex items-center gap-1">
+          {metricInfo && (
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground/60 hover:text-muted-foreground" aria-label={`${title}指标说明`}>
+                  <Info className="h-3.5 w-3.5" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-72" side="bottom" align="end">
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+                      <Icon className={`h-4 w-4 ${color}`} />
+                    </div>
+                    <div>
+                      <p className="font-semibold text-sm">{metricInfo.title}</p>
+                      <p className="text-xs text-muted-foreground">{metricInfo.brief}</p>
+                    </div>
+                  </div>
+                  <div className="space-y-2 text-sm">
+                    <div className="rounded-md bg-muted/50 p-2">
+                      <p className="font-medium text-xs text-muted-foreground mb-1">计算公式</p>
+                      <p className="font-mono text-xs">{metricInfo.formula}</p>
+                    </div>
+                    <div>
+                      <p className="font-medium text-xs text-muted-foreground mb-1">示例</p>
+                      <p className="text-xs">{metricInfo.example}</p>
+                    </div>
+                    <p className="text-xs text-muted-foreground/80 italic flex items-start gap-1">
+                      <span>💡</span>
+                      <span>{metricInfo.note}</span>
+                    </p>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
+          )}
+          <Icon className={`h-4 w-4 ${color}`} />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
@@ -135,7 +119,6 @@ export default function Reports() {
   const { transactions, members, getTodayStats } = useStore();
   const todayStats = getTodayStats();
 
-  // 计算30天趋势数据
   const trendData = useMemo(() => {
     const days = [];
     for (let i = 29; i >= 0; i--) {
@@ -191,7 +174,6 @@ export default function Reports() {
     return days;
   }, [transactions]);
 
-  // 计算总计数据
   const totalStats = useMemo(() => {
     const validTransactions = transactions.filter(t => !t.voided);
     
@@ -269,15 +251,15 @@ export default function Reports() {
       {/* Header */}
       <PageHeader
         title="数据报表"
-        description="经营数据分析 · 鼠标移至卡片查看指标说明"
+        description="经营数据分析"
       >
         <Badge variant="outline" className="font-normal">
           近30天
         </Badge>
       </PageHeader>
 
-      {/* Stats Cards - 带hover指标说明 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      {/* Stats Cards */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         {statCards.map((stat) => (
           <StatCardWithTooltip
             key={stat.title}
@@ -308,7 +290,7 @@ export default function Reports() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
+                <div className="h-[300px] w-full overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart data={trendData}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -325,6 +307,7 @@ export default function Reports() {
                         axisLine={false}
                         tickFormatter={(value) => `¥${value}`}
                         className="fill-muted-foreground"
+                        width={50}
                       />
                       <RechartsTooltip
                         contentStyle={{
@@ -365,7 +348,7 @@ export default function Reports() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="h-[300px]">
+                <div className="h-[300px] w-full overflow-hidden">
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={trendData}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
@@ -382,6 +365,7 @@ export default function Reports() {
                         axisLine={false}
                         tickFormatter={(value) => `¥${value}`}
                         className="fill-muted-foreground"
+                        width={50}
                       />
                       <RechartsTooltip
                         contentStyle={{

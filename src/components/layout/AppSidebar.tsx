@@ -11,7 +11,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Settings,
-  Dot,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
@@ -50,9 +49,16 @@ const navGroups = [
 
 const settingsItem = { title: "设置", url: "/settings", icon: Settings };
 
-export function AppSidebar() {
+interface AppSidebarProps {
+  forceExpanded?: boolean;
+  onNavigate?: () => void;
+}
+
+export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const location = useLocation();
+
+  const isCollapsed = forceExpanded ? false : collapsed;
 
   const NavItem = ({ item }: { item: { title: string; url: string; icon: React.ComponentType<{ className?: string }> } }) => {
     const isActive = location.pathname === item.url;
@@ -60,26 +66,26 @@ export function AppSidebar() {
     const content = (
       <NavLink
         to={item.url}
+        onClick={onNavigate}
         className={cn(
-          "group relative flex items-center gap-3 rounded-md px-3 py-2 text-[13px] font-medium transition-all duration-150",
+          "group relative flex items-center gap-3 rounded-md px-3 py-2.5 min-h-[44px] text-[13px] font-medium transition-colors duration-150",
           "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent",
           isActive && "bg-sidebar-accent text-sidebar-foreground font-semibold",
-          collapsed && "justify-center px-0"
+          isCollapsed && "justify-center px-0"
         )}
       >
-        {/* Active indicator bar */}
         {isActive && (
           <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-sidebar-primary" />
         )}
         <item.icon className={cn(
-          "h-[18px] w-[18px] shrink-0 transition-colors",
+          "h-[18px] w-[18px] shrink-0 transition-colors duration-150",
           isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground/80"
         )} />
-        {!collapsed && <span className="truncate">{item.title}</span>}
+        {!isCollapsed && <span className="truncate">{item.title}</span>}
       </NavLink>
     );
 
-    if (collapsed) {
+    if (isCollapsed) {
       return (
         <Tooltip delayDuration={0}>
           <TooltipTrigger asChild>{content}</TooltipTrigger>
@@ -97,32 +103,33 @@ export function AppSidebar() {
     <TooltipProvider>
       <aside
         className={cn(
-          "flex h-screen flex-col border-r border-border bg-sidebar transition-all duration-200 relative select-none",
-          collapsed ? "w-[60px]" : "w-56"
+          "flex h-screen flex-col border-r border-border bg-sidebar transition-[width] duration-200 relative select-none",
+          isCollapsed ? "w-[60px]" : "w-56"
         )}
       >
         {/* Brand header */}
         <div className={cn(
           "flex h-14 items-center border-b border-sidebar-border shrink-0",
-          collapsed ? "justify-center px-2" : "justify-between px-4"
+          isCollapsed ? "justify-center px-2" : "justify-between px-4"
         )}>
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground shrink-0">
               <span className="text-sm font-black text-background" style={{ fontFamily: 'Lora, serif' }}>F</span>
             </div>
-            {!collapsed && (
+            {!isCollapsed && (
               <div className="flex flex-col">
                 <span className="font-bold text-sidebar-foreground text-[15px] leading-tight tracking-tight">FFk</span>
                 <span className="text-[10px] text-sidebar-foreground/40 leading-tight">Management</span>
               </div>
             )}
           </div>
-          {!collapsed && (
+          {!isCollapsed && !forceExpanded && (
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setCollapsed(true)}
-              className="h-7 w-7 shrink-0 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              aria-label="折叠导航栏"
+              className="h-8 w-8 shrink-0 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
@@ -130,13 +137,14 @@ export function AppSidebar() {
         </div>
 
         {/* Expand toggle when collapsed */}
-        {collapsed && (
+        {isCollapsed && (
           <div className="flex justify-center pt-2 pb-1">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setCollapsed(false)}
-              className="h-7 w-7 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              aria-label="展开导航栏"
+              className="h-8 w-8 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent"
             >
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
@@ -144,10 +152,10 @@ export function AppSidebar() {
         )}
 
         {/* Grouped Navigation */}
-        <nav className="flex-1 overflow-y-auto py-3 px-2">
+        <nav className="flex-1 overflow-y-auto py-3 px-2" aria-label="主导航">
           {navGroups.map((group, idx) => (
             <div key={group.label} className={cn(idx > 0 && "mt-5")}>
-              {!collapsed ? (
+              {!isCollapsed ? (
                 <div className="flex items-center gap-2 px-3 mb-1.5">
                   <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/35">
                     {group.label}

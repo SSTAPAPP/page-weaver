@@ -19,13 +19,11 @@ export default function Members() {
   const [rechargeDialogOpen, setRechargeDialogOpen] = useState(false);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
-  // 实时搜索 - 支持拼音首字母和手机号
   const filteredMembers = useMemo(() => {
     if (!searchQuery) return members;
     return members.filter((m) => matchMemberSearch(m.name, m.phone, searchQuery));
   }, [members, searchQuery]);
 
-  // 计算总余额
   const totalBalance = useMemo(() => {
     return members.reduce((sum, m) => sum + m.balance, 0);
   }, [members]);
@@ -62,6 +60,7 @@ export default function Members() {
             size="sm"
             className="absolute right-1 top-1/2 h-8 -translate-y-1/2 px-2"
             onClick={() => setSearchQuery("")}
+            aria-label="清除搜索"
           >
             清除
           </Button>
@@ -88,13 +87,16 @@ export default function Members() {
           {filteredMembers.map((member) => (
             <Card
               key={member.id}
-              className="cursor-pointer transition-all hover:border-primary/50 hover:shadow-md"
+              className="group cursor-pointer transition-shadow duration-200 hover:border-primary/50 hover:shadow-md"
               onClick={() => setSelectedMemberId(member.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedMemberId(member.id); } }}
             >
               <CardContent className="p-4">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary transition-colors group-hover:bg-primary/20">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary transition-colors duration-150 group-hover:bg-primary/20">
                       {member.name.charAt(0)}
                     </div>
                     <div>
