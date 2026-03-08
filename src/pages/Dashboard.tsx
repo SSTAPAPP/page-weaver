@@ -207,16 +207,17 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* 最近会员 & 最近交易 - 移动端纵向堆叠 */}
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Recent Members */}
         <Card className={`transition-opacity duration-200 ${isHidden("members") ? "opacity-30" : ""}`}>
-          <CardHeader className="flex flex-row items-center justify-between pb-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">最近会员</CardTitle>
-            <div className="flex items-center gap-1">
+          <CardHeader className="flex flex-row items-center justify-between pb-0 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">最近会员</CardTitle>
+            <div className="flex items-center gap-0.5">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 opacity-30 hover:opacity-100"
+                className="h-6 w-6 sm:h-7 sm:w-7 opacity-30 hover:opacity-100"
                 onClick={() => toggleSectionVisibility("members")}
                 aria-label={isHidden("members") ? "显示会员列表" : "隐藏会员列表"}
               >
@@ -225,7 +226,7 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-1 h-7 text-xs text-muted-foreground hover:text-foreground"
+                className="gap-0.5 h-6 sm:h-7 text-[10px] sm:text-xs text-muted-foreground hover:text-foreground px-1.5"
                 onClick={() => navigate("/members")}
               >
                 全部
@@ -233,7 +234,7 @@ export default function Dashboard() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="pt-3">
+          <CardContent className="pt-2 sm:pt-3 px-3 sm:px-6 pb-3 sm:pb-6">
             {members.length === 0 ? (
               <EmptyState
                 icon={Users}
@@ -255,25 +256,25 @@ export default function Dashboard() {
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate("/members"); } }}
-                    className="flex cursor-pointer items-center justify-between py-3 first:pt-0 last:pb-0 transition-colors duration-150 hover:bg-muted/30 -mx-2 px-2 rounded-md"
+                    className="flex cursor-pointer items-center justify-between py-2 sm:py-3 first:pt-0 last:pb-0 transition-colors duration-150 hover:bg-muted/30 -mx-1.5 px-1.5 rounded-md"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-foreground shrink-0">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                      <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-foreground shrink-0">
                         {isHidden("members") ? "*" : member.name.charAt(0)}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{isHidden("members") ? "***" : member.name}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs sm:text-sm font-medium truncate">{isHidden("members") ? "***" : member.name}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">
                           {isHidden("members") ? "****" : member.phone}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right shrink-0 ml-3">
-                      <p className="text-sm font-medium tabular-nums">
-                        {isHidden("members") ? "****" : `¥${member.balance.toFixed(2)}`}
+                    <div className="text-right shrink-0 ml-2">
+                      <p className="text-xs sm:text-sm font-medium tabular-nums">
+                        {isHidden("members") ? "****" : `¥${member.balance.toFixed(0)}`}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {member.cards.length > 0 ? `${member.cards.length}张次卡` : "无次卡"}
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">
+                        {member.cards.length > 0 ? `${member.cards.length}张卡` : "无次卡"}
                       </p>
                     </div>
                   </div>
