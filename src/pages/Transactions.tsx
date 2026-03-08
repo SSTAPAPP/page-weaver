@@ -155,7 +155,7 @@ export default function Transactions() {
                 <div key={tx.id}>
                   {/* Main transaction */}
                   <div
-                    className={`flex items-center justify-between px-4 py-3 cursor-pointer transition-colors hover:bg-muted/30 ${isVoided ? "opacity-40" : ""}`}
+                    className={`flex items-center justify-between px-3 py-3 sm:px-4 cursor-pointer transition-colors hover:bg-muted/30 min-h-[48px] ${isVoided ? "opacity-40" : ""}`}
                     onClick={() => handleTransactionClick(tx)}
                   >
                     <div className="min-w-0 flex-1">
@@ -189,7 +189,7 @@ export default function Transactions() {
                         </div>
                       )}
                     </div>
-                    <span className={`text-sm font-medium tabular-nums shrink-0 ml-4 ${isVoided ? "line-through text-muted-foreground" : ""}`}>
+                    <span className={`text-sm font-medium tabular-nums shrink-0 ml-3 ${isVoided ? "line-through text-muted-foreground" : ""}`}>
                       {info.prefix}¥{tx.amount.toFixed(2)}
                     </span>
                   </div>

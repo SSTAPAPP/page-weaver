@@ -169,6 +169,7 @@
   body {
     @apply bg-background text-foreground antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-tap-highlight-color: transparent;
   }
 
   /* Smooth scrolling */
@@ -254,7 +255,12 @@
   /* Subtle card hover lift */
   .hover-lift {
     @apply transition-all duration-200;
-  }
+}
+
+/* Safe area for bottom nav on notched devices */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
   .hover-lift:hover {
     @apply -translate-y-0.5 shadow-md;
   }
