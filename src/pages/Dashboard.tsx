@@ -212,44 +212,44 @@ export default function Dashboard() {
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Recent Members */}
         <Card className={`transition-opacity duration-200 ${isHidden("members") ? "opacity-30" : ""}`}>
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-lg">最近会员</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between pb-0">
+            <CardTitle className="text-sm font-medium text-muted-foreground">最近会员</CardTitle>
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 opacity-30 hover:opacity-100"
+                className="h-7 w-7 opacity-30 hover:opacity-100"
                 onClick={() => toggleSectionVisibility("members")}
                 aria-label={isHidden("members") ? "显示会员列表" : "隐藏会员列表"}
               >
-                {isHidden("members") ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                {isHidden("members") ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-1 min-h-[44px]"
+                className="gap-1 h-7 text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => navigate("/members")}
               >
-                查看全部
-                <ArrowRight className="h-4 w-4" />
+                全部
+                <ArrowRight className="h-3 w-3" />
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-3">
             {members.length === 0 ? (
               <EmptyState
                 icon={Users}
                 title="暂无会员"
                 description='点击"快速开卡"添加第一位会员'
                 action={
-                  <Button onClick={() => setMemberDialogOpen(true)}>
-                    <UserPlus className="mr-2 h-4 w-4" />
+                  <Button size="sm" onClick={() => setMemberDialogOpen(true)}>
+                    <UserPlus className="mr-1.5 h-3.5 w-3.5" />
                     快速开卡
                   </Button>
                 }
               />
             ) : (
-              <div className="space-y-3">
+              <div className="divide-y divide-border">
                 {members.slice(0, 5).map((member) => (
                   <div
                     key={member.id}
@@ -257,25 +257,25 @@ export default function Dashboard() {
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate("/members"); } }}
-                    className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 min-h-[44px] transition-colors duration-150 hover:border-primary/50 hover:bg-muted/50"
+                    className="flex cursor-pointer items-center justify-between py-3 first:pt-0 last:pb-0 transition-colors duration-150 hover:bg-muted/30 -mx-2 px-2 rounded-md"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-                        {member.name.charAt(0)}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-foreground shrink-0">
+                        {isHidden("members") ? "*" : member.name.charAt(0)}
                       </div>
-                      <div>
-                        <p className="font-medium">{isHidden("members") ? "***" : member.name}</p>
-                        <p className="text-sm text-muted-foreground">
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium truncate">{isHidden("members") ? "***" : member.name}</p>
+                        <p className="text-xs text-muted-foreground">
                           {isHidden("members") ? "****" : member.phone}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right">
-                      <p className="font-medium">
+                    <div className="text-right shrink-0 ml-3">
+                      <p className="text-sm font-medium tabular-nums">
                         {isHidden("members") ? "****" : `¥${member.balance.toFixed(2)}`}
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        {member.cards.length}张次卡
+                      <p className="text-xs text-muted-foreground">
+                        {member.cards.length > 0 ? `${member.cards.length}张次卡` : "无次卡"}
                       </p>
                     </div>
                   </div>
@@ -287,30 +287,30 @@ export default function Dashboard() {
 
         {/* Recent Transactions */}
         <Card className={`transition-opacity duration-200 ${isHidden("transactions") ? "opacity-30" : ""}`}>
-          <CardHeader className="flex flex-row items-center justify-between pb-3">
-            <CardTitle className="text-lg">最近交易</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between pb-0">
+            <CardTitle className="text-sm font-medium text-muted-foreground">最近交易</CardTitle>
             <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 opacity-30 hover:opacity-100"
+                className="h-7 w-7 opacity-30 hover:opacity-100"
                 onClick={() => toggleSectionVisibility("transactions")}
                 aria-label={isHidden("transactions") ? "显示交易列表" : "隐藏交易列表"}
               >
-                {isHidden("transactions") ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                {isHidden("transactions") ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-1 min-h-[44px]"
+                className="gap-1 h-7 text-xs text-muted-foreground hover:text-foreground"
                 onClick={() => navigate("/transactions")}
               >
-                查看全部
-                <ArrowRight className="h-4 w-4" />
+                全部
+                <ArrowRight className="h-3 w-3" />
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pt-3">
             {recentTransactions.length === 0 ? (
               <EmptyState
                 icon={CreditCard}
@@ -318,32 +318,52 @@ export default function Dashboard() {
                 description="交易记录将在这里显示"
               />
             ) : (
-              <div className="space-y-3">
-                {recentTransactions.map((tx) => (
-                  <div
-                    key={tx.id}
-                    className="flex items-center justify-between rounded-lg border border-border p-3 min-h-[44px] transition-colors duration-150 hover:bg-muted/50"
-                  >
-                    <div>
-                      <p className="font-medium">
-                        {isHidden("transactions") ? "****" : tx.description}
-                      </p>
-                      <p className="text-sm text-muted-foreground">
-                        {isHidden("transactions") ? "***" : tx.memberName} • {format(new Date(tx.createdAt), "HH:mm")}
-                      </p>
-                    </div>
-                    <span
-                      className={`font-semibold ${
-                        tx.type === "recharge" || tx.type === "refund" ? "text-chart-2" : "text-destructive"
-                      }`}
+              <div className="divide-y divide-border">
+                {recentTransactions.map((tx) => {
+                  const isIncome = tx.type === "recharge" || tx.type === "refund";
+                  const typeLabel = tx.type === "recharge" ? "充值" : tx.type === "consume" ? "消费" : tx.type === "card_deduct" ? "次卡" : tx.type === "refund" ? "退款" : "其他";
+                  return (
+                    <div
+                      key={tx.id}
+                      className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
                     >
-                      {isHidden("transactions") 
-                        ? "****" 
-                        : `${tx.type === "recharge" || tx.type === "refund" ? "+" : "-"}¥${tx.amount.toFixed(2)}`
-                      }
-                    </span>
-                  </div>
-                ))}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className={cn(
+                          "flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium shrink-0",
+                          isIncome ? "bg-chart-2/10 text-chart-2" : "bg-muted text-muted-foreground"
+                        )}>
+                          {isIncome ? "+" : "−"}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-1.5">
+                            <p className="text-sm font-medium truncate">
+                              {isHidden("transactions") ? "****" : tx.description}
+                            </p>
+                            <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 font-normal shrink-0">
+                              {typeLabel}
+                            </Badge>
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {isHidden("transactions") ? "***" : tx.memberName}
+                            <span className="mx-1">·</span>
+                            {format(new Date(tx.createdAt), "HH:mm")}
+                          </p>
+                        </div>
+                      </div>
+                      <span
+                        className={cn(
+                          "text-sm font-medium tabular-nums shrink-0 ml-3",
+                          isIncome ? "text-chart-2" : "text-foreground"
+                        )}
+                      >
+                        {isHidden("transactions") 
+                          ? "****" 
+                          : `${isIncome ? "+" : "-"}¥${tx.amount.toFixed(2)}`
+                        }
+                      </span>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </CardContent>
