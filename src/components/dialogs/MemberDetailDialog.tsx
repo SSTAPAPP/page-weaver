@@ -88,7 +88,7 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
       name: editName.trim(),
       phone: editPhone.trim(),
       gender: editGender,
-      tag: editTag || undefined,
+      tag: editTag === "none" ? undefined : (editTag || undefined),
     });
 
     toast({ title: "修改成功", description: "会员信息已更新" });
