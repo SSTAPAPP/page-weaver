@@ -19,7 +19,6 @@ import {
 import { useStore } from "@/stores/useStore";
 import { TransactionRefundDialog } from "@/components/dialogs/TransactionRefundDialog";
 import type { Transaction } from "@/types";
-import { printTransactionReceipt } from "@/components/receipt/TransactionReceipt";
 
 const typeMap: Record<string, { label: string; sign: string; color: string }> = {
   recharge: { label: "充值", sign: "+", color: "text-chart-2" },
