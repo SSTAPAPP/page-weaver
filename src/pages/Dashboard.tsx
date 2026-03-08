@@ -208,7 +208,7 @@ export default function Dashboard() {
             {isHidden("stats") ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
           </Button>
         </div>
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
           {statCards.map((stat) => (
             <StatCardWithTooltip
               key={stat.title}
