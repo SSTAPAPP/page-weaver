@@ -1,7 +1,7 @@
 import { useState, useCallback } from "react";
 import { 
   Download, Save, Eye, EyeOff, Shield, Database, AlertTriangle, 
-  Moon, Sun, Type, Store, MapPin, Phone, ChevronRight,
+  Moon, Sun, Type, Store, MapPin, Phone,
   Building, Palette, Lock, HardDrive
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -488,10 +488,10 @@ export default function Settings() {
       />
 
       <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left Navigation */}
-        <Card className="lg:w-64 shrink-0">
-          <CardContent className="p-2">
-            <nav className="space-y-1">
+        {/* Left Navigation — matches sidebar style */}
+        <div className="lg:w-56 shrink-0">
+          <div className="rounded-md border border-border bg-muted/50 p-1.5">
+            <nav className="space-y-0.5">
               {categories.map((category) => {
                 const Icon = category.icon;
                 const isActive = activeCategory === category.id;
@@ -500,41 +500,35 @@ export default function Settings() {
                     key={category.id}
                     onClick={() => setActiveCategory(category.id)}
                     className={cn(
-                      "w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
-                      isActive 
-                        ? "bg-muted text-foreground" 
-                        : "hover:bg-muted text-muted-foreground hover:text-foreground"
+                      "group relative w-full flex items-center gap-3 rounded-md px-2.5 py-2 text-left transition-all duration-150",
+                      isActive
+                        ? "bg-background/80 text-foreground"
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/40"
                     )}
                   >
-                    <Icon className="h-5 w-5 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{category.label}</p>
-                      <p className={cn(
-                        "text-xs truncate",
-                        isActive ? "text-muted-foreground" : "text-muted-foreground"
-                      )}>
-                        {category.description}
-                      </p>
-                    </div>
-                    <ChevronRight className={cn(
-                      "h-4 w-4 shrink-0",
-                      isActive ? "text-foreground" : "text-muted-foreground"
+                    {isActive && (
+                      <span className="absolute left-0 top-1/2 -translate-y-1/2 h-3.5 w-[2px] rounded-r-full bg-foreground/70" />
+                    )}
+                    <Icon className={cn(
+                      "h-4 w-4 shrink-0 transition-colors duration-150",
+                      isActive ? "text-foreground" : "text-muted-foreground/50 group-hover:text-foreground/70"
                     )} />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13px] font-medium truncate">{category.label}</p>
+                    </div>
                   </button>
                 );
               })}
             </nav>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
 
         {/* Right Content Area */}
-        <Card className="flex-1">
-          <CardContent className="p-6">
-            <ScrollArea className="h-full">
-              {renderContent()}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+        <div className="flex-1 rounded-md border border-border bg-background p-6">
+          <ScrollArea className="h-full">
+            {renderContent()}
+          </ScrollArea>
+        </div>
       </div>
 
       <AdminPasswordDialog
