@@ -51,11 +51,12 @@ const settingsItem = { title: "系统设置", url: "/settings", icon: Settings }
 
 interface AppSidebarProps {
   forceExpanded?: boolean;
+  defaultCollapsed?: boolean;
   onNavigate?: () => void;
 }
 
-export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
+export function AppSidebar({ forceExpanded, defaultCollapsed, onNavigate }: AppSidebarProps) {
+  const [collapsed, setCollapsed] = useState(defaultCollapsed ?? false);
   const location = useLocation();
 
   const isCollapsed = forceExpanded ? false : collapsed;
