@@ -119,9 +119,9 @@ export default function Transactions() {
     return (
       <div
         className={cn(
-          "flex items-center gap-3 py-3 cursor-pointer transition-colors duration-150 hover:bg-muted/30 -mx-2 px-2 rounded-md",
+          "flex items-center gap-2 sm:gap-3 py-2.5 sm:py-3 cursor-pointer transition-colors duration-150 hover:bg-muted/30 -mx-2 px-2 rounded-md active:bg-muted/50",
           isVoided && "opacity-50",
-          isRefundRow && "ml-8"
+          isRefundRow && "ml-4 sm:ml-8"
         )}
         onClick={() => handleTransactionClick(tx)}
       >
@@ -135,7 +135,7 @@ export default function Transactions() {
               {tx.description}
             </p>
             {isVoided && (
-              <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4 font-normal shrink-0">
+              <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4 font-normal shrink-0 hidden sm:inline-flex">
                 已作废
               </Badge>
             )}
@@ -146,14 +146,14 @@ export default function Transactions() {
         </div>
 
         {/* Right: amount + type */}
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           <span className={cn(
             "text-sm font-medium tabular-nums",
             isVoided ? "line-through text-muted-foreground" : info.color
           )}>
             {info.sign}¥{tx.amount.toFixed(2)}
           </span>
-          <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal w-8 justify-center">
+          <Badge variant="secondary" className="text-[10px] px-1 sm:px-1.5 py-0 h-4 font-normal w-7 sm:w-8 justify-center">
             {info.label}
           </Badge>
         </div>
