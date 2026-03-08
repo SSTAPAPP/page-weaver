@@ -84,6 +84,13 @@
     --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.08), 0 8px 10px -6px hsl(0 0% 0% / 0.04);
     --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.2);
 
+    /* Motion tokens */
+    --duration-fast: 120ms;
+    --duration-normal: 200ms;
+    --duration-slow: 320ms;
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
     --tracking-normal: 0em;
     --spacing: 0.25rem;
   }
@@ -203,21 +210,46 @@
     @apply bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent;
   }
 
-  /* Page transition */
+  /* ── Motion utilities ── */
+
+  /* Page enter: used on route transitions */
   .page-enter {
-    animation: pageEnter 0.3s ease-out;
+    animation: pageEnter var(--duration-slow) var(--ease-out) both;
   }
 
   @keyframes pageEnter {
     from {
       opacity: 0;
-      transform: translateY(8px);
+      transform: translateY(6px);
     }
     to {
       opacity: 1;
       transform: translateY(0);
     }
   }
+
+  /* Staggered list item animation */
+  .animate-list-item {
+    animation: listItemIn var(--duration-normal) var(--ease-out) both;
+  }
+
+  @keyframes listItemIn {
+    from {
+      opacity: 0;
+      transform: translateY(4px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Stagger delay helpers — use on children */
+  .stagger-1 { animation-delay: 30ms; }
+  .stagger-2 { animation-delay: 60ms; }
+  .stagger-3 { animation-delay: 90ms; }
+  .stagger-4 { animation-delay: 120ms; }
+  .stagger-5 { animation-delay: 150ms; }
 
   /* Subtle card hover lift */
   .hover-lift {
@@ -235,6 +267,16 @@
   @keyframes pulseRing {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
+  }
+}
+
+/* ── Reduced motion: respect user preference ── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
