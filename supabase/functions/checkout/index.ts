@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 function getCorsHeaders(requestOrigin?: string): Record<string, string> {
   const allowedOrigin = Deno.env.get('ALLOWED_ORIGIN') || '*';
   const env = Deno.env.get('ENVIRONMENT') || 'development';
-  
+
   let origin = '*';
   if (env === 'production') {
     if (requestOrigin && (
@@ -16,14 +16,14 @@ function getCorsHeaders(requestOrigin?: string): Record<string, string> {
       origin = `https://${allowedOrigin}`;
     }
   }
-  
+
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
   };
 }
 
-function getSupabaseClient() {
+function getServiceClient() {
   return createClient(
     Deno.env.get('SUPABASE_URL')!,
     Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -34,18 +34,28 @@ async function verifyAuth(req: Request): Promise<{ userId: string } | null> {
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) return null;
 
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } }
-  );
+  const token = authHeader.replace('Bearer ', '').trim();
+  if (!token) return null;
 
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) return null;
+  const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+  const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!;
+
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      apikey: supabaseAnonKey,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) return null;
+  const user = await response.json();
+  if (!user?.id) return null;
   return { userId: user.id };
 }
 
-interface CartItem {
+interface CartItemInput {
   serviceId: string;
   serviceName: string;
   price: number;
@@ -56,18 +66,9 @@ interface CartItem {
 interface CheckoutRequest {
   memberId?: string;
   memberName: string;
-  cart: CartItem[];
+  cart: CartItemInput[];
   paymentMethod: string;
   isWalkIn: boolean;
-  balanceDeduct: number;
-  cardDeductTotal: number;
-  cashNeed: number;
-  total: number;
-  cardUsageMap: Record<string, number>; // cardId -> deduct count
-  subTransactions?: { type: string; amount: number; paymentMethod?: string; cardId?: string }[];
-  transactionType?: string;
-  transactionDescription?: string;
-  payments: { method: string; amount: number }[];
 }
 
 Deno.serve(async (req) => {
@@ -95,12 +96,7 @@ Deno.serve(async (req) => {
     }
 
     const body: CheckoutRequest = await req.json();
-    const {
-      memberId, memberName, cart, paymentMethod, isWalkIn,
-      balanceDeduct, cardDeductTotal, cashNeed, total,
-      cardUsageMap, subTransactions, transactionType,
-      transactionDescription, payments,
-    } = body;
+    const { memberId, memberName, cart, paymentMethod, isWalkIn } = body;
 
     if (!cart || cart.length === 0) {
       return new Response(JSON.stringify({ success: false, error: 'Cart is empty' }), {
@@ -109,123 +105,141 @@ Deno.serve(async (req) => {
       });
     }
 
-    const supabase = getSupabaseClient();
-
-    // 1. Process card deductions atomically
-    if (!isWalkIn && cardUsageMap) {
-      for (const [cardId, deductCount] of Object.entries(cardUsageMap)) {
-        if (deductCount > 0) {
-          // Use atomic decrement to avoid race conditions
-          const { data: card, error: cardErr } = await supabase
-            .from('member_cards')
-            .select('remaining_count')
-            .eq('id', cardId)
-            .single();
-
-          if (cardErr || !card) {
-            return new Response(JSON.stringify({ success: false, error: `Card ${cardId} not found` }), {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-
-          if (card.remaining_count < deductCount) {
-            return new Response(JSON.stringify({ success: false, error: `Card has insufficient remaining count` }), {
-              status: 400,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-
-          const { error: updateErr } = await supabase
-            .from('member_cards')
-            .update({ remaining_count: card.remaining_count - deductCount })
-            .eq('id', cardId);
-
-          if (updateErr) {
-            return new Response(JSON.stringify({ success: false, error: 'Failed to deduct card' }), {
-              status: 500,
-              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-            });
-          }
-        }
-      }
-    }
-
-    // 2. Process balance deduction
-    if (!isWalkIn && memberId && balanceDeduct > 0) {
-      const { error: balErr } = await supabase.rpc('decrement_member_balance', {
-        p_member_id: memberId,
-        p_amount: balanceDeduct,
+    if (!memberName || typeof memberName !== 'string') {
+      return new Response(JSON.stringify({ success: false, error: 'Invalid member name' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-
-      if (balErr) {
-        console.error('Balance deduction failed:', balErr);
-        return new Response(JSON.stringify({ success: false, error: 'Failed to deduct balance' }), {
-          status: 500,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
     }
 
-    // 3. Create transaction
-    // For walk-ins: amount = total (the cash amount paid)
-    // For members: amount = cardDeductTotal + balanceDeduct (internal consumption tracked)
-    const txAmount = isWalkIn ? total : (cardDeductTotal + balanceDeduct);
-    const txPaymentMethod = isWalkIn
-      ? paymentMethod
-      : (balanceDeduct > 0 ? 'balance' : (cashNeed > 0 ? paymentMethod : undefined));
+    const supabase = getServiceClient();
 
-    const { data: txData, error: txErr } = await supabase
-      .from('transactions')
-      .insert({
-        member_id: memberId || `walk-in-${Date.now()}`,
-        member_name: memberName,
-        type: transactionType || 'consume',
-        amount: txAmount,
-        payment_method: txPaymentMethod,
-        description: transactionDescription || '',
-        sub_transactions: subTransactions || null,
-        voided: false,
-      })
-      .select('id')
-      .single();
+    // ── Server-side price validation ──
+    // Fetch actual service prices from DB to prevent client-side tampering
+    const serviceIds = [...new Set(cart.map(item => item.serviceId))];
+    const { data: dbServices, error: svcErr } = await supabase
+      .from('services')
+      .select('id, price, name')
+      .in('id', serviceIds)
+      .eq('is_active', true);
 
-    if (txErr) {
-      console.error('Transaction creation failed:', txErr);
-      return new Response(JSON.stringify({ success: false, error: 'Failed to create transaction' }), {
+    if (svcErr || !dbServices) {
+      return new Response(JSON.stringify({ success: false, error: 'Failed to validate services' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // 4. Create order
-    const { data: orderData, error: orderErr } = await supabase
-      .from('orders')
-      .insert({
-        member_id: memberId || txData?.id,
-        member_name: memberName,
-        services: cart.map(item => ({
-          serviceId: item.serviceId,
-          serviceName: item.serviceName,
-          price: item.price,
-          useCard: item.useCard,
-          cardId: item.cardId,
-        })),
-        total_amount: total,
-        payments,
-      })
-      .select('id')
-      .single();
+    const priceMap = new Map(dbServices.map(s => [s.id, s.price]));
 
-    if (orderErr) {
-      console.error('Order creation failed:', orderErr);
-      // Transaction already created, log the error but don't fail
+    // Validate all service IDs exist and are active
+    for (const item of cart) {
+      if (!priceMap.has(item.serviceId)) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: `Service ${item.serviceName} is no longer available`,
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
+    // Build server-validated cart with DB prices (ignore client prices)
+    const validatedCart = cart.map(item => ({
+      serviceId: item.serviceId,
+      serviceName: item.serviceName,
+      price: priceMap.get(item.serviceId)!, // Use DB price, not client price
+      useCard: item.useCard,
+      cardId: item.cardId || null,
+    }));
+
+    // ── Server-side amount calculation ──
+    let serverCardDeductTotal = 0;
+    let serverNeedPayTotal = 0;
+
+    for (const item of validatedCart) {
+      if (!isWalkIn && item.useCard && item.cardId) {
+        serverCardDeductTotal += item.price;
+      } else {
+        serverNeedPayTotal += item.price;
+      }
+    }
+
+    // For members: calculate balance deduction server-side
+    let serverBalanceDeduct = 0;
+    if (!isWalkIn && memberId) {
+      const { data: member, error: memErr } = await supabase
+        .from('members')
+        .select('balance')
+        .eq('id', memberId)
+        .single();
+
+      if (memErr || !member) {
+        return new Response(JSON.stringify({ success: false, error: 'Member not found' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      serverBalanceDeduct = Math.min(member.balance || 0, serverNeedPayTotal);
+    }
+
+    const serverCashNeed = serverNeedPayTotal - serverBalanceDeduct;
+    const serverTotal = serverCardDeductTotal + serverNeedPayTotal;
+
+    // Determine actual member_id for walk-ins
+    const effectiveMemberId = isWalkIn
+      ? `walk-in-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
+      : memberId;
+
+    if (!effectiveMemberId) {
+      return new Response(JSON.stringify({ success: false, error: 'Member ID is required for non-walk-in checkout' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // ── Call atomic RPC ──
+    const { data: rpcResult, error: rpcErr } = await supabase.rpc('process_checkout', {
+      p_member_id: effectiveMemberId,
+      p_member_name: memberName,
+      p_is_walk_in: isWalkIn,
+      p_cart: JSON.stringify(validatedCart),
+      p_payment_method: paymentMethod || 'cash',
+      p_balance_deduct: serverBalanceDeduct,
+      p_cash_need: serverCashNeed,
+      p_card_deduct_total: serverCardDeductTotal,
+      p_total: serverTotal,
+    });
+
+    if (rpcErr) {
+      console.error('process_checkout RPC failed:', rpcErr);
+      return new Response(JSON.stringify({
+        success: false,
+        error: rpcErr.message || 'Checkout transaction failed',
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const result = typeof rpcResult === 'string' ? JSON.parse(rpcResult) : rpcResult;
+
+    if (!result?.success) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: result?.error || 'Checkout failed',
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     return new Response(JSON.stringify({
       success: true,
-      transaction_id: txData?.id,
-      order_id: orderData?.id,
+      transaction_id: result.transaction_id,
+      order_id: result.order_id,
     }), {
       status: 200,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
