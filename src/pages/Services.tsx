@@ -343,7 +343,7 @@ export default function Services() {
               }
             />
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {cardTemplates.map((template) => {
                 const unitPrice = template.totalCount > 0 ? (template.price / template.totalCount) : 0;
                 const serviceNames = template.serviceIds
@@ -353,77 +353,55 @@ export default function Services() {
                 return (
                   <div
                     key={template.id}
-                    className="group relative overflow-hidden rounded-xl border border-border bg-card transition-all duration-200 hover:border-primary/50 hover:shadow-md"
+                    className="group flex items-center justify-between rounded-lg border border-border p-3 transition-all duration-150 hover:border-primary/50 hover:bg-muted/30"
                   >
-                    {/* 顶部装饰条 */}
-                    <div className="h-1.5 bg-gradient-to-r from-primary/60 via-primary/30 to-transparent" />
-                    
-                    <div className="p-4">
-                      {/* 头部：名称 + 操作 */}
-                      <div className="flex items-start justify-between mb-3">
-                        <div className="flex items-center gap-2">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10">
-                            <CreditCard className="h-4.5 w-4.5 text-primary" />
-                          </div>
-                          <div>
-                            <p className="font-semibold text-sm leading-tight">{template.name}</p>
-                            <p className="text-[11px] text-muted-foreground mt-0.5">
-                              均价 ¥{unitPrice.toFixed(1)}/次
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => openEditCard(template)}
-                            aria-label={`编辑${template.name}`}
-                          >
-                            <Edit className="h-3.5 w-3.5" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-8 w-8"
-                            onClick={() => handleRequestDelete("card", template.id, template.name)}
-                            aria-label={`删除${template.name}`}
-                          >
-                            <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                          </Button>
-                        </div>
+                    {/* 左侧：信息 */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <p className="font-medium text-sm truncate">{template.name}</p>
+                        <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal shrink-0">
+                          {template.totalCount}次
+                        </Badge>
                       </div>
-                      
-                      {/* 核心数据 */}
-                      <div className="grid grid-cols-2 gap-3 mb-3">
-                        <div className="rounded-lg bg-muted/50 p-2.5 text-center">
-                          <p className="text-[10px] text-muted-foreground leading-tight">售价</p>
-                          <p className="text-lg font-bold tabular-nums mt-0.5">¥{template.price}</p>
-                        </div>
-                        <div className="rounded-lg bg-muted/50 p-2.5 text-center">
-                          <p className="text-[10px] text-muted-foreground leading-tight">总次数</p>
-                          <p className="text-lg font-bold tabular-nums mt-0.5">{template.totalCount}<span className="text-xs font-normal text-muted-foreground ml-0.5">次</span></p>
-                        </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="font-medium text-foreground tabular-nums">¥{template.price}</span>
+                        <span>·</span>
+                        <span className="tabular-nums">¥{unitPrice.toFixed(0)}/次</span>
                       </div>
-
-                      {/* 适用服务 */}
                       {serviceNames.length > 0 && (
-                        <div>
-                          <p className="text-[10px] text-muted-foreground mb-1.5">适用服务</p>
-                          <div className="flex flex-wrap gap-1">
-                            {serviceNames.slice(0, 4).map((name, i) => (
-                              <Badge key={i} variant="outline" className="text-[10px] px-1.5 py-0 font-normal">
-                                {name}
-                              </Badge>
-                            ))}
-                            {serviceNames.length > 4 && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal text-muted-foreground">
-                                +{serviceNames.length - 4}
-                              </Badge>
-                            )}
-                          </div>
+                        <div className="flex flex-wrap gap-1 mt-1.5">
+                          {serviceNames.slice(0, 3).map((name, i) => (
+                            <span key={i} className="text-[10px] text-muted-foreground">
+                              {name}{i < Math.min(serviceNames.length, 3) - 1 && '、'}
+                            </span>
+                          ))}
+                          {serviceNames.length > 3 && (
+                            <span className="text-[10px] text-muted-foreground">等{serviceNames.length}项</span>
+                          )}
                         </div>
                       )}
+                    </div>
+                    
+                    {/* 右侧：操作 */}
+                    <div className="flex gap-0.5 shrink-0 ml-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => openEditCard(template)}
+                        aria-label={`编辑${template.name}`}
+                      >
+                        <Edit className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => handleRequestDelete("card", template.id, template.name)}
+                        aria-label={`删除${template.name}`}
+                      >
+                        <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                      </Button>
                     </div>
                   </div>
                 );
