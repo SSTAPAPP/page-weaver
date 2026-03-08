@@ -69,7 +69,7 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
         onClick={onNavigate}
         className={cn(
           "group relative flex items-center gap-3 rounded-md px-3 py-2.5 min-h-[44px] text-[13px] font-medium transition-colors duration-150",
-          "text-sidebar-foreground/60 hover:text-sidebar-foreground hover:bg-sidebar-accent",
+          "text-sidebar-foreground hover:text-sidebar-foreground hover:bg-sidebar-accent",
           isActive && "bg-sidebar-accent text-sidebar-foreground font-semibold",
           isCollapsed && "justify-center px-0"
         )}
