@@ -19,14 +19,14 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { LoadingButton } from "@/components/ui/loading-button";
-import { useMembers, useServices, useCreateAppointment } from "@/hooks/useCloudData";
-import { toast } from "sonner";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { useStore } from "@/stores/useStore";
+import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 import { CalendarIcon, Search, User } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { matchMemberSearch } from "@/lib/pinyin";
-import type { Member } from "@/types";
 
 interface NewAppointmentDialogProps {
   open: boolean;
@@ -46,21 +46,21 @@ export function NewAppointmentDialog({
   onOpenChange,
   defaultDate = new Date(),
 }: NewAppointmentDialogProps) {
-  const { data: members = [] } = useMembers();
-  const { data: services = [] } = useServices();
-  const createAppointment = useCreateAppointment();
+  const { toast } = useToast();
+  const { members, services, addAppointment } = useStore();
 
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedMember, setSelectedMember] = useState<Member | null>(null);
+  const [selectedMember, setSelectedMember] = useState<typeof members[0] | null>(null);
   const [selectedService, setSelectedService] = useState("");
   const [date, setDate] = useState<Date>(defaultDate);
   const [time, setTime] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
+  // 实时搜索
   const searchResults = useMemo(() => {
     if (searchQuery.length < 1) return [];
-    return members.filter((m) => matchMemberSearch(m.name, m.phone, searchQuery)).slice(0, 10);
+    return members.filter((m) => matchMemberSearch(m.name, m.phone, searchQuery)).slice(0, 5);
   }, [members, searchQuery]);
 
   const resetForm = () => {
@@ -86,10 +86,12 @@ export function NewAppointmentDialog({
 
     setIsSubmitting(true);
     try {
+      await new Promise((r) => setTimeout(r, 300));
+
       const service = services.find((s) => s.id === selectedService);
       if (!service) return;
 
-      await createAppointment.mutateAsync({
+      addAppointment({
         memberId: selectedMember.id,
         memberName: selectedMember.name,
         memberPhone: selectedMember.phone,
@@ -100,14 +102,13 @@ export function NewAppointmentDialog({
         status: "pending",
       });
 
-      toast.success("预约成功", {
+      toast({
+        title: "预约成功",
         description: `${selectedMember.name} - ${format(date, "M月d日")} ${time}`,
       });
 
       resetForm();
       onOpenChange(false);
-    } catch (error) {
-      toast.error("预约失败", { description: "请检查网络连接后重试" });
     } finally {
       setIsSubmitting(false);
     }
@@ -115,13 +116,13 @@ export function NewAppointmentDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[85vh] overflow-hidden flex flex-col">
+      <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>新增预约</DialogTitle>
           <DialogDescription>为会员创建新的预约</DialogDescription>
         </DialogHeader>
 
-        <div className="space-y-4 flex-1 overflow-auto">
+        <div className="space-y-4">
           {/* 搜索会员 */}
           <div className="space-y-2">
             <Label className={errors.member ? "text-destructive" : ""}>
@@ -138,7 +139,11 @@ export function NewAppointmentDialog({
                     <p className="text-sm text-muted-foreground">{selectedMember.phone}</p>
                   </div>
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedMember(null)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedMember(null)}
+                >
                   更换
                 </Button>
               </div>
@@ -147,14 +152,14 @@ export function NewAppointmentDialog({
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                    placeholder="输入姓名或手机号搜索"
+                    placeholder="输入姓名拼音首字母或手机号搜索"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
                   />
                 </div>
                 {searchResults.length > 0 && (
-                  <div className="max-h-[120px] space-y-1 overflow-auto rounded-lg border border-border">
+                  <ScrollArea className="max-h-32 rounded-lg border border-border">
                     {searchResults.map((member) => (
                       <div
                         key={member.id}
@@ -169,7 +174,7 @@ export function NewAppointmentDialog({
                         <p className="text-sm text-muted-foreground">{member.phone}</p>
                       </div>
                     ))}
-                  </div>
+                  </ScrollArea>
                 )}
                 {errors.member && (
                   <p className="text-sm text-destructive">{errors.member}</p>

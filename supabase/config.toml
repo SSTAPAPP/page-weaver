@@ -1,7 +1,0 @@
-project_id = "xweeutzonpebdaijmbof"
-
-[functions.verify-password]
-verify_jwt = false
-
-[functions.checkout]
-verify_jwt = false

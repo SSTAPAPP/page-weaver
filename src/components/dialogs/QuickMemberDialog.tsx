@@ -7,6 +7,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -20,12 +21,8 @@ import { LoadingButton } from "@/components/ui/loading-button";
 import { FormField } from "@/components/ui/form-field";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import { useCardTemplates } from "@/hooks/useCloudData";
-import { memberService } from "@/services/memberService";
-import { transactionService } from "@/services/transactionService";
-import { useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "@/hooks/useCloudData";
+import { useStore } from "@/stores/useStore";
+import { useToast } from "@/hooks/use-toast";
 
 interface QuickMemberDialogProps {
   open: boolean;
@@ -33,8 +30,15 @@ interface QuickMemberDialogProps {
 }
 
 export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps) {
-  const queryClient = useQueryClient();
-  const { data: cardTemplates = [] } = useCardTemplates();
+  const { toast } = useToast();
+  const {
+    addMember,
+    getMemberByPhone,
+    rechargeMember,
+    addCardToMember,
+    cardTemplates,
+    addTransaction,
+  } = useStore();
 
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
@@ -61,7 +65,7 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
     setErrors({});
   };
 
-  const validateForm = async () => {
+  const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
     if (!name.trim()) {
@@ -73,9 +77,9 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
     } else if (phone.length !== 11) {
       newErrors.phone = "请输入11位手机号";
     } else {
-      const isUnique = await memberService.isPhoneUnique(phone);
-      if (!isUnique) {
-        newErrors.phone = "手机号已被其他会员注册";
+      const existing = getMemberByPhone(phone);
+      if (existing) {
+        newErrors.phone = `手机号已注册为会员 ${existing.name}`;
       }
     }
 
@@ -92,69 +96,51 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
   };
 
   const handleSubmit = async () => {
-    const valid = await validateForm();
-    if (!valid) return;
+    if (!validateForm()) return;
 
     setIsSubmitting(true);
     try {
-      const member = await memberService.create({
-        phone,
-        name: name.trim(),
-        gender,
-        balance: 0,
-      });
+      await new Promise((r) => setTimeout(r, 300));
 
+      // 创建会员
+      const member = addMember({ phone, name: name.trim(), gender, balance: 0 });
+
+      // 处理开卡/充值
       if (action === "recharge" && rechargeAmount) {
         const amount = parseFloat(rechargeAmount);
         if (amount > 0) {
-          await memberService.incrementBalance(member.id, amount);
-          await transactionService.create({
+          rechargeMember(member.id, amount);
+          addTransaction({
             memberId: member.id,
             memberName: member.name,
             type: "recharge",
             amount,
             paymentMethod,
             description: `充值 ¥${amount}`,
-            voided: false,
           });
         }
       } else if (action === "card" && selectedTemplate) {
         const template = cardTemplates.find((t) => t.id === selectedTemplate);
         if (template) {
-          await memberService.addCard(member.id, {
-            templateId: template.id,
-            templateName: template.name,
-            remainingCount: template.totalCount,
-            services: template.serviceIds,
-            originalPrice: template.price,
-            originalTotalCount: template.totalCount,
-          });
-          await transactionService.create({
+          addCardToMember(member.id, selectedTemplate);
+          addTransaction({
             memberId: member.id,
             memberName: member.name,
             type: "recharge",
             amount: template.price,
             paymentMethod,
             description: `购买 ${template.name}`,
-            voided: false,
           });
         }
       }
 
-      queryClient.invalidateQueries({ queryKey: queryKeys.members });
-      queryClient.invalidateQueries({ queryKey: queryKeys.transactions });
-      queryClient.invalidateQueries({ queryKey: queryKeys.todayStats });
-      queryClient.invalidateQueries({ queryKey: queryKeys.cloudCounts });
-
-      toast.success("开卡成功", {
+      toast({
+        title: "开卡成功",
         description: `会员 ${name} 已成功注册`,
       });
 
       resetForm();
       onOpenChange(false);
-    } catch (error) {
-      console.error("Create member error:", error);
-      toast.error("开卡失败", { description: "请检查网络连接后重试" });
     } finally {
       setIsSubmitting(false);
     }
@@ -233,6 +219,7 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
               </div>
             </RadioGroup>
 
+            {/* 充值金额 */}
             {action === "recharge" && (
               <div className="mt-3 space-y-2">
                 <FormField
@@ -260,6 +247,7 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
               </div>
             )}
 
+            {/* 次卡选择 */}
             {action === "card" && (
               <div className="mt-3 space-y-2">
                 <Label className={errors.card ? "text-destructive" : ""}>
@@ -297,6 +285,7 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
               </div>
             )}
 
+            {/* 支付方式 */}
             {action !== "none" && (
               <div className="mt-3 space-y-2">
                 <Label>支付方式</Label>

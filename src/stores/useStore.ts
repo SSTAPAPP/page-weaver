@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Member, MemberCard, CardTemplate, Service, Appointment, Transaction, Order, ShopInfo, AuditLogEntry, SyncConfig } from '@/types';
+import { Member, MemberCard, CardTemplate, Service, Appointment, Transaction, Order, ShopInfo } from '@/types';
 
 interface Store {
   // 会员
@@ -9,7 +9,6 @@ interface Store {
   updateMember: (id: string, data: Partial<Member>) => void;
   getMember: (id: string) => Member | undefined;
   getMemberByPhone: (phone: string) => Member | undefined;
-  isPhoneUnique: (phone: string, excludeMemberId?: string) => boolean;
   searchMembers: (query: string) => Member[];
   
   // 次卡
@@ -49,7 +48,9 @@ interface Store {
   orders: Order[];
   addOrder: (order: Omit<Order, 'id' | 'createdAt'>) => void;
   
-  // 设置 - admin password is managed server-side only
+  // 设置
+  adminPassword: string;
+  setAdminPassword: (password: string) => void;
   
   // 店铺信息
   shopInfo: ShopInfo;
@@ -62,15 +63,6 @@ interface Store {
   hiddenSections: string[];
   toggleSectionVisibility: (sectionId: string) => void;
   
-  // 审计日志
-  auditLogs: AuditLogEntry[];
-  addAuditLog: (entry: Omit<AuditLogEntry, 'id' | 'timestamp'>) => void;
-  clearAuditLogs: () => void;
-  
-  // 云端同步配置
-  syncConfig: SyncConfig;
-  setSyncConfig: (config: Partial<SyncConfig>) => void;
-  
   // 统计
   getTodayStats: () => {
     revenue: number;
@@ -81,17 +73,7 @@ interface Store {
   };
 }
 
-// Improved ID generator with timestamp + random to reduce collision risk
-const generateId = () => {
-  const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 7);
-  return `${timestamp}-${random}`;
-};
-
-// Generate unique walk-in ID for each transaction
-export const generateWalkInId = () => {
-  return `walk-in-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`;
-};
+const generateId = () => Math.random().toString(36).substring(2, 9);
 
 const isToday = (date: Date) => {
   const today = new Date();
@@ -125,10 +107,6 @@ export const useStore = create<Store>()(
       },
       getMember: (id) => get().members.find((m) => m.id === id),
       getMemberByPhone: (phone) => get().members.find((m) => m.phone === phone),
-      // Check if phone is unique (optionally excluding a specific member for edit scenarios)
-      isPhoneUnique: (phone, excludeMemberId) => {
-        return !get().members.some((m) => m.phone === phone && m.id !== excludeMemberId);
-      },
       searchMembers: (query) => {
         const q = query.toLowerCase();
         return get().members.filter(
@@ -149,9 +127,6 @@ export const useStore = create<Store>()(
           remainingCount: template.totalCount,
           services: template.serviceIds,
           createdAt: new Date(),
-          // Store original values for accurate refund if template is deleted later
-          originalPrice: template.price,
-          originalTotalCount: template.totalCount,
         };
         
         set((state) => ({
@@ -326,7 +301,9 @@ export const useStore = create<Store>()(
         }));
       },
 
-      // 设置 - admin password managed server-side only (no client storage)
+      // 设置
+      adminPassword: '123456',
+      setAdminPassword: (password) => set({ adminPassword: password }),
       
       // 店铺信息
       shopInfo: {
@@ -354,33 +331,6 @@ export const useStore = create<Store>()(
           hiddenSections: state.hiddenSections.includes(sectionId)
             ? state.hiddenSections.filter((s) => s !== sectionId)
             : [...state.hiddenSections, sectionId],
-        }));
-      },
-      
-      // 审计日志 - 限制最多1000条
-      auditLogs: [],
-      addAuditLog: (entry) => {
-        set((state) => {
-          const newLog: AuditLogEntry = {
-            ...entry,
-            id: generateId(),
-            timestamp: new Date(),
-          };
-          const logs = [newLog, ...state.auditLogs].slice(0, 1000);
-          return { auditLogs: logs };
-        });
-      },
-      clearAuditLogs: () => set({ auditLogs: [] }),
-      
-      // 云端同步配置
-      syncConfig: {
-        enabled: false,
-        apiUrl: '',
-        syncStatus: 'idle',
-      },
-      setSyncConfig: (config) => {
-        set((state) => ({
-          syncConfig: { ...state.syncConfig, ...config },
         }));
       },
 
@@ -440,11 +390,6 @@ export const useStore = create<Store>()(
     }),
     {
       name: 'barber-shop-storage',
-      partialize: (state: Record<string, unknown>) => {
-        const rest = { ...state };
-        delete rest.adminPassword;
-        return rest;
-      },
-    } as any
+    }
   )
 );

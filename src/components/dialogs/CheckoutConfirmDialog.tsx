@@ -9,11 +9,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import { CreditCard, Wallet, Banknote, User, Printer } from "lucide-react";
-import { printReceipt } from "@/lib/print";
-import { useStore } from "@/stores/useStore";
+import { CreditCard, Wallet, Banknote, User } from "lucide-react";
 
 interface CardUsageInfo {
   cardName: string;
@@ -62,34 +59,15 @@ export function CheckoutConfirmDialog({
   paymentMethod,
   cardUsageInfo = [],
 }: CheckoutConfirmDialogProps) {
-  const { shopInfo } = useStore();
-
-  const handlePrint = () => {
-    printReceipt({
-      shopName: shopInfo.name,
-      shopPhone: shopInfo.phone,
-      shopAddress: shopInfo.address,
-      memberName: memberName || "散客",
-      isWalkIn,
-      services: services.map(s => ({ name: s.name, price: s.price, useCard: s.useCard })),
-      cardDeduct: cardDeductTotal,
-      balanceDeduct,
-      cashNeed,
-      paymentMethod,
-      total,
-      timestamp: new Date(),
-    });
-  };
-
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-md max-h-[85vh] overflow-hidden flex flex-col">
+      <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
           <AlertDialogTitle className="flex items-center gap-2">
             确认结账
           </AlertDialogTitle>
           <AlertDialogDescription asChild>
-            <div className="space-y-4 pt-2 overflow-auto max-h-[60vh]">
+            <div className="space-y-4 pt-2">
               {/* 顾客信息 */}
               <div className="flex items-center gap-2 rounded-lg bg-muted p-3">
                 <User className="h-5 w-5 text-muted-foreground" />
@@ -214,12 +192,8 @@ export function CheckoutConfirmDialog({
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter className="pt-4 border-t border-border gap-2 sm:gap-2">
+        <AlertDialogFooter>
           <AlertDialogCancel>取消</AlertDialogCancel>
-          <Button variant="outline" onClick={handlePrint}>
-            <Printer className="mr-2 h-4 w-4" />
-            打印小票
-          </Button>
           <AlertDialogAction onClick={onConfirm}>确认结账</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>

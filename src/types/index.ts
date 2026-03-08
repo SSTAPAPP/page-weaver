@@ -18,9 +18,6 @@ export interface MemberCard {
   remainingCount: number;
   services: string[];
   createdAt: Date;
-  // Store original values for accurate refund calculation if template is deleted
-  originalPrice: number;
-  originalTotalCount: number;
 }
 
 // 次卡模板
@@ -107,22 +104,4 @@ export interface ShopInfo {
   name: string;
   address: string;
   phone: string;
-}
-
-// 审计日志
-export interface AuditLogEntry {
-  id: string;
-  timestamp: Date;
-  action: string;
-  category: 'member' | 'transaction' | 'service' | 'card' | 'system' | 'security';
-  details: string;
-  metadata?: Record<string, unknown>;
-}
-
-// 云端同步配置
-export interface SyncConfig {
-  enabled: boolean;
-  apiUrl: string;
-  lastSyncTime?: Date;
-  syncStatus: 'idle' | 'syncing' | 'success' | 'error';
 }

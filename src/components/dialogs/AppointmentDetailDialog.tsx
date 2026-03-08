@@ -12,8 +12,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LoadingButton } from "@/components/ui/loading-button";
 import { EmptyState } from "@/components/ui/empty-state";
-import { useUpdateAppointment } from "@/hooks/useCloudData";
-import { toast } from "sonner";
+import { useStore } from "@/stores/useStore";
+import { useToast } from "@/hooks/use-toast";
 import { Clock, User, Phone, Plus, Calendar, CheckCircle, XCircle, AlertCircle } from "lucide-react";
 import type { Appointment } from "@/types";
 import { useState } from "react";
@@ -41,18 +41,19 @@ export function AppointmentDetailDialog({
   onAddAppointment,
   appointments,
 }: AppointmentDetailDialogProps) {
-  const updateAppointment = useUpdateAppointment();
+  const { toast } = useToast();
+  const { updateAppointment } = useStore();
   const [isUpdating, setIsUpdating] = useState<string | null>(null);
 
   const handleUpdateStatus = async (id: string, status: Appointment["status"]) => {
     setIsUpdating(id);
     try {
-      await updateAppointment.mutateAsync({ id, updates: { status } });
-      toast.success("状态已更新", {
+      await new Promise((r) => setTimeout(r, 300));
+      updateAppointment(id, { status });
+      toast({
+        title: "状态已更新",
         description: `预约已${statusMap[status].label}`,
       });
-    } catch {
-      toast.error("更新失败", { description: "请检查网络连接" });
     } finally {
       setIsUpdating(null);
     }
@@ -119,6 +120,7 @@ export function AppointmentDetailDialog({
                         <span className="text-muted-foreground">{apt.serviceName}</span>
                       </div>
 
+                      {/* 操作按钮 */}
                       {apt.status === "pending" && (
                         <div className="mt-4 flex gap-2">
                           <LoadingButton

@@ -18,39 +18,29 @@ import {
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  useServices,
-  useCreateService,
-  useUpdateService,
-  useDeleteService,
-  useCardTemplates,
-  useCreateCardTemplate,
-  useUpdateCardTemplate,
-  useDeleteCardTemplate,
-} from "@/hooks/useCloudData";
-import { toast } from "sonner";
+import { useStore } from "@/stores/useStore";
+import { useToast } from "@/hooks/use-toast";
 import { AdminPasswordDialog } from "@/components/dialogs/AdminPasswordDialog";
-import { Skeleton } from "@/components/ui/skeleton";
-import type { Service, CardTemplate } from "@/types";
 
 export default function Services() {
-  
-  const { data: services = [], isLoading: isServicesLoading } = useServices();
-  const { data: cardTemplates = [], isLoading: isCardsLoading } = useCardTemplates();
-
-  const createService = useCreateService();
-  const updateService = useUpdateService();
-  const deleteService = useDeleteService();
-  const createCardTemplate = useCreateCardTemplate();
-  const updateCardTemplate = useUpdateCardTemplate();
-  const deleteCardTemplate = useDeleteCardTemplate();
+  const { toast } = useToast();
+  const {
+    services,
+    addService,
+    updateService,
+    deleteService,
+    cardTemplates,
+    addCardTemplate,
+    updateCardTemplate,
+    deleteCardTemplate,
+  } = useStore();
 
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [cardDialogOpen, setCardDialogOpen] = useState(false);
   const [adminPasswordDialogOpen, setAdminPasswordDialogOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<{ type: "service" | "card"; id: string; name: string } | null>(null);
-  const [editingService, setEditingService] = useState<Service | null>(null);
-  const [editingCard, setEditingCard] = useState<CardTemplate | null>(null);
+  const [editingService, setEditingService] = useState<typeof services[0] | null>(null);
+  const [editingCard, setEditingCard] = useState<typeof cardTemplates[0] | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Service form state
@@ -66,8 +56,6 @@ export default function Services() {
   const [cardCount, setCardCount] = useState("");
   const [selectedServices, setSelectedServices] = useState<string[]>([]);
   const [cardErrors, setCardErrors] = useState<Record<string, string>>({});
-
-  const isLoading = isServicesLoading || isCardsLoading;
 
   const resetServiceForm = () => {
     setServiceName("");
@@ -110,6 +98,8 @@ export default function Services() {
 
     setIsSubmitting(true);
     try {
+      await new Promise((r) => setTimeout(r, 300));
+      
       const data = {
         name: serviceName.trim(),
         price: parseFloat(servicePrice),
@@ -118,17 +108,15 @@ export default function Services() {
       };
 
       if (editingService) {
-        await updateService.mutateAsync({ id: editingService.id, updates: data });
-        toast.success("服务已更新");
+        updateService(editingService.id, data);
+        toast({ title: "服务已更新" });
       } else {
-        await createService.mutateAsync(data);
-        toast.success("服务已添加");
+        addService(data);
+        toast({ title: "服务已添加" });
       }
 
       resetServiceForm();
       setServiceDialogOpen(false);
-    } catch (error) {
-      toast.error("操作失败", { description: "请检查网络连接" });
     } finally {
       setIsSubmitting(false);
     }
@@ -139,6 +127,8 @@ export default function Services() {
 
     setIsSubmitting(true);
     try {
+      await new Promise((r) => setTimeout(r, 300));
+      
       const data = {
         name: cardName.trim(),
         price: parseFloat(cardPrice),
@@ -147,23 +137,21 @@ export default function Services() {
       };
 
       if (editingCard) {
-        await updateCardTemplate.mutateAsync({ id: editingCard.id, updates: data });
-        toast.success("服务已更新");
+        updateCardTemplate(editingCard.id, data);
+        toast({ title: "次卡模板已更新" });
       } else {
-        await createCardTemplate.mutateAsync(data);
-        toast.success("次卡模板已添加");
+        addCardTemplate(data);
+        toast({ title: "次卡模板已添加" });
       }
 
       resetCardForm();
       setCardDialogOpen(false);
-    } catch (error) {
-      toast.error("操作失败", { description: "请检查网络连接" });
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const openEditService = (service: Service) => {
+  const openEditService = (service: typeof services[0]) => {
     setEditingService(service);
     setServiceName(service.name);
     setServicePrice(service.price.toString());
@@ -173,7 +161,7 @@ export default function Services() {
     setServiceDialogOpen(true);
   };
 
-  const openEditCard = (card: CardTemplate) => {
+  const openEditCard = (card: typeof cardTemplates[0]) => {
     setEditingCard(card);
     setCardName(card.name);
     setCardPrice(card.price.toString());
@@ -183,19 +171,15 @@ export default function Services() {
     setCardDialogOpen(true);
   };
 
-  const handleDelete = async () => {
+  const handleDelete = () => {
     if (!deleteTarget) return;
     
-    try {
-      if (deleteTarget.type === "service") {
-        await deleteService.mutateAsync(deleteTarget.id);
-        toast.success("服务已删除");
-      } else {
-        await deleteCardTemplate.mutateAsync(deleteTarget.id);
-        toast.success("次卡模板已删除");
-      }
-    } catch (error) {
-      toast.error("删除失败");
+    if (deleteTarget.type === "service") {
+      deleteService(deleteTarget.id);
+      toast({ title: "服务已删除" });
+    } else {
+      deleteCardTemplate(deleteTarget.id);
+      toast({ title: "次卡模板已删除" });
     }
     
     setDeleteTarget(null);
@@ -208,22 +192,13 @@ export default function Services() {
 
   const categories = [...new Set(services.map((s) => s.category))];
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <PageHeader title="服务管理" description="管理服务项目和次卡模板" />
-        <div className="space-y-4">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Skeleton key={i} className="h-32 rounded-lg" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
-      <PageHeader title="服务管理" description="管理服务项目和次卡模板" />
+      {/* Header */}
+      <PageHeader
+        title="服务管理"
+        description="管理服务项目和次卡模板"
+      />
 
       <Tabs defaultValue="services">
         <TabsList className="grid w-full grid-cols-2 lg:w-80">
@@ -233,7 +208,12 @@ export default function Services() {
 
         <TabsContent value="services" className="mt-4 space-y-4">
           <div className="flex justify-end">
-            <Button onClick={() => { resetServiceForm(); setServiceDialogOpen(true); }}>
+            <Button
+              onClick={() => {
+                resetServiceForm();
+                setServiceDialogOpen(true);
+              }}
+            >
               <Plus className="mr-2 h-4 w-4" />
               添加服务
             </Button>
@@ -284,10 +264,18 @@ export default function Services() {
                             </div>
                           </div>
                           <div className="flex gap-1">
-                            <Button variant="ghost" size="icon" onClick={() => openEditService(service)}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => openEditService(service)}
+                            >
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleRequestDelete("service", service.id, service.name)}>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleRequestDelete("service", service.id, service.name)}
+                            >
                               <Trash2 className="h-4 w-4 text-destructive" />
                             </Button>
                           </div>
@@ -302,7 +290,12 @@ export default function Services() {
 
         <TabsContent value="cards" className="mt-4 space-y-4">
           <div className="flex justify-end">
-            <Button onClick={() => { resetCardForm(); setCardDialogOpen(true); }}>
+            <Button
+              onClick={() => {
+                resetCardForm();
+                setCardDialogOpen(true);
+              }}
+            >
               <Plus className="mr-2 h-4 w-4" />
               添加次卡模板
             </Button>
@@ -336,10 +329,18 @@ export default function Services() {
                         </p>
                       </div>
                       <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" onClick={() => openEditCard(template)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openEditCard(template)}
+                        >
                           <Edit className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" onClick={() => handleRequestDelete("card", template.id, template.name)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => handleRequestDelete("card", template.id, template.name)}
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -372,15 +373,55 @@ export default function Services() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <FormField label="服务名称" required value={serviceName} onChange={(e) => setServiceName(e.target.value)} placeholder="如：洗剪吹" error={serviceErrors.name} />
+            <FormField
+              label="服务名称"
+              required
+              value={serviceName}
+              onChange={(e) => setServiceName(e.target.value)}
+              placeholder="如：洗剪吹"
+              error={serviceErrors.name}
+            />
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="价格" required type="number" value={servicePrice} onChange={(e) => setServicePrice(e.target.value)} placeholder="38" error={serviceErrors.price} />
-              <FormField label="时长(分钟)" type="number" value={serviceDuration} onChange={(e) => setServiceDuration(e.target.value)} placeholder="30" />
+              <FormField
+                label="价格"
+                required
+                type="number"
+                value={servicePrice}
+                onChange={(e) => setServicePrice(e.target.value)}
+                placeholder="38"
+                error={serviceErrors.price}
+              />
+              <FormField
+                label="时长(分钟)"
+                type="number"
+                value={serviceDuration}
+                onChange={(e) => setServiceDuration(e.target.value)}
+                placeholder="30"
+              />
             </div>
-            <FormField label="分类" value={serviceCategory} onChange={(e) => setServiceCategory(e.target.value)} placeholder="如：剪发、烫染" hint='留空将归类为"其他"' />
+            <FormField
+              label="分类"
+              value={serviceCategory}
+              onChange={(e) => setServiceCategory(e.target.value)}
+              placeholder="如：剪发、烫染"
+              hint='留空将归类为"其他"'
+            />
             <div className="flex gap-2 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => setServiceDialogOpen(false)} disabled={isSubmitting}>取消</Button>
-              <LoadingButton className="flex-1" onClick={handleServiceSubmit} loading={isSubmitting}>确认</LoadingButton>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setServiceDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                取消
+              </Button>
+              <LoadingButton
+                className="flex-1"
+                onClick={handleServiceSubmit}
+                loading={isSubmitting}
+              >
+                确认
+              </LoadingButton>
             </div>
           </div>
         </DialogContent>
@@ -396,10 +437,33 @@ export default function Services() {
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <FormField label="次卡名称" required value={cardName} onChange={(e) => setCardName(e.target.value)} placeholder="如：洗剪吹10次卡" error={cardErrors.name} />
+            <FormField
+              label="次卡名称"
+              required
+              value={cardName}
+              onChange={(e) => setCardName(e.target.value)}
+              placeholder="如：洗剪吹10次卡"
+              error={cardErrors.name}
+            />
             <div className="grid grid-cols-2 gap-4">
-              <FormField label="售价" required type="number" value={cardPrice} onChange={(e) => setCardPrice(e.target.value)} placeholder="280" error={cardErrors.price} />
-              <FormField label="次数" required type="number" value={cardCount} onChange={(e) => setCardCount(e.target.value)} placeholder="10" error={cardErrors.count} />
+              <FormField
+                label="售价"
+                required
+                type="number"
+                value={cardPrice}
+                onChange={(e) => setCardPrice(e.target.value)}
+                placeholder="280"
+                error={cardErrors.price}
+              />
+              <FormField
+                label="次数"
+                required
+                type="number"
+                value={cardCount}
+                onChange={(e) => setCardCount(e.target.value)}
+                placeholder="10"
+                error={cardErrors.count}
+              />
             </div>
             <div className="space-y-2">
               <Label className={cardErrors.services ? "text-destructive" : ""}>
@@ -408,7 +472,9 @@ export default function Services() {
               <ScrollArea className="h-40 rounded-lg border border-border p-3">
                 <div className="space-y-2">
                   {services.length === 0 ? (
-                    <p className="py-4 text-center text-sm text-muted-foreground">请先添加服务项目</p>
+                    <p className="py-4 text-center text-sm text-muted-foreground">
+                      请先添加服务项目
+                    </p>
                   ) : (
                     services.map((service) => (
                       <div key={service.id} className="flex items-center space-x-2">
@@ -436,8 +502,21 @@ export default function Services() {
               )}
             </div>
             <div className="flex gap-2 pt-2">
-              <Button variant="outline" className="flex-1" onClick={() => setCardDialogOpen(false)} disabled={isSubmitting}>取消</Button>
-              <LoadingButton className="flex-1" onClick={handleCardSubmit} loading={isSubmitting}>确认</LoadingButton>
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setCardDialogOpen(false)}
+                disabled={isSubmitting}
+              >
+                取消
+              </Button>
+              <LoadingButton
+                className="flex-1"
+                onClick={handleCardSubmit}
+                loading={isSubmitting}
+              >
+                确认
+              </LoadingButton>
             </div>
           </div>
         </DialogContent>
