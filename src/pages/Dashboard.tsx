@@ -182,13 +182,13 @@ export default function Dashboard() {
       title: "会员充值",
       icon: Plus,
       onClick: () => setRechargeDialogOpen(true),
-      variant: "secondary" as const,
+      variant: "outline" as const,
     },
     {
       title: "收银结账",
       icon: Wallet,
       onClick: () => navigate("/cashier"),
-      variant: "secondary" as const,
+      variant: "outline" as const,
     },
     {
       title: "查找会员",
