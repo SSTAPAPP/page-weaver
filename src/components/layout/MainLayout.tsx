@@ -1,4 +1,5 @@
 import { ReactNode, useState } from "react";
+import { UpdateChecker } from "@/components/UpdateChecker";
 import { useLocation, useNavigate } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import {
