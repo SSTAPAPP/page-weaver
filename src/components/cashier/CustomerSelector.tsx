@@ -92,6 +92,7 @@ export function CustomerSelector({
               key={member.id}
               onClick={() => onSelectMember(member)}
               className="cursor-pointer px-3 py-3 transition-colors hover:bg-muted/40 min-h-[48px]"
+            >
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{member.name}</p>
