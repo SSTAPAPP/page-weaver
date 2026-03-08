@@ -26,7 +26,6 @@ import {
   BarChart,
   Bar,
   Legend,
-  TrendingUp,
 } from "recharts";
 
 const metricsInfo: Record<string, { title: string; brief: string; formula: string; note: string }> = {
