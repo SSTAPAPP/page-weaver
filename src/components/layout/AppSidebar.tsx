@@ -194,7 +194,7 @@ export function AppSidebar({ forceExpanded, defaultCollapsed, onNavigate }: AppS
         {/* Bottom: settings + collapse */}
         <div
           className={cn(
-            "shrink-0 border-t border-border/60 py-2",
+            "shrink-0 border-t border-border/30 py-2",
             isCollapsed ? "px-1.5" : "px-2"
           )}
         >
