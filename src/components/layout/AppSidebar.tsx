@@ -64,7 +64,7 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
           "group relative flex items-center gap-3 rounded-lg min-h-10 text-base font-medium transition-colors duration-150",
           isCollapsed ? "justify-center w-10 h-10 mx-auto" : "px-3 py-2",
           isActive
-            ? "bg-sidebar-accent text-sidebar-foreground font-semibold"
+            ? "bg-muted text-sidebar-foreground font-semibold"
             : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
         )}
       >
