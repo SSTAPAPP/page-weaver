@@ -24,7 +24,7 @@ export function RecentMembers({
   return (
     <section className={cn("transition-opacity duration-300", hidden && "opacity-30")}>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-serif text-base font-semibold">最近会员</h2>
+        <h2 className="text-base font-semibold">最近会员</h2>
         <Button
           variant="ghost"
           size="sm"
@@ -71,7 +71,7 @@ export function RecentMembers({
               className="flex cursor-pointer items-center justify-between px-4 py-2.5 transition-colors hover:bg-muted/40"
             >
               <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-muted text-xs font-medium">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand text-xs font-medium">
                   {member.name.charAt(0)}
                 </div>
                 <div className="min-w-0">

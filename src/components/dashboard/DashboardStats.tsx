@@ -9,6 +9,10 @@ interface TodayStats {
   consumption: number;
   newMembers: number;
   appointments: number;
+  yesterdayRevenue?: number;
+  yesterdayRecharge?: number;
+  yesterdayConsumption?: number;
+  yesterdayNewMembers?: number;
 }
 
 interface DashboardStatsProps {
@@ -29,6 +33,20 @@ function MetricSkeleton({ wide = false }: { wide?: boolean }) {
       <Skeleton className="h-3 w-12" />
       <Skeleton className={cn("h-8", wide ? "w-28" : "w-16")} />
     </div>
+  );
+}
+
+function TrendLabel({ current, previous }: { current: number; previous: number | undefined }) {
+  if (previous === undefined) return null;
+  if (previous === 0 && current === 0) return null;
+  if (previous === 0 && current > 0) return <span className="text-2xs text-brand font-medium ml-1.5">新增</span>;
+  const pct = Math.round(((current - previous) / previous) * 100);
+  if (pct === 0) return <span className="text-2xs text-muted-foreground ml-1.5">持平</span>;
+  const isUp = pct > 0;
+  return (
+    <span className={cn("text-2xs font-medium ml-1.5", isUp ? "text-brand" : "text-muted-foreground")}>
+      {isUp ? `↑${pct}%` : `↓${Math.abs(pct)}%`}
+    </span>
   );
 }
 
@@ -60,9 +78,12 @@ export function DashboardStats({ stats, isLoading, isError, refetch, hidden }: D
         ) : (
           <>
             <p className="text-xs text-muted-foreground mb-1">今日实收</p>
-            <p className="text-3xl font-bold tabular-nums tracking-tight">
-              {hidden ? "****" : `¥${formatCurrency(revenue)}`}
-            </p>
+            <div className="flex items-baseline">
+              <p className="text-3xl font-bold tabular-nums tracking-tight text-brand">
+                {hidden ? "****" : `¥${formatCurrency(revenue)}`}
+              </p>
+              {!hidden && <TrendLabel current={revenue} previous={stats?.yesterdayRevenue} />}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">现金 · 微信 · 支付宝 · 补差价</p>
           </>
         )}
@@ -75,12 +96,16 @@ export function DashboardStats({ stats, isLoading, isError, refetch, hidden }: D
           value={hidden ? "****" : `¥${formatCurrency(recharge)}`}
           sub="储值/次卡"
           loading={isLoading}
+          current={recharge}
+          previous={hidden ? undefined : stats?.yesterdayRecharge}
         />
         <SecondaryMetric
           label="消耗"
           value={hidden ? "****" : `¥${formatCurrency(consumption)}`}
           sub="余额+次卡"
           loading={isLoading}
+          current={consumption}
+          previous={hidden ? undefined : stats?.yesterdayConsumption}
         />
         <SecondaryMetric
           label="新会员"
@@ -88,6 +113,8 @@ export function DashboardStats({ stats, isLoading, isError, refetch, hidden }: D
           sub="今日注册"
           loading={isLoading}
           highlight={newMembers > 0}
+          current={newMembers}
+          previous={hidden ? undefined : stats?.yesterdayNewMembers}
         />
         <SecondaryMetric
           label="预约"
@@ -107,12 +134,16 @@ function SecondaryMetric({
   sub,
   loading,
   highlight,
+  current,
+  previous,
 }: {
   label: string;
   value: string;
   sub: string;
   loading?: boolean;
   highlight?: boolean;
+  current?: number;
+  previous?: number;
 }) {
   return (
     <div className="bg-card px-4 py-3">
@@ -121,12 +152,17 @@ function SecondaryMetric({
       ) : (
         <>
           <p className="text-xs text-muted-foreground">{label}</p>
-          <p className={cn(
-            "text-lg font-semibold tabular-nums mt-0.5",
-            highlight && "text-primary"
-          )}>
-            {value}
-          </p>
+          <div className="flex items-baseline">
+            <p className={cn(
+              "text-lg font-semibold tabular-nums mt-0.5",
+              highlight && "text-brand"
+            )}>
+              {value}
+            </p>
+            {current !== undefined && previous !== undefined && (
+              <TrendLabel current={current} previous={previous} />
+            )}
+          </div>
           <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
         </>
       )}

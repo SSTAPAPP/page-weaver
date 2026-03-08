@@ -90,18 +90,19 @@ export function CartPanel({
 
         {/* Undo bar */}
         {lastRemoved && (
-          <div className="flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-xs">
+          <div className="relative flex items-center justify-between rounded-md bg-muted/50 px-3 py-2 text-xs overflow-hidden">
             <span className="text-muted-foreground truncate">
               已移除 {lastRemoved.item.service.name}
             </span>
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 gap-1 text-xs text-primary px-2 shrink-0"
+              className="h-6 gap-1 text-xs text-brand px-2 shrink-0"
               onClick={onUndoRemove}
             >
               <Undo2 className="h-3 w-3" />撤销
             </Button>
+            <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand/30 origin-left animate-undo-countdown" />
           </div>
         )}
 

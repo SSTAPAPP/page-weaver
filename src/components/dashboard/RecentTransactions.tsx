@@ -25,7 +25,7 @@ export function RecentTransactions({
   return (
     <section className={cn("transition-opacity duration-300", hidden && "opacity-30")}>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="font-serif text-base font-semibold">最近交易</h2>
+        <h2 className="text-base font-semibold">最近交易</h2>
         <Button
           variant="ghost"
           size="sm"
@@ -93,7 +93,7 @@ export function RecentTransactions({
                   "text-sm font-medium tabular-nums shrink-0 ml-3",
                   tx.voided && "line-through text-muted-foreground",
                   !tx.voided && isExpense && "text-destructive",
-                  !tx.voided && isIncome && "text-primary",
+                  !tx.voided && isIncome && "text-brand",
                 )}>
                   {hidden
                     ? "****"

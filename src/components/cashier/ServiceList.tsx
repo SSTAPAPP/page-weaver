@@ -73,12 +73,12 @@ export function ServiceList({
                         ¥{service.price}
                       </p>
                       {hasCard && (
-                        <Badge
-                          variant="secondary"
-                          className="text-2xs font-normal px-1.5 py-0"
-                        >
-                          有次卡
-                        </Badge>
+                      <Badge
+                        variant="brand"
+                        className="text-2xs font-normal px-1.5 py-0"
+                      >
+                        次卡可抵
+                      </Badge>
                       )}
                     </div>
                   </div>

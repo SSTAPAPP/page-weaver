@@ -254,24 +254,39 @@ export function useTodayStats() {
   return useQuery({
     queryKey: queryKeys.todayStats,
     queryFn: async () => {
-      const [txStats, todayAppointments] = await Promise.all([
-        transactionService.getTodayStats(),
-        appointmentService.getTodayCount(),
-      ]);
-
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const { count: newMembers } = await supabase
-        .from("members")
-        .select("*", { count: "exact", head: true })
-        .gte("created_at", today.toISOString());
+
+      const yesterday = new Date(today);
+      yesterday.setDate(yesterday.getDate() - 1);
+      const yesterdayEnd = new Date(today);
+      yesterdayEnd.setMilliseconds(-1);
+
+      const [txStats, todayAppointments, yesterdayStats, newMembersResult, yesterdayMembersResult] = await Promise.all([
+        transactionService.getTodayStats(),
+        appointmentService.getTodayCount(),
+        transactionService.getStatsForDateRange(yesterday, yesterdayEnd),
+        supabase
+          .from("members")
+          .select("*", { count: "exact", head: true })
+          .gte("created_at", today.toISOString()),
+        supabase
+          .from("members")
+          .select("*", { count: "exact", head: true })
+          .gte("created_at", yesterday.toISOString())
+          .lt("created_at", today.toISOString()),
+      ]);
 
       return {
         revenue: txStats.revenue,
         recharge: txStats.recharge,
         consumption: txStats.consumption,
-        newMembers: newMembers || 0,
+        newMembers: newMembersResult.count || 0,
         appointments: todayAppointments,
+        yesterdayRevenue: yesterdayStats.revenue,
+        yesterdayRecharge: yesterdayStats.recharge,
+        yesterdayConsumption: yesterdayStats.consumption,
+        yesterdayNewMembers: yesterdayMembersResult.count || 0,
       };
     },
     staleTime: 15_000,
