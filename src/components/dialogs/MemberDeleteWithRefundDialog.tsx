@@ -265,7 +265,7 @@ export function MemberDeleteWithRefundDialog({
               </div>
             </div>
           )}
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="pt-4 border-t border-border gap-2 sm:gap-2">
           {step === "refund" ? (
