@@ -35,53 +35,13 @@ interface StatCardWithTooltipProps {
 }
 
 function StatCardWithTooltip({ title, value, description, icon: Icon, color, hidden }: StatCardWithTooltipProps) {
-  const metricInfo = metricsInfo[title];
-
   return (
     <Card className="relative overflow-hidden transition-shadow duration-200 hover:shadow-md">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <p className="text-sm font-medium text-muted-foreground">
           {title}
         </p>
-        <div className="flex items-center gap-1">
-          {metricInfo && (
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 text-muted-foreground/60 hover:text-muted-foreground" aria-label={`${title}指标说明`}>
-                  <Info className="h-3.5 w-3.5" />
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-72" side="bottom" align="end">
-                <div className="space-y-3">
-                  <div className="flex items-center gap-2">
-                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-muted`}>
-                      <Icon className={`h-4 w-4 ${color}`} />
-                    </div>
-                    <div>
-                      <p className="font-semibold text-sm">{metricInfo.title}</p>
-                      <p className="text-xs text-muted-foreground">{metricInfo.brief}</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2 text-sm">
-                    <div className="rounded-md bg-muted/50 p-2">
-                      <p className="font-medium text-xs text-muted-foreground mb-1">计算公式</p>
-                      <p className="font-mono text-xs">{metricInfo.formula}</p>
-                    </div>
-                    <div>
-                      <p className="font-medium text-xs text-muted-foreground mb-1">示例</p>
-                      <p className="text-xs">{metricInfo.example}</p>
-                    </div>
-                    <p className="text-xs text-muted-foreground/80 italic flex items-start gap-1">
-                      <span>💡</span>
-                      <span>{metricInfo.note}</span>
-                    </p>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-          )}
-          <Icon className={`h-4 w-4 ${color}`} />
-        </div>
+        <Icon className={`h-4 w-4 ${color}`} />
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{hidden ? "****" : value}</div>
