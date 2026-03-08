@@ -38,6 +38,7 @@ export default function Services() {
   const [serviceDialogOpen, setServiceDialogOpen] = useState(false);
   const [cardDialogOpen, setCardDialogOpen] = useState(false);
   const [adminPasswordDialogOpen, setAdminPasswordDialogOpen] = useState(false);
+  const [adminPasswordAction, setAdminPasswordAction] = useState<"delete" | "editService" | "editCard">("delete");
   const [deleteTarget, setDeleteTarget] = useState<{ type: "service" | "card"; id: string; name: string } | null>(null);
   const [editingService, setEditingService] = useState<typeof services[0] | null>(null);
   const [editingCard, setEditingCard] = useState<typeof cardTemplates[0] | null>(null);
