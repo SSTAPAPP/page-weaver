@@ -173,7 +173,7 @@ export default function Transactions() {
               </SelectContent>
             </Select>
             {hasFilters && (
-              <Button variant="ghost" size="icon" onClick={clearFilters}>
+              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={clearFilters} aria-label="清除筛选">
                 <X className="h-4 w-4" />
               </Button>
             )}
