@@ -27,9 +27,11 @@ import {
   ArrowRight,
   Wallet,
   Banknote,
-  Link2
+  Link2,
+  Printer
 } from "lucide-react";
 import type { Transaction } from "@/types";
+import { printTransactionReceipt } from "@/components/receipt/TransactionReceipt";
 
 const typeMap = {
   recharge: { label: "充值", icon: ArrowUpCircle, color: "text-chart-2", bgColor: "bg-chart-2/10" },
@@ -58,7 +60,7 @@ export function TransactionRefundDialog({
   onOpenChange,
 }: TransactionRefundDialogProps) {
   const { toast } = useToast();
-  const { adminPassword, refundBalance, refundCard, addTransaction, voidTransaction, getRelatedTransactions } = useStore();
+  const { adminPassword, refundBalance, refundCard, addTransaction, voidTransaction, getRelatedTransactions, shopInfo } = useStore();
   const [password, setPassword] = useState("");
   const [isRefunding, setIsRefunding] = useState(false);
   const [passwordError, setPasswordError] = useState("");
@@ -360,6 +362,15 @@ export function TransactionRefundDialog({
         </div>
 
         <DialogFooter>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => printTransactionReceipt(transaction, shopInfo, refundTransaction)}
+            className="gap-1.5 mr-auto"
+          >
+            <Printer className="h-3.5 w-3.5" />
+            打印凭证
+          </Button>
           <Button variant="outline" onClick={handleClose}>
             {canRefund ? "取消" : "关闭"}
           </Button>
