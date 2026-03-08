@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, ShoppingCart, Trash2, CreditCard, Wallet, UserX, AlertCircle, Clock, DollarSign, Plus } from "lucide-react";
+import { Search, ShoppingCart, Trash2, CreditCard, Wallet, UserX, AlertCircle, Clock, DollarSign, Plus, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Member, Service, MemberCard } from "@/types";
 import { matchMemberSearch } from "@/lib/pinyin";
 import { CheckoutConfirmDialog } from "@/components/dialogs/CheckoutConfirmDialog";
+import { CheckoutReceipt, ReceiptData } from "@/components/receipt/CheckoutReceipt";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface CartItem {
   service: Service;
@@ -48,6 +57,8 @@ export default function Cashier() {
   const [paymentMethod, setPaymentMethod] = useState<"wechat" | "alipay" | "cash">("wechat");
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [lastReceiptData, setLastReceiptData] = useState<ReceiptData | null>(null);
 
   const isWalkIn = !selectedMember;
 
@@ -280,10 +291,32 @@ export default function Cashier() {
         });
       }
 
-      toast({
-        title: "结账成功",
-        description: `${isWalkIn ? "散客" : selectedMember?.name}消费 ¥${total}`,
-      });
+      // 生成订单号和收据数据
+      const orderNo = `ORD${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const receiptData: ReceiptData = {
+        orderNo,
+        isWalkIn,
+        memberName: selectedMember?.name,
+        memberPhone: selectedMember?.phone,
+        memberBalance: selectedMember ? (selectedMember.balance + balanceDeduct) : undefined, // 结账前余额
+        balanceAfter: selectedMember?.balance,
+        services: cart.map((item) => ({
+          name: item.service.name,
+          price: item.service.price,
+          useCard: item.useCard,
+          cardName: item.card?.templateName,
+        })),
+        cardDeductTotal,
+        balanceDeduct,
+        cashNeed,
+        total,
+        paymentMethod,
+        cardUsageInfo,
+        createdAt: new Date(),
+      };
+
+      setLastReceiptData(receiptData);
+      setSuccessDialogOpen(true);
 
       // 重置
       setSelectedMember(null);
@@ -722,6 +755,36 @@ export default function Cashier() {
         paymentMethod={paymentMethod}
         cardUsageInfo={cardUsageInfo}
       />
+
+      {/* 结账成功弹窗 */}
+      <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader className="text-center sm:text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-chart-2/10">
+              <CheckCircle2 className="h-8 w-8 text-chart-2" />
+            </div>
+            <DialogTitle className="text-xl">结账成功</DialogTitle>
+            <DialogDescription>
+              {lastReceiptData && (
+                <span className="text-foreground font-medium">
+                  {lastReceiptData.isWalkIn ? "散客" : lastReceiptData.memberName} 消费 
+                  <span className="text-primary ml-1">¥{lastReceiptData.total.toFixed(2)}</span>
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex-col gap-2 sm:flex-col">
+            {lastReceiptData && <CheckoutReceipt data={lastReceiptData} />}
+            <Button
+              variant="ghost"
+              onClick={() => setSuccessDialogOpen(false)}
+              className="w-full"
+            >
+              完成
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
