@@ -100,8 +100,8 @@ All colors MUST be HSL.
     --destructive: 12 65% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 100% / 10%;
-    --input: 0 0% 100% / 15%;
+    --border: 0 0% 100% / 14%;
+    --input: 0 0% 100% / 18%;
     --ring: 264 2.7% 55.1%;
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 248 0.3% 98.4%;
