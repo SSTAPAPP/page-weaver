@@ -567,7 +567,7 @@ export default function Cashier() {
                       <div className="space-y-2">
                         <p className="text-xs text-muted-foreground">次卡扣除</p>
                         {cardUsageInfo.map((card, idx) => (
-                          <div key={idx} className="flex items-center justify-between rounded-md border border-muted/20 p-2 bg-card">
+                          <div key={idx} className="flex items-center justify-between rounded-md border border-border p-2 bg-card">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium truncate">{card.cardName}</span>
