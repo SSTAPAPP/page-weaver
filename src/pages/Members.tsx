@@ -15,12 +15,6 @@ import { matchMemberSearch } from "@/lib/pinyin";
 import { format, formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
-function getMemberLevel(balance: number, cardCount: number) {
-  if (balance >= 5000 || cardCount >= 5) return { label: "VIP", color: "bg-chart-1/15 text-chart-1 border-chart-1/30" };
-  if (balance >= 2000 || cardCount >= 3) return { label: "金卡", color: "bg-chart-5/15 text-chart-5 border-chart-5/30" };
-  if (balance >= 500 || cardCount >= 1) return { label: "银卡", color: "bg-muted-foreground/15 text-muted-foreground border-muted-foreground/30" };
-  return { label: "普通", color: "bg-muted text-muted-foreground border-border" };
-}
 
 export default function Members() {
   const { members, transactions } = useStore();
@@ -117,7 +111,6 @@ export default function Members() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredMembers.map((member) => {
-            const level = getMemberLevel(member.balance, member.cards.length);
             const consumeCount = memberConsumeCounts[member.id] || 0;
             const totalSpent = memberTotalSpent[member.id] || 0;
             const totalCardRemaining = member.cards.reduce((s, c) => s + c.remainingCount, 0);
@@ -152,9 +145,6 @@ export default function Members() {
                         </div>
                       </div>
                     </div>
-                    <Badge variant="outline" className={`text-[10px] font-semibold border ${level.color}`}>
-                      {level.label}
-                    </Badge>
                   </div>
 
                   <Separator className="my-3" />
