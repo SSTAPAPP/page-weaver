@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, ShoppingCart, Trash2, CreditCard, Wallet, UserX, AlertCircle } from "lucide-react";
+import { Search, ShoppingCart, Trash2, CreditCard, Wallet, UserX, AlertCircle, Clock, DollarSign, Plus } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -380,85 +380,92 @@ export default function Cashier() {
             </CardContent>
           </Card>
 
-          {/* 服务列表 - 列表卡片风格 */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-base">服务项目</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {services.length === 0 ? (
-                <div className="p-4">
-                  <EmptyState
-                    icon={ShoppingCart}
-                    title="暂无服务项目"
-                    description="请先在服务管理中添加服务"
-                  />
-                </div>
-              ) : (
-                <div className="divide-y divide-border">
-                  {servicesByCategory.map(({ category, services: categoryServices }) => (
-                    <div key={category} className="py-3 first:pt-0">
-                      {/* 分类标题 */}
-                      <div className="flex items-center justify-between px-4 mb-2">
-                        <span className="text-xs font-medium text-muted-foreground">
-                          {category}
-                        </span>
-                        <span className="text-[10px] text-muted-foreground/60">
-                          {categoryServices.length}项
-                        </span>
-                      </div>
-                      {/* 服务列表 */}
-                      <div className="space-y-1 px-2">
-                        {categoryServices.map((service) => {
-                          const availableCard = selectedMember?.cards.find(
-                            (card) => card.services.includes(service.id) && card.remainingCount > 0
-                          );
-                          const hasCard = !!availableCard;
-                          
-                          return (
-                            <div
-                              key={service.id}
-                              onClick={() => addToCart(service)}
-                              role="button"
-                              tabIndex={0}
-                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addToCart(service); } }}
-                              className="group flex items-center gap-3 rounded-lg px-3 py-3 cursor-pointer transition-all duration-150 hover:bg-muted/50 active:bg-muted"
-                            >
-                              {/* 左侧：服务信息 */}
-                              <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <p className="text-sm font-medium truncate">{service.name}</p>
-                                  {hasCard && (
-                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal bg-chart-2/10 text-chart-2 border-0">
-                                      <CreditCard className="h-2.5 w-2.5 mr-0.5" />
-                                      {availableCard.remainingCount}次
-                                    </Badge>
-                                  )}
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-0.5">
-                                  {service.duration ? `${service.duration}分钟` : '标准服务'}
-                                </p>
+          {/* 服务列表 - 分类卡片风格 */}
+          {services.length === 0 ? (
+            <Card>
+              <CardContent className="p-6">
+                <EmptyState
+                  icon={ShoppingCart}
+                  title="暂无服务项目"
+                  description="请先在服务管理中添加服务"
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {servicesByCategory.map(({ category, services: categoryServices }) => (
+                <Card key={category}>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="flex items-center gap-2 text-base">
+                      {category}
+                      <Badge variant="secondary" className="font-normal text-xs">
+                        {categoryServices.length}项
+                      </Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {categoryServices.map((service) => {
+                        const availableCard = selectedMember?.cards.find(
+                          (card) => card.services.includes(service.id) && card.remainingCount > 0
+                        );
+                        const hasCard = !!availableCard;
+                        const cartCount = cart.filter(item => item.service.id === service.id).length;
+                        
+                        return (
+                          <div
+                            key={service.id}
+                            onClick={() => addToCart(service)}
+                            role="button"
+                            tabIndex={0}
+                            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addToCart(service); } }}
+                            className="group relative flex items-center justify-between rounded-lg border border-border p-3 cursor-pointer transition-all duration-150 hover:border-primary/50 hover:bg-muted/30 hover:shadow-sm active:scale-[0.99]"
+                          >
+                            {/* 已添加数量角标 */}
+                            {cartCount > 0 && (
+                              <div className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-medium text-primary-foreground">
+                                {cartCount}
                               </div>
-                              
-                              {/* 右侧：价格 */}
-                              <div className="flex items-center gap-3 shrink-0">
-                                <span className="text-sm font-semibold tabular-nums">
+                            )}
+                            
+                            {/* 左侧：服务信息 */}
+                            <div className="flex-1 min-w-0 pr-2">
+                              <div className="flex items-center gap-1.5">
+                                <p className="text-sm font-medium truncate">{service.name}</p>
+                                {hasCard && (
+                                  <Badge className="text-[10px] px-1.5 py-0 font-normal bg-chart-2/15 text-chart-2 border-0 shrink-0">
+                                    <CreditCard className="h-2.5 w-2.5 mr-0.5" />
+                                    {availableCard.remainingCount}次
+                                  </Badge>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
+                                <span className="flex items-center gap-1">
+                                  <DollarSign className="h-3 w-3" />
                                   ¥{service.price}
                                 </span>
-                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <ShoppingCart className="h-3.5 w-3.5" />
-                                </div>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {service.duration || 30}分钟
+                                </span>
                               </div>
                             </div>
-                          );
-                        })}
-                      </div>
+                            
+                            {/* 右侧：添加按钮 */}
+                            <div className="flex items-center shrink-0">
+                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                                <Plus className="h-4 w-4" />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* 右侧：购物车和结算 */}
