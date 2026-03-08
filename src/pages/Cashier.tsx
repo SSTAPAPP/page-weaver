@@ -567,18 +567,23 @@ export default function Cashier() {
                   <div className="bg-muted/30 border-t border-border px-4 py-3 space-y-3">
                     {/* 次卡使用汇总 */}
                     {cardUsageInfo.length > 0 && (
-                      <div className="space-y-1.5">
+                      <div className="space-y-2">
+                        <p className="text-xs text-muted-foreground">次卡扣除</p>
                         {cardUsageInfo.map((card, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-sm">
-                            <span className="flex items-center gap-1.5 text-muted-foreground">
-                              <CreditCard className="h-3.5 w-3.5" />
-                              {card.cardName}
-                            </span>
-                            <span className="tabular-nums">
-                              <span className="text-destructive">-{card.consumedCount}次</span>
-                              <span className="text-muted-foreground mx-1">→</span>
-                              <span className="text-primary font-medium">余{card.remainingCount}次</span>
-                            </span>
+                          <div key={idx} className="flex items-center justify-between rounded-md border border-border p-2 bg-card">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2">
+                                <span className="text-sm font-medium truncate">{card.cardName}</span>
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal shrink-0">
+                                  {card.originalCount}次
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+                                <span className="text-destructive tabular-nums">-{card.consumedCount}次</span>
+                                <span>·</span>
+                                <span className="tabular-nums">余{card.remainingCount}次</span>
+                              </div>
+                            </div>
                           </div>
                         ))}
                       </div>
