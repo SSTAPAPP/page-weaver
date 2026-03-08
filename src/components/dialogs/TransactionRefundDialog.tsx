@@ -90,34 +90,55 @@ export function TransactionRefundDialog({
       let totalRefundAmount = transaction.amount;
       const fundTrail: string[] = [];
 
-      // 1. 处理subTransactions中的退款
+      // 1. 处理subTransactions中的退款（原路返回）
       if (transaction.subTransactions && transaction.subTransactions.length > 0) {
         transaction.subTransactions.forEach((sub) => {
           if (sub.type === 'card' && sub.cardId) {
             refundCard(transaction.memberId, sub.cardId);
-            fundTrail.push(`次卡退回1次 (¥${sub.amount})`);
+            fundTrail.push(`次卡已原路退回1次（价值 ¥${sub.amount}）`);
           }
           if (sub.type === 'balance') {
             refundBalance(transaction.memberId, sub.amount);
-            fundTrail.push(`余额退回 ¥${sub.amount}`);
+            fundTrail.push(`¥${sub.amount} 已原路退回会员余额`);
           }
           if (sub.type === 'price_diff') {
-            fundTrail.push(`补差价 ¥${sub.amount} (需手动退还${paymentMethodMap[sub.paymentMethod || 'cash']})`);
+            const method = paymentMethodMap[sub.paymentMethod || 'cash'];
+            fundTrail.push(`补差价 ¥${sub.amount} 需手动通过${method}原路退还给顾客`);
           }
         });
       } else {
-        // 2. 处理旧格式的交易（没有subTransactions）
+        // 2. 处理旧格式 / 散客交易（没有subTransactions）
         if (transaction.type === "consume" && transaction.paymentMethod === "balance") {
+          // 会员余额消费 → 原路退回余额
           refundBalance(transaction.memberId, transaction.amount);
-          fundTrail.push(`余额退回 ¥${transaction.amount}`);
+          fundTrail.push(`¥${transaction.amount} 已原路退回会员余额`);
         } else if (transaction.paymentMethod && transaction.paymentMethod !== 'balance') {
-          fundTrail.push(`需手动退还${paymentMethodMap[transaction.paymentMethod]} ¥${transaction.amount}`);
+          // 散客/现金/微信/支付宝消费 → 提示手动原路退还
+          const method = paymentMethodMap[transaction.paymentMethod];
+          fundTrail.push(`¥${transaction.amount} 需手动通过${method}原路退还给顾客`);
         }
       }
 
       // 计算总退款金额（包含补差价）
       const priceDiffAmount = transaction.subTransactions?.find(s => s.type === 'price_diff')?.amount || 0;
       totalRefundAmount = transaction.amount + priceDiffAmount;
+
+      // 生成退款说明（含原路返回路径）
+      const refundPaths: string[] = [];
+      if (transaction.subTransactions) {
+        if (transaction.subTransactions.some(s => s.type === 'card')) refundPaths.push('次卡原路退回');
+        if (transaction.subTransactions.some(s => s.type === 'balance')) refundPaths.push('余额原路退回');
+        if (transaction.subTransactions.some(s => s.type === 'price_diff')) {
+          const method = paymentMethodMap[transaction.subTransactions.find(s => s.type === 'price_diff')?.paymentMethod || 'cash'];
+          refundPaths.push(`${method}手动退还`);
+        }
+      } else if (transaction.paymentMethod === 'balance') {
+        refundPaths.push('余额原路退回');
+      } else if (transaction.paymentMethod) {
+        refundPaths.push(`${paymentMethodMap[transaction.paymentMethod]}手动退还`);
+      }
+
+      const refundDesc = `退款 - ${transaction.description}（${refundPaths.join('，')}）`;
 
       // 3. 作废原交易
       voidTransaction(transaction.id);
@@ -128,7 +149,7 @@ export function TransactionRefundDialog({
         memberName: transaction.memberName,
         type: "refund",
         amount: totalRefundAmount,
-        description: `退款 - ${transaction.description}`,
+        description: refundDesc,
         relatedTransactionId: transaction.id,
         subTransactions: transaction.subTransactions?.map(sub => ({
           ...sub,
@@ -309,13 +330,25 @@ export function TransactionRefundDialog({
                 )}
                 <Alert>
                   <AlertTriangle className="h-4 w-4" />
-                  <AlertDescription className="text-xs">
-                    退款后将作废此交易。
-                    {transaction.subTransactions?.some(s => s.type === 'card') && " 次卡次数将自动退回。"}
-                    {transaction.subTransactions?.some(s => s.type === 'balance') && " 余额将退回会员账户。"}
-                    {transaction.subTransactions?.some(s => s.type === 'price_diff') && " 补差价部分请手动退还。"}
-                    {!transaction.subTransactions && transaction.paymentMethod === 'balance' && " 余额将退回会员账户。"}
-                    {!transaction.subTransactions && transaction.paymentMethod && transaction.paymentMethod !== 'balance' && " 请手动退还现金/在线支付。"}
+                  <AlertDescription className="text-xs space-y-1">
+                    <p className="font-medium">退款将按原路返回：</p>
+                    <ul className="list-disc list-inside space-y-0.5">
+                      {transaction.subTransactions?.some(s => s.type === 'card') && (
+                        <li>次卡消费 → 次数自动退回原卡</li>
+                      )}
+                      {transaction.subTransactions?.some(s => s.type === 'balance') && (
+                        <li>余额消费 → 金额自动退回会员账户</li>
+                      )}
+                      {transaction.subTransactions?.some(s => s.type === 'price_diff') && (
+                        <li>补差价部分 → 需手动通过{paymentMethodMap[transaction.subTransactions?.find(s => s.type === 'price_diff')?.paymentMethod || 'cash']}退还</li>
+                      )}
+                      {!transaction.subTransactions && transaction.paymentMethod === 'balance' && (
+                        <li>余额消费 → 金额自动退回会员账户</li>
+                      )}
+                      {!transaction.subTransactions && transaction.paymentMethod && transaction.paymentMethod !== 'balance' && (
+                        <li>{paymentMethodMap[transaction.paymentMethod]}支付 → 需手动原路退还给顾客</li>
+                      )}
+                    </ul>
                   </AlertDescription>
                 </Alert>
               </div>
