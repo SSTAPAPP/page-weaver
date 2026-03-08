@@ -335,7 +335,7 @@ export default function Dashboard() {
                           "flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full text-[10px] sm:text-xs font-medium shrink-0",
                           isIncome ? "bg-chart-2/10 text-chart-2" : "bg-muted text-muted-foreground"
                         )}>
-                          {isIncome ? "+" : "−"}
+                          {isIncome ? "↑" : "−"}
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-1">
