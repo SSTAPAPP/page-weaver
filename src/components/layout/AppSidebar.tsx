@@ -160,11 +160,8 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
                   <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/35">
                     {group.label}
                   </span>
-                  <div className="flex-1 h-px bg-sidebar-border/60" />
                 </div>
-              ) : (
-                idx > 0 && <div className="mx-auto my-2 w-6 h-px bg-sidebar-border" />
-              )}
+              ) : null}
               <div className="space-y-0.5">
                 {group.items.map((item) => (
                   <NavItem key={item.url} item={item} />
