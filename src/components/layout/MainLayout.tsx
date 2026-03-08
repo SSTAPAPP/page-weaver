@@ -24,7 +24,8 @@ export function MainLayout({ children }: MainLayoutProps) {
     <div className="flex min-h-screen w-full bg-background">
       {/* Fixed Sidebar */}
       <aside className={cn(
-        "fixed left-0 top-0 h-screen z-50 transition-all duration-300",
+        "fixed left-0 top-0 h-screen z-50",
+        "transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
         collapsed ? "w-16" : "w-60"
       )}>
         <AppSidebar collapsed={collapsed} onCollapsedChange={setCollapsed} />
@@ -32,7 +33,8 @@ export function MainLayout({ children }: MainLayoutProps) {
 
       {/* Main content with margin to account for fixed sidebar */}
       <main className={cn(
-        "flex-1 overflow-auto transition-all duration-300",
+        "flex-1 overflow-auto",
+        "transition-[margin] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
         collapsed ? "ml-16" : "ml-60"
       )}>
         <div key={location.pathname} className="container py-6 page-enter">

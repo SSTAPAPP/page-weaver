@@ -27,7 +27,7 @@ export default function Dashboard() {
   return (
     <div className="space-y-8">
       {/* Header */}
-      <div className="flex items-end justify-between">
+      <div className="flex items-end justify-between animate-slide-up">
         <div>
           <h1 className="font-serif text-2xl font-bold tracking-tight text-foreground">
             仪表盘
@@ -48,39 +48,47 @@ export default function Dashboard() {
       </div>
 
       {/* Today Stats */}
-      <DashboardStats
-        stats={stats}
-        isLoading={isStatsLoading}
-        isError={isStatsError}
-        refetch={refetchStats}
-        hidden={isHidden("stats")}
-      />
+      <div className="animate-list-item stagger-1">
+        <DashboardStats
+          stats={stats}
+          isLoading={isStatsLoading}
+          isError={isStatsError}
+          refetch={refetchStats}
+          hidden={isHidden("stats")}
+        />
+      </div>
 
       {/* Quick Actions */}
-      <QuickActions
-        onAddMember={() => setMemberDialogOpen(true)}
-        onRecharge={() => setRechargeDialogOpen(true)}
-        onCashier={() => navigate("/cashier")}
-        onSearchMember={() => navigate("/members")}
-        onNewAppointment={() => navigate("/appointments")}
-      />
+      <div className="animate-list-item stagger-2">
+        <QuickActions
+          onAddMember={() => setMemberDialogOpen(true)}
+          onRecharge={() => setRechargeDialogOpen(true)}
+          onCashier={() => navigate("/cashier")}
+          onSearchMember={() => navigate("/members")}
+          onNewAppointment={() => navigate("/appointments")}
+        />
+      </div>
 
       {/* Lists */}
       <div className="grid gap-8 lg:grid-cols-2">
-        <RecentMembers
-          members={members}
-          isLoading={isMembersLoading}
-          hidden={isHidden("members")}
-          onToggleHidden={() => toggleSectionVisibility("members")}
-          onViewAll={() => navigate("/members")}
-          onAddMember={() => setMemberDialogOpen(true)}
-        />
-        <RecentTransactions
-          transactions={transactions}
-          isLoading={isTxLoading}
-          hidden={isHidden("transactions")}
-          onViewAll={() => navigate("/transactions")}
-        />
+        <div className="animate-list-item stagger-3">
+          <RecentMembers
+            members={members}
+            isLoading={isMembersLoading}
+            hidden={isHidden("members")}
+            onToggleHidden={() => toggleSectionVisibility("members")}
+            onViewAll={() => navigate("/members")}
+            onAddMember={() => setMemberDialogOpen(true)}
+          />
+        </div>
+        <div className="animate-list-item stagger-4">
+          <RecentTransactions
+            transactions={transactions}
+            isLoading={isTxLoading}
+            hidden={isHidden("transactions")}
+            onViewAll={() => navigate("/transactions")}
+          />
+        </div>
       </div>
 
       {/* Dialogs */}
