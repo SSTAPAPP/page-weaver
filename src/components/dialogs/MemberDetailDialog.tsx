@@ -389,3 +389,4 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
       />
     </>
   );
+}
