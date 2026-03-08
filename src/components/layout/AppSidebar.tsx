@@ -24,14 +24,14 @@ import {
 
 const navGroups = [
   {
-    label: "工作台",
+    label: "日常",
     items: [
       { title: "仪表盘", url: "/", icon: LayoutDashboard },
       { title: "收银台", url: "/cashier", icon: ShoppingCart },
     ],
   },
   {
-    label: "业务管理",
+    label: "管理",
     items: [
       { title: "会员管理", url: "/members", icon: Users },
       { title: "预约管理", url: "/appointments", icon: Calendar },
@@ -39,7 +39,7 @@ const navGroups = [
     ],
   },
   {
-    label: "数据 & 系统",
+    label: "统计",
     items: [
       { title: "数据报表", url: "/reports", icon: BarChart3 },
       { title: "交易流水", url: "/transactions", icon: FileText },
