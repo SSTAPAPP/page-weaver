@@ -179,7 +179,7 @@ export default function Cashier() {
         <div className="space-y-6 lg:col-span-2">
           {/* Customer selection */}
           <div>
-            <p className="text-xs font-medium text-muted-foreground mb-2 tracking-wide uppercase">顾客</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">顾客</p>
             {selectedMember ? (
               <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 p-4">
                 <div className="flex items-center gap-3">
@@ -230,7 +230,7 @@ export default function Cashier() {
 
           {/* Services */}
           <div>
-            <p className="text-xs font-medium text-muted-foreground mb-2 tracking-wide uppercase">服务项目</p>
+            <p className="text-xs font-medium text-muted-foreground mb-2">服务项目</p>
             {isLoading ? (
               <div className="grid gap-2 sm:grid-cols-2">
                 {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-md" />)}
@@ -241,7 +241,7 @@ export default function Cashier() {
               <div className="space-y-4">
                 {servicesByCategory.map(({ category, services: categoryServices }) => (
                   <div key={category}>
-                    <p className="text-[11px] font-medium text-muted-foreground/60 mb-1.5">{category}</p>
+                    <p className="text-xs text-muted-foreground mb-1.5">{category}</p>
                     <div className="grid gap-1.5 sm:grid-cols-2">
                       {categoryServices.map((service) => {
                         const hasCard = selectedMember?.cards.some(
@@ -277,7 +277,7 @@ export default function Cashier() {
           <Card className="sticky top-6">
             <CardContent className="p-4 space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-xs font-medium text-muted-foreground tracking-wide uppercase">结算清单</p>
+                <p className="text-xs font-medium text-muted-foreground">结算清单</p>
                 {isWalkIn && <Badge variant="outline" className="text-[10px] font-normal">散客</Badge>}
               </div>
 
@@ -305,12 +305,12 @@ export default function Cashier() {
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{item.service.name}</p>
                             {item.card && item.useCard ? (
-                              <p className="text-[11px] text-muted-foreground">次卡抵扣 · 剩{effectiveRemaining}次</p>
+                              <p className="text-xs text-muted-foreground">次卡抵扣 · 剩{effectiveRemaining}次</p>
                             ) : (
                               <p className="text-xs text-muted-foreground tabular-nums">¥{item.service.price}</p>
                             )}
                             {item.card && !isWalkIn && (
-                              <button className="text-[11px] text-primary hover:underline" onClick={() => toggleCardUse(index)}>
+                              <button className="text-xs text-primary hover:underline" onClick={() => toggleCardUse(index)}>
                                 {item.useCard ? "改为现金" : "使用次卡"}
                               </button>
                             )}

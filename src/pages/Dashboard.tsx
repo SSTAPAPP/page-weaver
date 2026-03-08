@@ -71,7 +71,7 @@ function StatMetric({ label, value, sub, loading, hidden, infoKey }: {
       <p className="text-xl font-semibold tracking-tight tabular-nums">
         {loading ? <Skeleton className="h-7 w-20" /> : hidden ? "****" : value}
       </p>
-      <p className="text-[11px] text-muted-foreground/70 mt-0.5">{sub}</p>
+      <p className="text-xs text-muted-foreground mt-0.5">{sub}</p>
     </div>
   );
 
@@ -133,7 +133,7 @@ export default function Dashboard() {
       {/* Stats — horizontal strip */}
       <Card className={`transition-opacity duration-300 ${isHidden("stats") ? "opacity-30" : ""}`}>
         <CardContent className="p-0">
-          <div className="grid grid-cols-2 md:grid-cols-5 divide-x divide-border">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 divide-x divide-border">
             <div className="px-5 py-4">
               <StatMetric label="今日实收" value={`¥${(stats?.revenue ?? 0).toFixed(2)}`} sub="现金+微信+支付宝+补差价" loading={isStatsLoading} hidden={isHidden("stats")} infoKey="今日实收" />
             </div>
@@ -155,7 +155,7 @@ export default function Dashboard() {
 
       {/* Quick Actions — compact row */}
       <div>
-        <p className="text-xs font-medium text-muted-foreground mb-3 tracking-wide uppercase">快捷操作</p>
+        <p className="text-xs font-medium text-muted-foreground mb-3">快捷操作</p>
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={() => setMemberDialogOpen(true)}>
             <UserPlus className="mr-1.5 h-3.5 w-3.5" />快速开卡
@@ -279,7 +279,7 @@ export default function Dashboard() {
                   </div>
                   <span className={`text-sm font-medium tabular-nums shrink-0 ml-3 ${
                     tx.voided ? "line-through text-muted-foreground" :
-                    tx.type === "recharge" || tx.type === "refund" ? "text-foreground" : "text-foreground"
+                    tx.type === "consume" || tx.type === "card_deduct" ? "text-destructive" : "text-foreground"
                   }`}>
                     {isHidden("transactions")
                       ? "****"
