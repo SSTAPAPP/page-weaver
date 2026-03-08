@@ -9,11 +9,12 @@ import {
   BarChart3,
   FileText,
   Settings,
-  ChevronsLeft,
-  ChevronsRight,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 import {
   Tooltip,
   TooltipContent,
@@ -24,14 +25,14 @@ import {
 const navItems = [
   { title: "仪表盘", url: "/", icon: LayoutDashboard },
   { title: "收银台", url: "/cashier", icon: ShoppingCart },
-  { title: "会员", url: "/members", icon: Users },
-  { title: "预约", url: "/appointments", icon: Calendar },
-  { title: "服务", url: "/services", icon: Scissors },
-  { title: "报表", url: "/reports", icon: BarChart3 },
-  { title: "流水", url: "/transactions", icon: FileText },
+  { title: "会员管理", url: "/members", icon: Users },
+  { title: "预约管理", url: "/appointments", icon: Calendar },
+  { title: "服务管理", url: "/services", icon: Scissors },
+  { title: "数据报表", url: "/reports", icon: BarChart3 },
+  { title: "交易流水", url: "/transactions", icon: FileText },
 ];
 
-const settingsItem = { title: "设置", url: "/settings", icon: Settings };
+const settingsItem = { title: "系统设置", url: "/settings", icon: Settings };
 
 interface AppSidebarProps {
   forceExpanded?: boolean;
@@ -63,14 +64,16 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
           "group relative flex items-center gap-3 rounded-lg min-h-[40px] text-[13px] font-medium transition-colors duration-150",
           isCollapsed ? "justify-center w-10 h-10 mx-auto" : "px-3 py-2",
           isActive
-            ? "bg-foreground text-background"
-            : "text-muted-foreground hover:text-foreground hover:bg-accent"
+            ? "bg-sidebar-accent text-sidebar-foreground font-semibold"
+            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
         )}
       >
         <item.icon
           className={cn(
             "h-[18px] w-[18px] shrink-0",
-            isActive ? "text-background" : "text-muted-foreground group-hover:text-foreground"
+            isActive
+              ? "text-sidebar-foreground"
+              : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground"
           )}
         />
         {!isCollapsed && <span className="truncate">{item.title}</span>}
@@ -99,15 +102,15 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
     <TooltipProvider>
       <aside
         className={cn(
-          "flex h-screen flex-col bg-background transition-[width] duration-200 relative select-none",
+          "flex h-screen flex-col border-r border-border bg-muted transition-[width] duration-200 relative select-none",
           isCollapsed ? "w-[60px]" : "w-52"
         )}
       >
-        {/* Brand */}
+        {/* Brand + collapse toggle */}
         <div
           className={cn(
             "flex h-14 items-center shrink-0",
-            isCollapsed ? "justify-center" : "px-4"
+            isCollapsed ? "justify-center" : "justify-between px-4"
           )}
         >
           <div className="flex items-center gap-2.5">
@@ -125,7 +128,33 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
               </span>
             )}
           </div>
+          {!isCollapsed && !forceExpanded && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCollapsed(true)}
+              aria-label="折叠导航栏"
+              className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground hover:bg-accent"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </Button>
+          )}
         </div>
+
+        {/* Expand toggle when collapsed */}
+        {isCollapsed && !forceExpanded && (
+          <div className="flex justify-center pt-1 pb-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setCollapsed(false)}
+              aria-label="展开导航栏"
+              className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent"
+            >
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
+        )}
 
         {/* Navigation */}
         <nav
@@ -135,57 +164,32 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
           )}
           aria-label="主导航"
         >
-          <div className={cn("space-y-1", isCollapsed && "flex flex-col items-center")}>
+          <div
+            className={cn(
+              "space-y-0.5",
+              isCollapsed && "flex flex-col items-center"
+            )}
+          >
             {navItems.map((item) => (
               <NavItem key={item.url} item={item} />
             ))}
           </div>
         </nav>
 
-        {/* Bottom: Settings + Collapse toggle */}
+        {/* Bottom settings */}
         <div
           className={cn(
             "shrink-0 pb-3",
             isCollapsed ? "px-1.5" : "px-3"
           )}
         >
-          <div className={cn("space-y-1", isCollapsed && "flex flex-col items-center")}>
-            <NavItem item={settingsItem} />
-
-            {!forceExpanded && (
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={() => setCollapsed(!isCollapsed)}
-                    aria-label={isCollapsed ? "展开导航栏" : "折叠导航栏"}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg min-h-[40px] text-[13px] font-medium transition-colors duration-150 text-muted-foreground hover:text-foreground hover:bg-accent",
-                      isCollapsed
-                        ? "justify-center w-10 h-10 mx-auto"
-                        : "px-3 py-2 w-full"
-                    )}
-                  >
-                    {isCollapsed ? (
-                      <ChevronsRight className="h-[18px] w-[18px] shrink-0" />
-                    ) : (
-                      <>
-                        <ChevronsLeft className="h-[18px] w-[18px] shrink-0" />
-                        <span className="truncate">收起</span>
-                      </>
-                    )}
-                  </button>
-                </TooltipTrigger>
-                {isCollapsed && (
-                  <TooltipContent
-                    side="right"
-                    sideOffset={8}
-                    className="text-xs font-medium"
-                  >
-                    展开
-                  </TooltipContent>
-                )}
-              </Tooltip>
+          <div
+            className={cn(
+              "space-y-0.5",
+              isCollapsed && "flex flex-col items-center"
             )}
+          >
+            <NavItem item={settingsItem} />
           </div>
         </div>
       </aside>
