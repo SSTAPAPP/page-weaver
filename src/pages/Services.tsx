@@ -197,7 +197,7 @@ export default function Services() {
       {/* Header */}
       <PageHeader
         title="服务管理"
-        description="管理服务项目和次卡模板"
+        description="维护服务项目与次卡模板，设置价格、时长和适用范围"
       />
 
       <Tabs defaultValue="services">

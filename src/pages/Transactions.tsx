@@ -143,7 +143,7 @@ export default function Transactions() {
       {/* Header */}
       <PageHeader
         title="交易流水"
-        description={`共 ${filteredGroups.length} 条记录${filteredGroups.length > PAGE_SIZE * MAX_PAGES ? `（显示前 ${PAGE_SIZE * MAX_PAGES} 条）` : ""}`}
+        description={`完整的充值、消费、退款记录，共 ${filteredGroups.length} 条${filteredGroups.length > PAGE_SIZE * MAX_PAGES ? `（显示前 ${PAGE_SIZE * MAX_PAGES} 条）` : ""}`}
       />
 
       {/* Filters */}

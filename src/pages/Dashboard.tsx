@@ -212,7 +212,7 @@ export default function Dashboard() {
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">仪表盘</h1>
-          <p className="text-muted-foreground">今日经营数据一览</p>
+          <p className="text-muted-foreground">实时掌握今日营收、会员动态与预约概况</p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="font-normal">
