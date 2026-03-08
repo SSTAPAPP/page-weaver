@@ -154,11 +154,11 @@ export default function Members() {
                   {/* Bottom row */}
                   <div className="border-t border-border/60 px-4 py-3 flex items-center justify-between bg-muted/20">
                     <div>
-                      <p className="text-[11px] text-muted-foreground">余额</p>
+                      <p className="text-xs text-muted-foreground">余额</p>
                       <p className="text-sm font-semibold tabular-nums">¥{member.balance.toFixed(2)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-[11px] text-muted-foreground">次卡</p>
+                      <p className="text-xs text-muted-foreground">次卡</p>
                       <p className="text-sm font-semibold">{member.cards.length}张</p>
                     </div>
                   </div>
@@ -170,13 +170,13 @@ export default function Members() {
                         <Badge
                           key={card.id}
                           variant={card.remainingCount <= 1 ? "destructive" : "outline"}
-                          className="text-[10px] font-normal"
+                          className="text-xs font-normal"
                         >
                           {card.templateName} ({card.remainingCount})
                         </Badge>
                       ))}
                       {member.cards.length > 3 && (
-                        <Badge variant="outline" className="text-[10px] font-normal">
+                        <Badge variant="outline" className="text-xs font-normal">
                           +{member.cards.length - 3}
                         </Badge>
                       )}
