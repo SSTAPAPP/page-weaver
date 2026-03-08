@@ -222,7 +222,7 @@ export default function Dashboard() {
                 key={action.title}
                 variant={action.variant}
                 onClick={action.onClick}
-                className="gap-1.5 sm:gap-2 min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm whitespace-nowrap shrink-0"
+                className="gap-1.5 sm:gap-2 min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm whitespace-nowrap shrink-0 min-w-[110px] sm:min-w-[130px]"
                 size="sm"
               >
                 <action.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
