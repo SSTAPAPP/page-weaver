@@ -115,7 +115,7 @@ export default function Members() {
           }
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
           {filteredMembers.map((member) => {
             const consumeCount = memberConsumeCounts[member.id] || 0;
             const totalSpent = memberTotalSpent[member.id] || 0;
