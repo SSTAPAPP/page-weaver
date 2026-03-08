@@ -198,6 +198,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <main className="flex-1 overflow-auto">
         <div className="container py-6 px-6">{children}</div>
       </main>
+      <UpdateChecker />
     </div>
   );
 }
