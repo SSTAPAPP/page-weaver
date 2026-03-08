@@ -77,11 +77,11 @@ export function AppSidebar({ forceExpanded, defaultCollapsed, onNavigate }: AppS
         to={item.url}
         onClick={onNavigate}
         className={cn(
-          "group relative flex items-center gap-3 rounded-md min-h-9 text-[13px] font-medium transition-all duration-150",
+          "group relative flex items-center gap-3 rounded-md min-h-9 text-[14px] transition-all duration-150",
           isCollapsed ? "justify-center w-9 h-9 mx-auto rounded-lg" : "px-2.5 py-1.5",
           isActive
-            ? "bg-background/80 text-foreground"
-            : "text-muted-foreground hover:text-foreground hover:bg-background/40"
+            ? "bg-background/80 text-foreground font-bold"
+            : "text-muted-foreground font-medium hover:text-foreground hover:bg-background/40"
         )}
       >
         {isActive && !isCollapsed && (
