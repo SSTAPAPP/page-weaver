@@ -56,6 +56,7 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
   const [editGender, setEditGender] = useState<"male" | "female">("male");
   const [editTag, setEditTag] = useState<string>("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [adminPasswordDialogOpen, setAdminPasswordDialogOpen] = useState(false);
 
   if (!member) return null;
 
