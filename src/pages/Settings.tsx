@@ -61,6 +61,7 @@ export default function Settings() {
   const [isExporting, setIsExporting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [shopPasswordDialogOpen, setShopPasswordDialogOpen] = useState(false);
   
   // 店铺信息编辑状态
   const [editShopName, setEditShopName] = useState(shopInfo.name);
