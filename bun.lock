@@ -34,6 +34,7 @@
         "@radix-ui/react-tooltip": "^1.2.7",
         "@supabase/supabase-js": "^2.98.0",
         "@tanstack/react-query": "^5.83.0",
+        "@tauri-apps/api": "^1",
         "@tauri-apps/cli": "1",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
@@ -371,6 +372,8 @@
     "@tanstack/query-core": ["@tanstack/query-core@5.83.0", "", {}, "sha512-0M8dA+amXUkyz5cVUm/B+zSk3xkQAcuXuz5/Q/LveT4ots2rBpPTZOzd7yJa2Utsf8D2Upl5KyjhHRY+9lB/XA=="],
 
     "@tanstack/react-query": ["@tanstack/react-query@5.83.0", "", { "dependencies": { "@tanstack/query-core": "5.83.0" }, "peerDependencies": { "react": "^18 || ^19" } }, "sha512-/XGYhZ3foc5H0VM2jLSD/NyBRIOK4q9kfeml4+0x2DlL6xVuAcVEW+hTlTapAmejObg0i3eNqhkr2dT+eciwoQ=="],
+
+    "@tauri-apps/api": ["@tauri-apps/api@1.6.0", "", {}, "sha512-rqI++FWClU5I2UBp4HXFvl+sBWkdigBkxnpJDQUWttNyG7IZP4FwQGhTNL5EOw0vI8i6eSAJ5frLqO7n7jbJdg=="],
 
     "@tauri-apps/cli": ["@tauri-apps/cli@1.6.3", "", { "dependencies": { "semver": ">=7.5.2" }, "optionalDependencies": { "@tauri-apps/cli-darwin-arm64": "1.6.3", "@tauri-apps/cli-darwin-x64": "1.6.3", "@tauri-apps/cli-linux-arm-gnueabihf": "1.6.3", "@tauri-apps/cli-linux-arm64-gnu": "1.6.3", "@tauri-apps/cli-linux-arm64-musl": "1.6.3", "@tauri-apps/cli-linux-x64-gnu": "1.6.3", "@tauri-apps/cli-linux-x64-musl": "1.6.3", "@tauri-apps/cli-win32-arm64-msvc": "1.6.3", "@tauri-apps/cli-win32-ia32-msvc": "1.6.3", "@tauri-apps/cli-win32-x64-msvc": "1.6.3" }, "bin": { "tauri": "tauri.js" } }, "sha512-q46umd6QLRKDd4Gg6WyZBGa2fWvk0pbeUA5vFomm4uOs1/17LIciHv2iQ4UD+2Yv5H7AO8YiE1t50V0POiEGEw=="],
 
