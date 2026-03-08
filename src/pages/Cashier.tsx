@@ -482,30 +482,30 @@ export default function Cashier() {
                     {cart.map((item, index) => (
                       <div
                         key={index}
-                        className="flex items-center gap-2 rounded-md p-2 -mx-1 transition-colors duration-150 hover:bg-muted/40 group/item"
+                        className="flex items-center gap-2.5 rounded-md p-2.5 -mx-1 transition-colors duration-150 hover:bg-muted/40 group/item"
                       >
-                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-muted text-[10px] font-medium text-muted-foreground">
+                        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-muted text-xs font-medium text-muted-foreground">
                           {index + 1}
                         </span>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-baseline justify-between gap-2">
                             <p className="text-sm font-medium truncate">{item.service.name}</p>
-                            <span className={`text-sm tabular-nums shrink-0 ${item.useCard && item.card ? 'line-through text-muted-foreground text-xs' : 'text-foreground'}`}>
+                            <span className={`text-sm tabular-nums shrink-0 ${item.useCard && item.card ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                               ¥{item.service.price}
                             </span>
                           </div>
                           {item.card && item.useCard ? (
-                            <div className="flex items-center gap-1.5 mt-0.5">
-                              <Badge variant="secondary" className="text-[10px] py-0 h-4">
-                                <CreditCard className="mr-0.5 h-2.5 w-2.5" />
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <Badge variant="secondary" className="text-xs py-0 h-5">
+                                <CreditCard className="mr-1 h-3 w-3" />
                                 {item.card.templateName}
                               </Badge>
-                              <span className="text-[10px] text-muted-foreground">
+                              <span className="text-xs text-muted-foreground">
                                 余{item.card.remainingCount}次
                               </span>
                             </div>
                           ) : (
-                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                            <p className="text-xs text-muted-foreground mt-0.5">
                               {[item.service.duration && `${item.service.duration}分钟`, item.service.category].filter(Boolean).join(' · ')}
                             </p>
                           )}
@@ -513,7 +513,7 @@ export default function Cashier() {
                             <Button
                               variant="link"
                               size="sm"
-                              className="h-auto p-0 text-[11px]"
+                              className="h-auto p-0 text-xs"
                               onClick={() => toggleCardUse(index)}
                             >
                               {item.useCard ? "改为现金支付" : "使用次卡抵扣"}
@@ -523,11 +523,11 @@ export default function Cashier() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity"
+                          className="h-8 w-8 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity"
                           onClick={() => removeFromCart(index)}
                           aria-label={`移除${item.service.name}`}
                         >
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
+                          <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
                     ))}
@@ -537,11 +537,11 @@ export default function Cashier() {
                   <div className="bg-muted/30 border-t border-border px-4 py-3 space-y-3">
                     {/* 次卡使用汇总 */}
                     {cardUsageInfo.length > 0 && (
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         {cardUsageInfo.map((card, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-xs">
-                            <span className="flex items-center gap-1 text-muted-foreground">
-                              <CreditCard className="h-3 w-3" />
+                          <div key={idx} className="flex items-center justify-between text-sm">
+                            <span className="flex items-center gap-1.5 text-muted-foreground">
+                              <CreditCard className="h-3.5 w-3.5" />
                               {card.cardName}
                             </span>
                             <span className="tabular-nums">
@@ -576,21 +576,21 @@ export default function Cashier() {
 
                     {/* 应付/无需支付 */}
                     {cashNeed > 0 ? (
-                      <div className="rounded-md bg-primary/10 p-2.5">
+                      <div className="rounded-md bg-primary/10 p-3">
                         <div className="flex justify-between items-baseline font-medium">
-                          <span className="text-sm">{isWalkIn ? '应付金额' : '需补差价'}</span>
-                          <span className="text-base text-primary tabular-nums">¥{cashNeed}</span>
+                          <span>{isWalkIn ? '应付金额' : '需补差价'}</span>
+                          <span className="text-lg text-primary tabular-nums">¥{cashNeed}</span>
                         </div>
                         {!isWalkIn && balanceDeduct > 0 && (
-                          <p className="mt-1 text-[11px] text-muted-foreground">
+                          <p className="mt-1 text-xs text-muted-foreground">
                             余额不足，需额外支付
                           </p>
                         )}
                       </div>
                     ) : cart.length > 0 && !isWalkIn ? (
-                      <div className="rounded-md bg-chart-2/10 p-2.5 text-center">
-                        <p className="text-xs font-medium text-chart-2">✓ 无需额外支付</p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">
+                      <div className="rounded-md bg-chart-2/10 p-3 text-center">
+                        <p className="text-sm font-medium text-chart-2">✓ 无需额外支付</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
                           {cardDeductTotal > 0 && balanceDeduct > 0
                             ? '次卡 + 余额全额覆盖'
                             : cardDeductTotal > 0
@@ -602,26 +602,26 @@ export default function Cashier() {
 
                     {/* 支付方式 */}
                     {cashNeed > 0 && (
-                      <div className="space-y-1.5">
-                        <Label className="text-xs">{isWalkIn ? '支付方式' : '补差价方式'}</Label>
+                      <div className="space-y-2">
+                        <Label className="text-sm">{isWalkIn ? '支付方式' : '补差价方式'}</Label>
                         <RadioGroup
                           value={paymentMethod}
                           onValueChange={(v) =>
                             setPaymentMethod(v as "wechat" | "alipay" | "cash")
                           }
-                          className="flex gap-3"
+                          className="flex gap-4"
                         >
-                          <div className="flex items-center space-x-1.5">
+                          <div className="flex items-center space-x-2">
                             <RadioGroupItem value="wechat" id="c-wechat" />
-                            <Label htmlFor="c-wechat" className="cursor-pointer text-sm">微信</Label>
+                            <Label htmlFor="c-wechat" className="cursor-pointer">微信</Label>
                           </div>
-                          <div className="flex items-center space-x-1.5">
+                          <div className="flex items-center space-x-2">
                             <RadioGroupItem value="alipay" id="c-alipay" />
-                            <Label htmlFor="c-alipay" className="cursor-pointer text-sm">支付宝</Label>
+                            <Label htmlFor="c-alipay" className="cursor-pointer">支付宝</Label>
                           </div>
-                          <div className="flex items-center space-x-1.5">
+                          <div className="flex items-center space-x-2">
                             <RadioGroupItem value="cash" id="c-cash" />
-                            <Label htmlFor="c-cash" className="cursor-pointer text-sm">现金</Label>
+                            <Label htmlFor="c-cash" className="cursor-pointer">现金</Label>
                           </div>
                         </RadioGroup>
                       </div>
@@ -629,7 +629,7 @@ export default function Cashier() {
 
                     {/* 会员余额预览 */}
                     {!isWalkIn && selectedMember && balanceDeduct > 0 && (
-                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <span>余额变化</span>
                         <span className="tabular-nums">
                           ¥{selectedMember.balance.toFixed(2)}
@@ -641,13 +641,13 @@ export default function Cashier() {
                   </div>
 
                   {/* 底部结账栏 */}
-                  <div className="px-4 py-3 border-t border-border space-y-2">
+                  <div className="px-4 py-4 border-t border-border space-y-3">
                     <div className="flex items-baseline justify-between">
-                      <span className="text-sm font-medium">合计</span>
-                      <span className="text-xl font-bold text-primary tabular-nums">¥{total}</span>
+                      <span className="font-medium">合计</span>
+                      <span className="text-2xl font-bold text-primary tabular-nums">¥{total}</span>
                     </div>
                     {cashNeed > 0 && cashNeed !== total && (
-                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                      <div className="flex items-center justify-between text-sm text-muted-foreground">
                         <span>实付</span>
                         <span className="font-medium text-foreground tabular-nums">¥{cashNeed}</span>
                       </div>
