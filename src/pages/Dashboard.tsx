@@ -29,7 +29,7 @@ export default function Dashboard() {
       {/* Header */}
       <div className="flex items-end justify-between animate-slide-up">
         <div>
-          <h1 className="font-serif text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-2xl font-bold tracking-tight text-foreground">
             仪表盘
           </h1>
           <p className="text-sm text-muted-foreground mt-1">

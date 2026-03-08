@@ -1,92 +1,89 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap");
-@import url("https://fonts.googleapis.com/css2?family=Lora:wght@400;500;600;700&display=swap");
 @import url("https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap");
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Monochrome (Black/Gray/White) Design System
-   Clean grayscale palette with strong hierarchy
+/* Claude Desktop — Warm Parchment Design System
+   Warm cream backgrounds, terracotta accent, clean sans-serif
    All colors MUST be HSL.
 */
 
 @layer base {
   :root {
-    /* Clean white background */
-    --background: 0 0% 98%;
-    --foreground: 0 0% 9%;
+    /* Warm cream background */
+    --background: 40 33% 96%;
+    --foreground: 30 10% 12%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 9%;
+    --card: 40 25% 99%;
+    --card-foreground: 30 10% 12%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 9%;
+    --popover: 40 25% 99%;
+    --popover-foreground: 30 10% 12%;
 
-    /* Primary: near-black for strong contrast */
-    --primary: 0 0% 12%;
+    /* Primary: terracotta/coral — Claude accent */
+    --primary: 20 70% 52%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 95%;
-    --secondary-foreground: 0 0% 15%;
+    --secondary: 35 20% 92%;
+    --secondary-foreground: 30 10% 20%;
 
-    --muted: 0 0% 95%;
-    --muted-foreground: 0 0% 45%;
+    --muted: 35 18% 93%;
+    --muted-foreground: 30 8% 46%;
 
-    --accent: 0 0% 93%;
-    --accent-foreground: 0 0% 15%;
+    --accent: 35 22% 91%;
+    --accent-foreground: 30 10% 18%;
 
-    /* Destructive: keep a functional red, subdued */
-    --destructive: 0 60% 48%;
+    /* Destructive */
+    --destructive: 0 65% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 88%;
-    --ring: 0 0% 12%;
+    --border: 35 18% 88%;
+    --input: 35 15% 86%;
+    --ring: 20 70% 52%;
 
     --radius: 0.625rem;
 
-    /* Dark sidebar */
-    --sidebar-background: 0 0% 8%;
-    --sidebar-foreground: 0 0% 72%;
-    --sidebar-primary: 0 0% 95%;
-    --sidebar-primary-foreground: 0 0% 9%;
-    --sidebar-accent: 0 0% 14%;
-    --sidebar-accent-foreground: 0 0% 88%;
-    --sidebar-border: 0 0% 16%;
-    --sidebar-ring: 0 0% 50%;
-    --sidebar: 0 0% 8%;
+    /* Sidebar: warm dark */
+    --sidebar-background: 30 12% 11%;
+    --sidebar-foreground: 30 10% 65%;
+    --sidebar-primary: 30 10% 92%;
+    --sidebar-primary-foreground: 30 12% 11%;
+    --sidebar-accent: 30 10% 17%;
+    --sidebar-accent-foreground: 30 10% 85%;
+    --sidebar-border: 30 8% 20%;
+    --sidebar-ring: 30 10% 50%;
+    --sidebar: 30 12% 11%;
 
-    /* Chart colors: grayscale spectrum for readability */
-    --chart-1: 0 0% 15%;
-    --chart-2: 0 0% 35%;
-    --chart-3: 0 0% 50%;
-    --chart-4: 0 0% 65%;
-    --chart-5: 0 0% 78%;
+    /* Chart colors */
+    --chart-1: 20 70% 52%;
+    --chart-2: 30 40% 45%;
+    --chart-3: 35 25% 55%;
+    --chart-4: 40 15% 65%;
+    --chart-5: 35 10% 78%;
 
-    /* Functional: success (muted green) */
-    --success: 145 30% 42%;
+    /* Functional */
+    --success: 152 45% 42%;
     --success-foreground: 0 0% 100%;
 
-    /* Functional: warning (muted amber) */
-    --warning: 38 60% 48%;
+    --warning: 38 70% 50%;
     --warning-foreground: 0 0% 100%;
 
-    /* Brand accent: copper/amber */
-    --brand: 30 60% 44%;
-    --brand-foreground: 40 20% 98%;
+    /* Brand = primary */
+    --brand: 20 70% 52%;
+    --brand-foreground: 0 0% 100%;
 
-    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-    --font-serif: 'Lora', ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+    --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
     --font-mono: 'Space Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
-    --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.03);
-    --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.04);
-    --shadow-sm: 0 1px 3px 0 hsl(0 0% 0% / 0.06), 0 1px 2px -1px hsl(0 0% 0% / 0.06);
-    --shadow: 0 2px 6px 0 hsl(0 0% 0% / 0.06), 0 1px 3px -1px hsl(0 0% 0% / 0.06);
-    --shadow-md: 0 4px 8px -1px hsl(0 0% 0% / 0.07), 0 2px 4px -2px hsl(0 0% 0% / 0.05);
-    --shadow-lg: 0 10px 15px -3px hsl(0 0% 0% / 0.08), 0 4px 6px -4px hsl(0 0% 0% / 0.04);
-    --shadow-xl: 0 20px 25px -5px hsl(0 0% 0% / 0.08), 0 8px 10px -6px hsl(0 0% 0% / 0.04);
-    --shadow-2xl: 0 25px 50px -12px hsl(0 0% 0% / 0.2);
+    --shadow-2xs: 0 1px 2px 0 hsl(30 10% 10% / 0.03);
+    --shadow-xs: 0 1px 3px 0 hsl(30 10% 10% / 0.04);
+    --shadow-sm: 0 1px 3px 0 hsl(30 10% 10% / 0.06), 0 1px 2px -1px hsl(30 10% 10% / 0.04);
+    --shadow: 0 2px 6px 0 hsl(30 10% 10% / 0.06), 0 1px 3px -1px hsl(30 10% 10% / 0.04);
+    --shadow-md: 0 4px 8px -1px hsl(30 10% 10% / 0.07), 0 2px 4px -2px hsl(30 10% 10% / 0.04);
+    --shadow-lg: 0 10px 15px -3px hsl(30 10% 10% / 0.08), 0 4px 6px -4px hsl(30 10% 10% / 0.03);
+    --shadow-xl: 0 20px 25px -5px hsl(30 10% 10% / 0.08), 0 8px 10px -6px hsl(30 10% 10% / 0.03);
+    --shadow-2xl: 0 25px 50px -12px hsl(30 10% 10% / 0.18);
 
     /* Motion tokens */
     --duration-fast: 120ms;
@@ -100,63 +97,61 @@
   }
 
   .dark {
-    /* Dark mode: rich blacks with layered grays */
-    --background: 0 0% 6%;
-    --foreground: 0 0% 93%;
+    /* Dark mode: warm dark */
+    --background: 30 8% 7%;
+    --foreground: 30 10% 90%;
 
-    --card: 0 0% 10%;
-    --card-foreground: 0 0% 93%;
+    --card: 30 8% 11%;
+    --card-foreground: 30 10% 90%;
 
-    --popover: 0 0% 10%;
-    --popover-foreground: 0 0% 93%;
+    --popover: 30 8% 11%;
+    --popover-foreground: 30 10% 90%;
 
-    /* Primary: bright white for maximum contrast */
-    --primary: 0 0% 93%;
-    --primary-foreground: 0 0% 6%;
+    --primary: 20 65% 58%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 0 0% 15%;
-    --secondary-foreground: 0 0% 88%;
+    --secondary: 30 8% 16%;
+    --secondary-foreground: 30 10% 85%;
 
-    --muted: 0 0% 15%;
-    --muted-foreground: 0 0% 55%;
+    --muted: 30 6% 16%;
+    --muted-foreground: 30 8% 52%;
 
-    --accent: 0 0% 18%;
-    --accent-foreground: 0 0% 88%;
+    --accent: 30 8% 19%;
+    --accent-foreground: 30 10% 85%;
 
-    --destructive: 0 55% 55%;
+    --destructive: 0 60% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 0 0% 18%;
-    --input: 0 0% 20%;
-    --ring: 0 0% 70%;
+    --border: 30 8% 19%;
+    --input: 30 8% 22%;
+    --ring: 20 65% 58%;
 
-    /* Darker sidebar */
-    --sidebar-background: 0 0% 4%;
-    --sidebar-foreground: 0 0% 65%;
-    --sidebar-primary: 0 0% 90%;
-    --sidebar-primary-foreground: 0 0% 6%;
-    --sidebar-accent: 0 0% 12%;
-    --sidebar-accent-foreground: 0 0% 82%;
-    --sidebar-border: 0 0% 14%;
-    --sidebar-ring: 0 0% 50%;
-    --sidebar: 0 0% 4%;
+    /* Dark sidebar */
+    --sidebar-background: 30 8% 5%;
+    --sidebar-foreground: 30 10% 58%;
+    --sidebar-primary: 30 10% 88%;
+    --sidebar-primary-foreground: 30 8% 5%;
+    --sidebar-accent: 30 8% 12%;
+    --sidebar-accent-foreground: 30 10% 80%;
+    --sidebar-border: 30 8% 14%;
+    --sidebar-ring: 30 10% 50%;
+    --sidebar: 30 8% 5%;
 
-    /* Chart colors: spread grayscale for dark bg readability */
-    --chart-1: 0 0% 90%;
-    --chart-2: 0 0% 72%;
-    --chart-3: 0 0% 55%;
-    --chart-4: 0 0% 42%;
-    --chart-5: 0 0% 30%;
+    /* Chart colors */
+    --chart-1: 20 65% 58%;
+    --chart-2: 30 30% 55%;
+    --chart-3: 35 20% 50%;
+    --chart-4: 40 12% 42%;
+    --chart-5: 35 8% 32%;
 
-    --success: 145 35% 50%;
+    --success: 152 45% 48%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 65% 55%;
+    --warning: 38 70% 55%;
     --warning-foreground: 0 0% 100%;
 
-    /* Brand accent: copper/amber */
-    --brand: 32 55% 55%;
-    --brand-foreground: 30 10% 10%;
+    --brand: 20 65% 58%;
+    --brand-foreground: 0 0% 100%;
 
     --shadow-2xs: 0 1px 2px 0 hsl(0 0% 0% / 0.1);
     --shadow-xs: 0 1px 3px 0 hsl(0 0% 0% / 0.12);
@@ -180,100 +175,76 @@
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* Smooth scrolling */
   html {
     scroll-behavior: smooth;
   }
 
-  /* Better focus ring */
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
   }
 
-  /* Selection color */
   ::selection {
-    background: hsl(0 0% 12% / 0.12);
-    color: hsl(0 0% 9%);
+    background: hsl(20 70% 52% / 0.12);
+    color: hsl(30 10% 12%);
   }
 
   .dark ::selection {
-    background: hsl(0 0% 90% / 0.2);
-    color: hsl(0 0% 93%);
+    background: hsl(20 65% 58% / 0.2);
+    color: hsl(30 10% 90%);
   }
 }
 
 @layer utilities {
-  /* Glass morphism utility */
   .glass {
     @apply bg-card/70 backdrop-blur-xl;
   }
 
-  /* Extra-small text for badges and annotations */
   .text-2xs {
-    font-size: 0.625rem; /* 10px */
-    line-height: 0.875rem; /* 14px */
+    font-size: 0.625rem;
+    line-height: 0.875rem;
   }
 
-  /* Gradient text */
   .gradient-text {
     @apply bg-gradient-to-r from-foreground to-muted-foreground bg-clip-text text-transparent;
   }
 
   /* ── Motion utilities ── */
-
-  /* Page enter: used on route transitions */
   .page-enter {
     animation: pageEnter var(--duration-slow) var(--ease-out) both;
   }
 
   @keyframes pageEnter {
-    from {
-      opacity: 0;
-      transform: translateY(6px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Staggered list item animation */
   .animate-list-item {
     animation: listItemIn var(--duration-normal) var(--ease-out) both;
   }
 
   @keyframes listItemIn {
-    from {
-      opacity: 0;
-      transform: translateY(4px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
-  /* Stagger delay helpers — use on children */
   .stagger-1 { animation-delay: 30ms; }
   .stagger-2 { animation-delay: 60ms; }
   .stagger-3 { animation-delay: 90ms; }
   .stagger-4 { animation-delay: 120ms; }
   .stagger-5 { animation-delay: 150ms; }
 
-  /* Subtle card hover lift */
   .hover-lift {
     @apply transition-all duration-200;
-}
+  }
 
-/* Safe area for bottom nav on notched devices */
-.safe-area-bottom {
-  padding-bottom: env(safe-area-inset-bottom, 0);
-}
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
   .hover-lift:hover {
     @apply -translate-y-0.5 shadow-md;
   }
 
-  /* Pulse ring animation for notifications */
   .pulse-ring {
     animation: pulseRing 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
@@ -284,7 +255,7 @@
   }
 }
 
-/* ── Reduced motion: respect user preference ── */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -306,7 +277,6 @@
     display: none !important;
   }
 
-  /* Receipt specific styles */
   .receipt-container {
     width: 80mm !important;
     margin: 0 !important;
@@ -315,7 +285,6 @@
     border: none !important;
   }
 
-  /* Report print styles */
   .print-report {
     width: 100% !important;
     padding: 20px !important;
@@ -343,11 +312,7 @@
     font-weight: bold !important;
   }
 
-  /* Hide sidebar and navigation when printing */
-  nav,
-  aside,
-  header,
-  .sidebar {
+  nav, aside, header, .sidebar {
     display: none !important;
   }
 

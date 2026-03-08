@@ -7,8 +7,8 @@ import {
   Scissors,
   BarChart3,
   FileText,
-  ChevronLeft,
-  ChevronRight,
+  PanelLeftClose,
+  PanelLeft,
   Settings,
   LogOut,
 } from "lucide-react";
@@ -16,7 +16,6 @@ import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
-import { Separator } from "@/components/ui/separator";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
@@ -57,15 +56,15 @@ function SidebarNavItem({
     <NavLink
       to={item.url}
       className={cn(
-        "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-150",
-        "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        isActive && "bg-sidebar-accent text-sidebar-primary font-medium",
+        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors duration-150",
+        "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
         collapsed && "justify-center px-0"
       )}
     >
       <item.icon className={cn(
         "h-[18px] w-[18px] shrink-0",
-        isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
+        isActive ? "text-sidebar-accent-foreground" : "text-sidebar-foreground/50"
       )} />
       {!collapsed && <span>{item.title}</span>}
     </NavLink>
@@ -111,21 +110,21 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
       >
         {/* Brand */}
         <div className={cn(
-          "flex h-14 items-center border-b border-sidebar-border/50",
+          "flex h-14 items-center",
           collapsed ? "justify-center px-2" : "justify-between px-4"
         )}>
           {!collapsed ? (
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-accent border border-sidebar-border font-serif font-bold text-sm text-sidebar-primary">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
                 F
               </div>
               <div className="flex flex-col">
-                <span className="font-serif font-bold text-sidebar-accent-foreground text-sm leading-tight">FFk Barber</span>
-                <span className="text-[10px] text-sidebar-foreground/40 leading-tight tracking-wide">经营管理系统</span>
+                <span className="font-semibold text-sidebar-accent-foreground text-sm leading-tight">FFk Barber</span>
+                <span className="text-[10px] text-sidebar-foreground/40 leading-tight">经营管理</span>
               </div>
             </div>
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-accent border border-sidebar-border font-serif font-bold text-sm text-sidebar-primary">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
               F
             </div>
           )}
@@ -136,7 +135,7 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
               onClick={() => onCollapsedChange(!collapsed)}
               className="h-7 w-7 shrink-0 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent"
             >
-              <ChevronLeft className="h-3.5 w-3.5" />
+              <PanelLeftClose className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
@@ -150,18 +149,13 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
               onClick={() => onCollapsedChange(false)}
               className="h-7 w-7 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent"
             >
-              <ChevronRight className="h-3.5 w-3.5" />
+              <PanelLeft className="h-3.5 w-3.5" />
             </Button>
           </div>
         )}
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-2 py-3">
-          {!collapsed && (
-            <p className="mb-1.5 px-3 text-[10px] font-medium uppercase tracking-widest text-sidebar-foreground/30">
-              主要功能
-            </p>
-          )}
+        <nav className="flex-1 overflow-y-auto px-2.5 py-4">
           <div className="space-y-0.5">
             {mainMenuItems.map((item) => (
               <SidebarNavItem
@@ -173,13 +167,13 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
             ))}
           </div>
 
-          <div className={cn("my-3", collapsed ? "mx-2" : "mx-3")}>
-            <Separator className="bg-sidebar-border/40" />
+          <div className={cn("my-4", collapsed ? "mx-2" : "mx-3")}>
+            <div className="h-px bg-sidebar-border/40" />
           </div>
 
           {!collapsed && (
-            <p className="mb-1.5 px-3 text-[10px] font-medium uppercase tracking-widest text-sidebar-foreground/30">
-              经营管理
+            <p className="mb-2 px-3 text-[10px] font-medium text-sidebar-foreground/30 tracking-wide">
+              管理
             </p>
           )}
           <div className="space-y-0.5">
@@ -193,8 +187,8 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
             ))}
           </div>
 
-          <div className={cn("my-3", collapsed ? "mx-2" : "mx-3")}>
-            <Separator className="bg-sidebar-border/40" />
+          <div className={cn("my-4", collapsed ? "mx-2" : "mx-3")}>
+            <div className="h-px bg-sidebar-border/40" />
           </div>
 
           <SidebarNavItem
@@ -205,16 +199,16 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
         </nav>
 
         {/* Bottom */}
-        <div className="p-2 space-y-2">
+        <div className="p-2.5 space-y-2">
           <SyncStatusIndicator collapsed={collapsed} />
 
           <div className={cn(
-            "rounded-md bg-sidebar-accent/40 p-2",
+            "rounded-lg bg-sidebar-accent/50 p-2.5",
             collapsed && "flex flex-col items-center gap-1"
           )}>
             {!collapsed ? (
               <div className="flex items-center gap-2.5">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-sidebar-primary/15 text-xs font-medium text-sidebar-primary">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">
                   {userInitial}
                 </div>
                 <div className="flex-1 min-w-0">
