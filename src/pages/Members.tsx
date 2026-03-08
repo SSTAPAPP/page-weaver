@@ -14,6 +14,13 @@ import { MemberDetailDialog } from "@/components/dialogs/MemberDetailDialog";
 import { matchMemberSearch } from "@/lib/pinyin";
 import { format, formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { MEMBER_TAG_OPTIONS } from "@/types";
+
+const TAG_COLORS: Record<string, string> = {
+  '金卡': 'bg-chart-5/15 text-chart-5 border-chart-5/30',
+  '银卡': 'bg-muted-foreground/15 text-muted-foreground border-muted-foreground/30',
+  '普通': 'bg-muted text-muted-foreground border-border',
+};
 
 
 export default function Members() {
