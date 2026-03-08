@@ -20,8 +20,9 @@
       }
     },
     "updater": {
-      "active": true,
+      "active": false,
       "dialog": false,
+      "pubkey": "",
       "endpoints": [
         "https://github.com/SSTAPAPP/page-weaver/releases/latest/download/latest.json"
       ]
