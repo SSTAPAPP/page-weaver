@@ -6,14 +6,12 @@ type FontSize = "xs" | "sm" | "base" | "lg" | "xl";
 const THEME_KEY = "barber-shop-theme";
 const FONT_SIZE_KEY = "barber-shop-font-size";
 
-// 大厂规范：html root 固定 16px，通过 CSS 变量控制全局文字缩放
-// Apple HIG: body 13-17pt, Ant Design: 14px base, Material: 14-16px
 const fontSizeMap: Record<FontSize, string> = {
   xs: "13px",
   sm: "14px",
-  base: "14px",
-  lg: "15px",
-  xl: "16px",
+  base: "15px",
+  lg: "16px",
+  xl: "17px",
 };
 
 export function useTheme() {
