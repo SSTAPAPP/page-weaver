@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { 
   Download, Save, Eye, EyeOff, Shield, Database, AlertTriangle, 
   Moon, Sun, Type, Store, MapPin, Phone, ChevronRight,
