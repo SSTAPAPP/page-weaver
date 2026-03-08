@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { Search, CreditCard, ChevronLeft, ChevronRight, Filter, X, Link2, Printer } from "lucide-react";
+import { Search, CreditCard, ChevronLeft, ChevronRight, Filter, X, Link2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
