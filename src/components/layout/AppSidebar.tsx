@@ -164,20 +164,16 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
           )}
           aria-label="主导航"
         >
-          <div className="space-y-1.5">
+          <div className="space-y-0.5">
             {navGroups.map((group, idx) => (
               <div key={group.label}>
-                {idx > 0 && !isCollapsed && (
-                  <div className="flex items-center gap-2 px-2.5 py-2">
-                    <div className="h-px flex-1 bg-border/40" />
-                    <span className="text-[10px] font-medium text-muted-foreground/40 shrink-0">
-                      {group.label}
-                    </span>
-                    <div className="h-px flex-1 bg-border/40" />
+                {idx > 0 && (
+                  <div className={cn(
+                    "my-2",
+                    isCollapsed ? "mx-auto w-4" : "mx-2.5"
+                  )}>
+                    <div className="h-px bg-border/40" />
                   </div>
-                )}
-                {idx > 0 && isCollapsed && (
-                  <div className="mx-auto my-1.5 h-px w-4 bg-border/50" />
                 )}
                 <div
                   className={cn(
