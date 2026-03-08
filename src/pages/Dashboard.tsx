@@ -318,7 +318,7 @@ export default function Dashboard() {
               />
             ) : (
               <div className="divide-y divide-border">
-                {recentTransactions.map((tx) => {
+                {recentTransactions.map((tx, idx) => {
                   const isIncome = tx.type === "recharge" || tx.type === "refund";
                   const typeLabel = tx.type === "recharge" ? "充值" : tx.type === "consume" ? "消费" : tx.type === "card_deduct" ? "次卡" : tx.type === "refund" ? "退款" : "其他";
                   return (
@@ -326,7 +326,11 @@ export default function Dashboard() {
                       key={tx.id}
                       className="flex items-center justify-between py-2 sm:py-3 first:pt-0 last:pb-0"
                     >
-                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                      {/* 序号 */}
+                      <span className="text-xs text-muted-foreground tabular-nums w-5 shrink-0">
+                        {idx + 1}
+                      </span>
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                         <div className={cn(
                           "flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full text-[10px] sm:text-xs font-medium shrink-0",
                           isIncome ? "bg-chart-2/10 text-chart-2" : "bg-muted text-muted-foreground"
