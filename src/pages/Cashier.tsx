@@ -380,9 +380,9 @@ export default function Cashier() {
             </CardContent>
           </Card>
 
-          {/* 服务列表 - 大厂风格 */}
-          <Card className="overflow-hidden">
-            <CardHeader className="pb-0 pt-4 px-4">
+          {/* 服务列表 - 列表卡片风格 */}
+          <Card>
+            <CardHeader className="pb-3">
               <CardTitle className="text-base">服务项目</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -397,22 +397,24 @@ export default function Cashier() {
               ) : (
                 <div className="divide-y divide-border">
                   {servicesByCategory.map(({ category, services: categoryServices }) => (
-                    <div key={category} className="py-3">
+                    <div key={category} className="py-3 first:pt-0">
                       {/* 分类标题 */}
-                      <div className="flex items-center gap-2 px-4 mb-2">
-                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                      <div className="flex items-center justify-between px-4 mb-2">
+                        <span className="text-xs font-medium text-muted-foreground">
                           {category}
                         </span>
                         <span className="text-[10px] text-muted-foreground/60">
                           {categoryServices.length}项
                         </span>
                       </div>
-                      {/* 服务网格 */}
-                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 px-4">
+                      {/* 服务列表 */}
+                      <div className="space-y-1 px-2">
                         {categoryServices.map((service) => {
-                          const hasCard = selectedMember?.cards.some(
+                          const availableCard = selectedMember?.cards.find(
                             (card) => card.services.includes(service.id) && card.remainingCount > 0
                           );
+                          const hasCard = !!availableCard;
+                          
                           return (
                             <div
                               key={service.id}
@@ -420,24 +422,33 @@ export default function Cashier() {
                               role="button"
                               tabIndex={0}
                               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addToCart(service); } }}
-                              className="group relative flex flex-col items-center justify-center rounded-lg border border-border bg-card p-3 min-h-[72px] cursor-pointer transition-all duration-150 hover:border-primary/40 hover:bg-primary/5 hover:shadow-sm active:scale-[0.98]"
+                              className="group flex items-center gap-3 rounded-lg px-3 py-3 cursor-pointer transition-all duration-150 hover:bg-muted/50 active:bg-muted"
                             >
-                              {/* 次卡标记 */}
-                              {hasCard && (
-                                <div className="absolute top-1.5 right-1.5">
-                                  <div className="flex items-center justify-center h-4 w-4 rounded-full bg-chart-2/15">
-                                    <CreditCard className="h-2.5 w-2.5 text-chart-2" />
-                                  </div>
+                              {/* 左侧：服务信息 */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2">
+                                  <p className="text-sm font-medium truncate">{service.name}</p>
+                                  {hasCard && (
+                                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 font-normal bg-chart-2/10 text-chart-2 border-0">
+                                      <CreditCard className="h-2.5 w-2.5 mr-0.5" />
+                                      {availableCard.remainingCount}次
+                                    </Badge>
+                                  )}
                                 </div>
-                              )}
-                              {/* 服务名称 */}
-                              <span className="text-sm font-medium text-center leading-tight line-clamp-2 mb-1">
-                                {service.name}
-                              </span>
-                              {/* 价格 */}
-                              <span className="text-xs text-muted-foreground tabular-nums">
-                                ¥{service.price}
-                              </span>
+                                <p className="text-xs text-muted-foreground mt-0.5">
+                                  {service.duration ? `${service.duration}分钟` : '标准服务'}
+                                </p>
+                              </div>
+                              
+                              {/* 右侧：价格 */}
+                              <div className="flex items-center gap-3 shrink-0">
+                                <span className="text-sm font-semibold tabular-nums">
+                                  ¥{service.price}
+                                </span>
+                                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <ShoppingCart className="h-3.5 w-3.5" />
+                                </div>
+                              </div>
                             </div>
                           );
                         })}
