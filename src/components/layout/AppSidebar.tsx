@@ -127,14 +127,14 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
         {/* Brand + collapse toggle */}
         <div
           className={cn(
-            "flex items-center shrink-0",
-            isCollapsed ? "justify-center h-16 px-2" : "justify-between h-16 px-4"
+            "flex items-center shrink-0 border-b border-border",
+            isCollapsed ? "justify-center h-14 px-2" : "justify-between h-14 px-4"
           )}
         >
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-foreground shrink-0 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground shrink-0">
               <span
-                className="text-base font-black text-background"
+                className="text-sm font-black text-background"
                 style={{ fontFamily: "Lora, serif" }}
               >
                 F
@@ -142,10 +142,10 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
             </div>
             {!isCollapsed && (
               <div className="flex flex-col">
-                <span className="font-bold text-foreground text-[15px] leading-tight tracking-tight">
+                <span className="font-bold text-foreground text-sm leading-tight tracking-tight">
                   FFk
                 </span>
-                <span className="text-[10px] text-muted-foreground leading-tight">
+                <span className="text-[10px] text-muted-foreground/70 leading-tight">
                   Management System
                 </span>
               </div>
@@ -157,7 +157,7 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
               size="icon"
               onClick={() => setCollapsed(true)}
               aria-label="折叠导航栏"
-              className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground hover:bg-accent"
+              className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
