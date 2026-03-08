@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { Search, CreditCard, ChevronLeft, ChevronRight, Filter, X, Link2 } from "lucide-react";
+import { Search, CreditCard, ChevronLeft, ChevronRight, Filter, X, Link2, Printer } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import {
 import { useStore } from "@/stores/useStore";
 import { TransactionRefundDialog } from "@/components/dialogs/TransactionRefundDialog";
 import type { Transaction } from "@/types";
+import { printTransactionReceipt } from "@/components/receipt/TransactionReceipt";
 
 const typeMap: Record<string, { label: string; sign: string; color: string }> = {
   recharge: { label: "充值", sign: "+", color: "text-chart-2" },
@@ -44,7 +45,7 @@ interface GroupedTransaction {
 }
 
 export default function Transactions() {
-  const { transactions } = useStore();
+  const { transactions, shopInfo } = useStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [currentPage, setCurrentPage] = useState(1);
@@ -231,16 +232,28 @@ export default function Transactions() {
 
                   return (
                     <div key={tx.id}>
-                      <div className="relative">
+                      <div className="relative group/row">
                         {renderRow(tx, rowNumber)}
-                        {hasRefund && !tx.voided && (
-                          <div className="absolute right-2 top-3">
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                          {hasRefund && !tx.voided && (
                             <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 font-normal text-chart-4 border-chart-4/30">
                               <Link2 className="h-2.5 w-2.5 mr-0.5" />
                               已退款
                             </Badge>
-                          </div>
-                        )}
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover/row:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              printTransactionReceipt(tx, shopInfo, refundTx);
+                            }}
+                            aria-label="打印凭证"
+                          >
+                            <Printer className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
                       {refundTx && renderRow(refundTx, rowNumber, true)}
                     </div>
