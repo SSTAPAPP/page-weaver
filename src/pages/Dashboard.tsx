@@ -141,7 +141,7 @@ export default function Dashboard() {
     },
   ];
 
-  const recentTransactions = transactions.filter(t => !t.voided).slice(0, 5);
+  const recentTransactions = transactions.slice(0, 5);
 
   return (
     <div className="space-y-4 sm:space-y-6">
