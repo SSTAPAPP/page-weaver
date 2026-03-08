@@ -308,7 +308,7 @@ export default function Cashier() {
       {/* Header */}
       <PageHeader
         title="收银台"
-        description="快速结账，支持多种支付方式"
+        description="选择会员与服务项目，支持余额、次卡、现金等多种支付方式快速结账"
       />
 
       <div className="grid gap-6 lg:grid-cols-3">

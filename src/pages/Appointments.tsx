@@ -116,7 +116,7 @@ export default function Appointments() {
       {/* Header */}
       <PageHeader
         title="预约管理"
-        description="管理客户预约"
+        description="按月查看与管理客户预约，跟踪待确认、已确认及已完成状态"
       >
         <Button onClick={() => setDialogOpen(true)}>
           <Plus className="mr-2 h-4 w-4" />

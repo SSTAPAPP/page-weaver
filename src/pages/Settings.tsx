@@ -478,7 +478,7 @@ export default function Settings() {
     <div className="space-y-6">
       <PageHeader
         title="设置"
-        description="系统设置和数据管理"
+        description="店铺信息、外观主题、安全密码与数据导出管理"
       />
 
       <div className="flex flex-col lg:flex-row gap-6">

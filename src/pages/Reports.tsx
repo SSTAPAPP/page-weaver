@@ -251,7 +251,7 @@ export default function Reports() {
       {/* Header */}
       <PageHeader
         title="数据报表"
-        description="经营数据分析"
+        description="近30天营收趋势、充值消耗分析与会员增长统计"
       >
         <Badge variant="outline" className="font-normal">
           近30天

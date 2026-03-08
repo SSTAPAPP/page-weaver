@@ -33,7 +33,7 @@ export default function Members() {
       {/* Header */}
       <PageHeader
         title="会员管理"
-        description={`共 ${members.length} 位会员 · 总余额 ¥${totalBalance.toFixed(2)}`}
+        description={`当前共 ${members.length} 位会员，储值总余额 ¥${totalBalance.toFixed(2)}，支持开卡、充值与查询`}
       >
         <Button variant="outline" onClick={() => setRechargeDialogOpen(true)}>
           <Wallet className="mr-2 h-4 w-4" />
