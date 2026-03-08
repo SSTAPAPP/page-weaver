@@ -35,17 +35,23 @@ interface StatCardWithTooltipProps {
 }
 
 function StatCardWithTooltip({ title, value, description, icon: Icon, color, hidden }: StatCardWithTooltipProps) {
+  // Extract the bg color class from text color (e.g. text-chart-1 -> bg-chart-1/10)
+  const bgColor = color.replace("text-", "bg-") + "/10";
   return (
-    <Card className="relative overflow-hidden transition-shadow duration-200 hover:shadow-md">
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <p className="text-sm font-medium text-muted-foreground">
-          {title}
-        </p>
-        <Icon className={`h-4 w-4 ${color}`} />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{hidden ? "****" : value}</div>
-        <p className="text-xs text-muted-foreground">{description}</p>
+    <Card className="relative overflow-hidden transition-all duration-200 hover:shadow-md group">
+      <CardContent className="p-4">
+        <div className="flex items-start justify-between mb-3">
+          <p className="text-sm font-medium text-muted-foreground leading-tight">
+            {title}
+          </p>
+          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${bgColor} transition-transform duration-200 group-hover:scale-110`}>
+            <Icon className={`h-4.5 w-4.5 ${color}`} />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <div className="text-2xl font-bold tracking-tight tabular-nums">{hidden ? "****" : value}</div>
+          <p className="text-xs text-muted-foreground">{description}</p>
+        </div>
       </CardContent>
     </Card>
   );
