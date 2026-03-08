@@ -536,6 +536,14 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+
+      <AdminPasswordDialog
+        open={shopPasswordDialogOpen}
+        onOpenChange={setShopPasswordDialogOpen}
+        onConfirm={handleSaveShopInfo}
+        title="修改店铺信息"
+        description="修改店铺信息需要管理员密码确认"
+      />
     </div>
   );
 }
