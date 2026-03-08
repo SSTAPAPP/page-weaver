@@ -77,7 +77,7 @@ export function AppSidebar({ forceExpanded, defaultCollapsed, onNavigate }: AppS
         to={item.url}
         onClick={onNavigate}
         className={cn(
-          "group relative flex items-center gap-3 rounded-md min-h-9 text-[14px] transition-all duration-150",
+          "group relative flex items-center gap-3 rounded-md min-h-9 text-[15px] transition-all duration-150",
           isCollapsed ? "justify-center w-9 h-9 mx-auto rounded-lg" : "px-2.5 py-1.5",
           isActive
             ? "bg-background/80 text-foreground font-bold"
@@ -144,13 +144,10 @@ export function AppSidebar({ forceExpanded, defaultCollapsed, onNavigate }: AppS
             {!isCollapsed && (
               <div className="flex flex-col">
                 <span
-                  className="font-bold text-foreground text-[14px] leading-tight tracking-tight"
+                  className="font-bold text-foreground text-[15px] leading-tight tracking-tight"
                   style={{ fontFamily: "Lora, serif" }}
                 >
-                  FFk
-                </span>
-                <span className="text-[9px] text-muted-foreground/60 leading-tight tracking-wide">
-                  MANAGEMENT
+                  理发店管理
                 </span>
               </div>
             )}
