@@ -307,8 +307,17 @@ export default function Cashier() {
         createdAt: new Date(),
       };
 
-      setLastReceiptData(receiptData);
-      setSuccessDialogOpen(true);
+      const capturedShopInfo = { ...shopInfo };
+      toast({
+        title: "结账成功",
+        description: `${receiptData.isWalkIn ? "散客" : receiptData.memberName} 消费 ¥${receiptData.total.toFixed(2)}`,
+        action: (
+          <ToastAction altText="打印小票" onClick={() => printReceipt(receiptData, capturedShopInfo)}>
+            <Printer className="h-3.5 w-3.5 mr-1" />
+            打印
+          </ToastAction>
+        ),
+      });
 
       // 重置
       setSelectedMember(null);
