@@ -145,6 +145,32 @@ export default function Reports() {
     return { revenue, recharge, consumption };
   }, [transactions]);
 
+  const extraStats = useMemo(() => {
+    const validTx = transactions.filter(t => !t.voided);
+    const consumeTx = validTx.filter(
+      (t) => t.type === "consume" || t.type === "card_deduct"
+    );
+    const totalTxCount = consumeTx.length;
+    const avgSpend = totalTxCount > 0
+      ? consumeTx.reduce((s, t) => s + t.amount, 0) / totalTxCount
+      : 0;
+    const totalBalance = members.reduce((s, m) => s + m.balance, 0);
+    const totalCards = members.reduce((s, m) => s + m.cards.filter(c => c.remainingCount > 0).length, 0);
+
+    const todayTx = validTx.filter(t => {
+      const d = new Date(t.createdAt);
+      const now = new Date();
+      return d.getDate() === now.getDate() && d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    });
+    const todayConsumeTx = todayTx.filter(t => t.type === "consume" || t.type === "card_deduct");
+    const todayTxCount = todayConsumeTx.length;
+    const todayAvg = todayTxCount > 0
+      ? todayConsumeTx.reduce((s, t) => s + t.amount, 0) / todayTxCount
+      : 0;
+
+    return { totalTxCount, avgSpend, totalBalance, totalCards, todayTxCount, todayAvg };
+  }, [transactions, members]);
+
   const statCards = [
     {
       title: "今日实收",
@@ -168,11 +194,39 @@ export default function Reports() {
       color: "text-chart-3",
     },
     {
+      title: "交易笔数",
+      value: extraStats.todayTxCount.toString(),
+      total: `累计: ${extraStats.totalTxCount}笔`,
+      icon: Receipt,
+      color: "text-chart-5",
+    },
+    {
+      title: "客单价",
+      value: `¥${extraStats.todayAvg.toFixed(0)}`,
+      total: `平均: ¥${extraStats.avgSpend.toFixed(0)}`,
+      icon: Activity,
+      color: "text-chart-1",
+    },
+    {
       title: "会员总数",
       value: members.length.toString(),
       total: `今日新增: ${todayStats.newMembers}`,
       icon: Users,
       color: "text-chart-4",
+    },
+    {
+      title: "储值总余额",
+      value: `¥${extraStats.totalBalance.toFixed(0)}`,
+      total: `${members.length}位会员`,
+      icon: PiggyBank,
+      color: "text-chart-2",
+    },
+    {
+      title: "有效次卡",
+      value: `${extraStats.totalCards}张`,
+      total: `${members.filter(m => m.cards.some(c => c.remainingCount > 0)).length}位会员持有`,
+      icon: CreditCardIcon,
+      color: "text-chart-3",
     },
   ];
 
