@@ -321,7 +321,7 @@ export default function Cashier() {
             </CardHeader>
             <CardContent>
               {selectedMember ? (
-                <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all">
+                <div className="flex items-center justify-between rounded-lg border border-primary/30 bg-primary/5 p-4 transition-all">
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-lg font-bold text-primary">
                       {selectedMember.name.charAt(0)}
@@ -357,7 +357,7 @@ export default function Cashier() {
                     />
                   </div>
                   {searchResults.length > 0 && (
-                    <div className="max-h-48 space-y-1 overflow-auto rounded-lg border border-muted/20">
+                    <div className="max-h-48 space-y-1 overflow-auto rounded-lg border border-border">
                       {searchResults.map((member) => (
                         <div
                           key={member.id}
@@ -419,7 +419,7 @@ export default function Cashier() {
                             role="button"
                             tabIndex={0}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addToCart(service); } }}
-                            className="group relative flex items-center justify-between rounded-lg border border-muted/20 p-3 cursor-pointer transition-all duration-150 hover:border-primary/50 hover:bg-muted/30 hover:shadow-sm active:scale-[0.99]"
+                            className="group relative flex items-center justify-between rounded-lg border border-border p-3 cursor-pointer transition-all duration-150 hover:border-primary/50 hover:bg-muted/30 hover:shadow-sm active:scale-[0.99]"
                           >
                             {/* 已添加数量角标 */}
                             {cartCount > 0 && (
@@ -471,7 +471,7 @@ export default function Cashier() {
         {/* 右侧：购物车和结算 */}
         <div className="space-y-4">
           <Card className="sticky top-6 overflow-hidden">
-            <CardHeader className="pb-2 border-b border-muted/20">
+            <CardHeader className="pb-2 border-b border-border">
               <CardTitle className="flex items-center gap-2 text-base">
                 <ShoppingCart className="h-4 w-4" />
                 结算清单
@@ -561,13 +561,13 @@ export default function Cashier() {
                   </div>
 
                   {/* 费用汇总区 */}
-                  <div className="bg-muted/30 border-t border-muted/20 px-4 py-3 space-y-3">
+                  <div className="bg-muted/30 border-t border-border px-4 py-3 space-y-3">
                     {/* 次卡使用汇总 */}
                     {cardUsageInfo.length > 0 && (
                       <div className="space-y-2">
                         <p className="text-xs text-muted-foreground">次卡扣除</p>
                         {cardUsageInfo.map((card, idx) => (
-                          <div key={idx} className="flex items-center justify-between rounded-md border border-muted/20 p-2 bg-card">
+                          <div key={idx} className="flex items-center justify-between rounded-md border border-border p-2 bg-card">
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="text-sm font-medium truncate">{card.cardName}</span>
@@ -673,7 +673,7 @@ export default function Cashier() {
                   </div>
 
                   {/* 底部结账栏 */}
-                  <div className="px-4 py-4 border-t border-muted/20 space-y-3">
+                  <div className="px-4 py-4 border-t border-border space-y-3">
                     <div className="flex items-baseline justify-between">
                       <span className="font-medium">合计</span>
                       <span className="text-2xl font-bold text-primary tabular-nums">¥{total}</span>
