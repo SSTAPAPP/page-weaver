@@ -77,7 +77,7 @@ export function RecentTransactions({
                       {hidden ? "****" : tx.description}
                     </p>
                     {tx.voided && (
-                      <Badge variant="destructive" className="text-[10px] shrink-0 px-1.5 py-0">
+                      <Badge variant="destructive" className="text-2xs shrink-0 px-1.5 py-0">
                         已作废
                       </Badge>
                     )}

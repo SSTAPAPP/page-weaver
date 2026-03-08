@@ -318,7 +318,7 @@ export default function Settings() {
                     >
                       <option.icon className={cn("h-5 w-5", theme === option.value ? "text-primary" : "text-muted-foreground")} />
                       <span className={cn("text-sm font-medium", theme === option.value ? "text-primary" : "text-foreground")}>{option.label}</span>
-                      <span className="text-[10px] text-muted-foreground">{option.desc}</span>
+                      <span className="text-2xs text-muted-foreground">{option.desc}</span>
                     </button>
                   ))}
                 </div>
@@ -628,7 +628,7 @@ export default function Settings() {
 
             {/* 系统品牌 */}
             <div className="flex flex-col items-center py-6">
-              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary shadow-lg mb-4">
+              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary shadow-md mb-4">
                 <span className="text-2xl font-black text-primary-foreground">F</span>
               </div>
               <h2 className="text-xl font-bold">FFk Barber</h2>

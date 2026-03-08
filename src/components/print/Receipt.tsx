@@ -22,6 +22,10 @@ const paymentMethodLabels: Record<string, string> = {
   balance: "余额支付",
 };
 
+/**
+ * Receipt is a print-only component rendered on white paper.
+ * Uses print-safe inline colors intentionally — not themed.
+ */
 export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
   ({ shopName, shopPhone, shopAddress, memberName, isWalkIn, services, cardDeduct, balanceDeduct, cashNeed, paymentMethod, total, timestamp }, ref) => {
     const formatTime = (date: Date) => {
@@ -34,17 +38,19 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
       }).format(date);
     };
 
+    const borderClass = "border-dashed border-muted-foreground/40";
+
     return (
-      <div ref={ref} className="receipt-container w-[80mm] bg-white p-4 text-black font-mono text-xs">
+      <div ref={ref} className="receipt-container w-[80mm] bg-background p-4 text-foreground font-mono text-xs print:bg-white print:text-black">
         {/* Header */}
-        <div className="text-center border-b border-dashed border-gray-400 pb-3 mb-3">
+        <div className={`text-center border-b ${borderClass} pb-3 mb-3`}>
           <div className="text-lg font-bold">{shopName}</div>
-          {shopPhone && <div className="text-xs text-gray-600">{shopPhone}</div>}
-          {shopAddress && <div className="text-xs text-gray-600">{shopAddress}</div>}
+          {shopPhone && <div className="text-xs text-muted-foreground">{shopPhone}</div>}
+          {shopAddress && <div className="text-xs text-muted-foreground">{shopAddress}</div>}
         </div>
 
         {/* Info */}
-        <div className="border-b border-dashed border-gray-400 pb-3 mb-3 space-y-1">
+        <div className={`border-b ${borderClass} pb-3 mb-3 space-y-1`}>
           <div className="flex justify-between">
             <span>时间</span>
             <span>{formatTime(timestamp)}</span>
@@ -56,8 +62,8 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         </div>
 
         {/* Items */}
-        <div className="border-b border-dashed border-gray-400 pb-3 mb-3">
-          <div className="flex justify-between text-gray-500 mb-2">
+        <div className={`border-b ${borderClass} pb-3 mb-3`}>
+          <div className="flex justify-between text-muted-foreground mb-2">
             <span>项目</span>
             <span>金额</span>
           </div>
@@ -70,7 +76,7 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         </div>
 
         {/* Total */}
-        <div className="border-b border-dashed border-gray-400 pb-3 mb-3">
+        <div className={`border-b ${borderClass} pb-3 mb-3`}>
           <div className="flex justify-between text-base font-bold">
             <span>合计</span>
             <span>¥{total.toFixed(2)}</span>
@@ -80,7 +86,7 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         {/* Payment Details */}
         <div className="pb-3 mb-3 space-y-1">
           {cardDeduct > 0 && (
-            <div className="flex justify-between text-green-600">
+            <div className="flex justify-between text-success">
               <span>次卡抵扣</span>
               <span>-¥{cardDeduct.toFixed(2)}</span>
             </div>
@@ -100,9 +106,9 @@ export const Receipt = forwardRef<HTMLDivElement, ReceiptProps>(
         </div>
 
         {/* Footer */}
-        <div className="text-center pt-3 border-t border-dashed border-gray-400">
+        <div className={`text-center pt-3 border-t ${borderClass}`}>
           <div className="mb-2">谢谢光临，欢迎再来！</div>
-          <div className="text-xs text-gray-500">此小票为消费凭证，请妥善保管</div>
+          <div className="text-xs text-muted-foreground">此小票为消费凭证，请妥善保管</div>
         </div>
       </div>
     );

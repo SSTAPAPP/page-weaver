@@ -235,7 +235,7 @@ export default function Cashier() {
         <div className="space-y-6 lg:col-span-2">
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-2">
-              <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-[10px] font-semibold mr-1.5">1</span>
+              <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-2xs font-semibold mr-1.5">1</span>
               选择顾客
             </p>
             <CustomerSelector
@@ -250,7 +250,7 @@ export default function Cashier() {
 
           <div>
             <p className="text-xs font-medium text-muted-foreground mb-2">
-              <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-[10px] font-semibold mr-1.5">2</span>
+              <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-2xs font-semibold mr-1.5">2</span>
               选择服务
             </p>
             <ServiceList
@@ -267,7 +267,7 @@ export default function Cashier() {
         {/* Right: Cart */}
         <div>
           <p className="text-xs font-medium text-muted-foreground mb-2 lg:hidden">
-            <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-[10px] font-semibold mr-1.5">3</span>
+            <span className="inline-flex items-center justify-center h-4 w-4 rounded-full bg-muted text-2xs font-semibold mr-1.5">3</span>
             结算
           </p>
           <CartPanel

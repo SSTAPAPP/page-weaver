@@ -66,20 +66,20 @@ export function CartPanel({
           <div className="flex items-center gap-2">
             <p className="text-xs font-medium text-muted-foreground">结算清单</p>
             {cart.length > 0 && (
-              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 tabular-nums">
+              <Badge variant="secondary" className="text-2xs px-1.5 py-0 tabular-nums">
                 {cart.length}项
               </Badge>
             )}
           </div>
           <div className="flex items-center gap-1">
             {isWalkIn && (
-              <Badge variant="outline" className="text-[10px] font-normal">散客</Badge>
+              <Badge variant="outline" className="text-2xs font-normal">散客</Badge>
             )}
             {cart.length > 1 && (
               <Button
                 variant="ghost"
                 size="sm"
-                className="h-6 text-[10px] text-muted-foreground hover:text-destructive px-2"
+                className="h-6 text-2xs text-muted-foreground hover:text-destructive px-2"
                 onClick={onClearCart}
               >
                 清空
@@ -186,7 +186,7 @@ export function CartPanel({
 
               {/* Balance warning */}
               {hasBalanceWarning && (
-                <p className="text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30 rounded px-2 py-1.5">
+                <p className="text-xs text-warning-foreground bg-warning/10 rounded px-2 py-1.5">
                   余额不足，需补差价 ¥{cashNeed}
                 </p>
               )}

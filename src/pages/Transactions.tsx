@@ -163,10 +163,10 @@ export default function Transactions() {
                         <p className={`text-sm font-medium truncate ${isVoided ? "line-through" : ""}`}>
                           {tx.description}
                         </p>
-                        <Badge variant="secondary" className="text-[10px] font-normal shrink-0">{info.label}</Badge>
-                        {isVoided && <Badge variant="destructive" className="text-[10px] shrink-0">已作废</Badge>}
+                        <Badge variant="secondary" className="text-2xs font-normal shrink-0">{info.label}</Badge>
+                        {isVoided && <Badge variant="destructive" className="text-2xs shrink-0">已作废</Badge>}
                         {refundTx && (
-                          <Badge variant="outline" className="text-[10px] shrink-0">
+                          <Badge variant="outline" className="text-2xs shrink-0">
                             <Link2 className="h-2.5 w-2.5 mr-0.5" />已退款
                           </Badge>
                         )}
@@ -182,7 +182,7 @@ export default function Transactions() {
                       {tx.subTransactions && tx.subTransactions.length > 0 && (
                         <div className="mt-1 flex flex-wrap gap-1">
                           {tx.subTransactions.map((sub, i) => (
-                            <Badge key={i} variant="outline" className="text-[10px] font-normal">
+                            <Badge key={i} variant="outline" className="text-2xs font-normal">
                               {sub.type === 'balance' ? '余额' : sub.type === 'card' ? '次卡' : '补差价'} ¥{sub.amount}
                             </Badge>
                           ))}
