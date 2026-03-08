@@ -9,7 +9,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+
 import { CreditCard, Wallet, Banknote, User } from "lucide-react";
 
 interface CardUsageInfo {
@@ -61,149 +61,139 @@ export function CheckoutConfirmDialog({
 }: CheckoutConfirmDialogProps) {
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent className="max-w-md">
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            确认结账
-          </AlertDialogTitle>
+      <AlertDialogContent className="max-w-md p-0 overflow-hidden">
+        <AlertDialogHeader className="px-5 pt-5 pb-3">
+          <AlertDialogTitle className="text-base">确认结账</AlertDialogTitle>
           <AlertDialogDescription asChild>
-            <div className="space-y-4 pt-2">
+            <div className="space-y-0">
               {/* 顾客信息 */}
-              <div className="flex items-center gap-2 rounded-lg bg-muted p-3">
-                <User className="h-5 w-5 text-muted-foreground" />
-                <span className="font-medium">
-                  {isWalkIn ? "散客结账" : memberName}
-                </span>
+              <div className="flex items-center gap-2.5 rounded-md bg-muted/50 p-2.5 mt-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
+                  {isWalkIn ? <User className="h-4 w-4" /> : (memberName?.charAt(0) || '?')}
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-foreground">
+                    {isWalkIn ? "散客结账" : memberName}
+                  </p>
+                  {!isWalkIn && memberBalance !== undefined && (
+                    <p className="text-[11px] text-muted-foreground">余额 ¥{memberBalance.toFixed(2)}</p>
+                  )}
+                </div>
                 {isWalkIn && (
-                  <Badge variant="secondary" className="ml-auto">
-                    非会员
-                  </Badge>
+                  <Badge variant="secondary" className="text-[10px]">非会员</Badge>
                 )}
               </div>
 
               {/* 消费明细 */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-medium text-foreground">消费明细</p>
-                  <span className="text-xs text-muted-foreground">共 {services.length} 项</span>
+              <div className="mt-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-xs font-medium text-muted-foreground">消费明细</p>
+                  <span className="text-[11px] text-muted-foreground">{services.length} 项</span>
                 </div>
-                {services.map((service, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between text-sm gap-2"
-                  >
-                    <span className="flex items-center gap-2 min-w-0">
-                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
-                        {index + 1}
+                <div className="space-y-0.5">
+                  {services.map((service, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between py-1.5 text-sm"
+                    >
+                      <span className="flex items-center gap-2 min-w-0">
+                        <span className="flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded bg-muted text-[10px] text-muted-foreground">
+                          {index + 1}
+                        </span>
+                        <span className="truncate text-foreground">{service.name}</span>
+                        {service.useCard && (
+                          <Badge variant="secondary" className="text-[10px] py-0 h-4 shrink-0">
+                            {service.cardName || '次卡'}
+                          </Badge>
+                        )}
                       </span>
-                      <span className="truncate">{service.name}</span>
-                      {service.useCard && (
-                        <Badge variant="outline" className="text-xs shrink-0">
-                          {service.cardName || '次卡'}
-                        </Badge>
-                      )}
-                    </span>
-                    <span className={`shrink-0 ${service.useCard ? 'line-through text-muted-foreground' : ''}`}>
-                      ¥{service.price}
-                    </span>
-                  </div>
-                ))}
-              </div>
-
-              <Separator />
-
-              {/* 支付明细 */}
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-foreground">支付方式</p>
-                {cardDeductTotal > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <CreditCard className="h-4 w-4" />
-                      次卡抵扣
-                    </span>
-                    <span className="text-chart-2">-¥{cardDeductTotal}</span>
-                  </div>
-                )}
-                {balanceDeduct > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <Wallet className="h-4 w-4" />
-                      余额支付
-                    </span>
-                    <span>¥{balanceDeduct}</span>
-                  </div>
-                )}
-                {cashNeed > 0 && (
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="flex items-center gap-1 text-muted-foreground">
-                      <Banknote className="h-4 w-4" />
-                      需补差价（{paymentMethodMap[paymentMethod] || paymentMethod}）
-                    </span>
-                    <span className="text-primary font-medium">¥{cashNeed}</span>
-                  </div>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* 结账总计 */}
-              <div className="flex items-center justify-between font-medium">
-                <span className="text-foreground">消费总计</span>
-                <span className="text-lg text-primary">¥{total}</span>
-              </div>
-
-              {/* 次卡使用明细 */}
-              {cardUsageInfo.length > 0 && (
-                <div className="rounded-lg bg-chart-3/10 p-3 space-y-2">
-                  <p className="text-sm font-medium text-foreground flex items-center gap-1">
-                    <CreditCard className="h-4 w-4" />
-                    次卡使用明细
-                  </p>
-                  {cardUsageInfo.map((card, index) => (
-                    <div key={index} className="text-sm space-y-1">
-                      <p className="font-medium">{card.cardName}</p>
-                      <div className="flex justify-between text-muted-foreground">
-                        <span>原余次数</span>
-                        <span>{card.originalCount}次</span>
-                      </div>
-                      <div className="flex justify-between text-destructive">
-                        <span>本次消费</span>
-                        <span>-{card.consumedCount}次</span>
-                      </div>
-                      <div className="flex justify-between font-medium text-foreground">
-                        <span>剩余次数</span>
-                        <span className="text-primary">{card.remainingCount}次</span>
-                      </div>
+                      <span className={`shrink-0 tabular-nums ${service.useCard ? 'line-through text-muted-foreground text-xs' : 'text-foreground'}`}>
+                        ¥{service.price}
+                      </span>
                     </div>
                   ))}
                 </div>
-              )}
-
-              {/* 会员余额变化 */}
-              {!isWalkIn && balanceDeduct > 0 && (
-                <div className="rounded-lg bg-primary/10 p-3 text-sm">
-                  <div className="flex justify-between">
-                    <span>原余额</span>
-                    <span>¥{memberBalance.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-destructive">
-                    <span>本次消费</span>
-                    <span>-¥{balanceDeduct.toFixed(2)}</span>
-                  </div>
-                  <Separator className="my-2" />
-                  <div className="flex justify-between font-medium">
-                    <span>剩余余额</span>
-                    <span className="text-primary">¥{balanceAfter.toFixed(2)}</span>
-                  </div>
-                </div>
-              )}
+              </div>
             </div>
           </AlertDialogDescription>
         </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel>取消</AlertDialogCancel>
-          <AlertDialogAction onClick={onConfirm}>确认结账</AlertDialogAction>
-        </AlertDialogFooter>
+
+        {/* 支付汇总区 - 灰底 */}
+        <div className="bg-muted/30 border-t border-border px-5 py-3 space-y-2.5">
+          {/* 支付方式明细 */}
+          <div className="space-y-1.5">
+            {cardDeductTotal > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <CreditCard className="h-3.5 w-3.5" />
+                  次卡抵扣
+                </span>
+                <span className="text-chart-2 tabular-nums">-¥{cardDeductTotal}</span>
+              </div>
+            )}
+            {balanceDeduct > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Wallet className="h-3.5 w-3.5" />
+                  余额支付
+                </span>
+                <span className="tabular-nums">-¥{balanceDeduct}</span>
+              </div>
+            )}
+            {cashNeed > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Banknote className="h-3.5 w-3.5" />
+                  {isWalkIn ? '' : '补差价 · '}{paymentMethodMap[paymentMethod] || paymentMethod}
+                </span>
+                <span className="text-primary font-medium tabular-nums">¥{cashNeed}</span>
+              </div>
+            )}
+          </div>
+
+          {/* 次卡使用明细 */}
+          {cardUsageInfo.length > 0 && (
+            <div className="space-y-1">
+              {cardUsageInfo.map((card, index) => (
+                <div key={index} className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span className="flex items-center gap-1">
+                    <CreditCard className="h-3 w-3" />
+                    {card.cardName}
+                  </span>
+                  <span className="tabular-nums">
+                    {card.originalCount}次
+                    <span className="mx-0.5">→</span>
+                    <span className="text-primary font-medium">{card.remainingCount}次</span>
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* 会员余额变化 */}
+          {!isWalkIn && balanceDeduct > 0 && (
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>余额变化</span>
+              <span className="tabular-nums">
+                ¥{memberBalance.toFixed(2)}
+                <span className="mx-0.5">→</span>
+                <span className="text-primary font-medium">¥{balanceAfter.toFixed(2)}</span>
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* 总计 + 按钮 */}
+        <div className="px-5 pb-5 pt-3 space-y-3">
+          <div className="flex items-baseline justify-between">
+            <span className="text-sm font-medium text-foreground">消费总计</span>
+            <span className="text-xl font-bold text-primary tabular-nums">¥{total}</span>
+          </div>
+          <div className="flex gap-2">
+            <AlertDialogCancel className="flex-1">取消</AlertDialogCancel>
+            <AlertDialogAction onClick={onConfirm} className="flex-1">确认结账</AlertDialogAction>
+          </div>
+        </div>
       </AlertDialogContent>
     </AlertDialog>
   );

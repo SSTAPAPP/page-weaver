@@ -440,171 +440,157 @@ export default function Cashier() {
 
         {/* 右侧：购物车和结算 */}
         <div className="space-y-4">
-          <Card className="sticky top-6">
-            <CardHeader className="pb-3">
+          <Card className="sticky top-6 overflow-hidden">
+            <CardHeader className="pb-2 border-b border-border">
               <CardTitle className="flex items-center gap-2 text-base">
                 <ShoppingCart className="h-4 w-4" />
                 结算清单
+                {cart.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 text-xs font-normal">
+                    {cart.length}
+                  </Badge>
+                )}
                 {isWalkIn && (
-                  <Badge variant="outline" className="ml-auto">
+                  <Badge variant="outline" className="ml-auto text-xs">
                     散客
                   </Badge>
                 )}
               </CardTitle>
             </CardHeader>
-             <CardContent className="space-y-4">
+             <CardContent className="p-0">
               {cart.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-8 text-center">
-                  <ShoppingCart className="mb-2 h-12 w-12 text-muted-foreground/50" />
-                  <p className="text-muted-foreground">请选择服务项目</p>
+                <div className="flex flex-col items-center justify-center py-12 text-center px-6">
+                  <ShoppingCart className="mb-3 h-10 w-10 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground">点击左侧服务项目添加</p>
                 </div>
               ) : (
                 <>
                   {/* 散客提示 */}
                   {isWalkIn && (
-                    <Alert>
-                      <UserX className="h-4 w-4" />
-                      <AlertDescription>
-                        当前为散客结账，无法使用会员余额和次卡抵扣
-                      </AlertDescription>
-                    </Alert>
+                    <div className="mx-4 mt-3">
+                      <Alert>
+                        <UserX className="h-4 w-4" />
+                        <AlertDescription>
+                          散客模式，不可用余额与次卡
+                        </AlertDescription>
+                      </Alert>
+                    </div>
                   )}
 
-                  {/* 项目数量汇总 */}
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>共 {cart.length} 项服务</span>
-                    {cardUsageInfo.length > 0 && (
-                      <span className="flex items-center gap-1">
-                        <CreditCard className="h-3.5 w-3.5" />
-                        {cart.filter(i => i.useCard).length} 项次卡抵扣
-                      </span>
-                    )}
-                  </div>
-
-                  {/* 购物车项目列表 - 带编号 */}
-                  <div className="space-y-2">
+                  {/* 购物车项目列表 */}
+                  <div className="px-4 pt-3 pb-2 space-y-1.5">
                     {cart.map((item, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between rounded-lg border border-border p-3 min-h-[44px] transition-colors duration-150 hover:bg-muted/30"
+                        className="flex items-center gap-2 rounded-md p-2 -mx-1 transition-colors duration-150 hover:bg-muted/40 group/item"
                       >
-                        <div className="flex items-start gap-2 flex-1">
-                          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium text-muted-foreground mt-0.5">
-                            {index + 1}
-                          </span>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-2">
-                              <p className="font-medium truncate">{item.service.name}</p>
-                              <span className={`text-sm shrink-0 ${item.useCard && item.card ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
-                                ¥{item.service.price}
+                        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded bg-muted text-[10px] font-medium text-muted-foreground">
+                          {index + 1}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-baseline justify-between gap-2">
+                            <p className="text-sm font-medium truncate">{item.service.name}</p>
+                            <span className={`text-sm tabular-nums shrink-0 ${item.useCard && item.card ? 'line-through text-muted-foreground text-xs' : 'text-foreground'}`}>
+                              ¥{item.service.price}
+                            </span>
+                          </div>
+                          {item.card && item.useCard ? (
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <Badge variant="secondary" className="text-[10px] py-0 h-4">
+                                <CreditCard className="mr-0.5 h-2.5 w-2.5" />
+                                {item.card.templateName}
+                              </Badge>
+                              <span className="text-[10px] text-muted-foreground">
+                                余{item.card.remainingCount}次
                               </span>
                             </div>
-                            {item.card && item.useCard ? (
-                              <div className="flex items-center gap-1.5 mt-1">
-                                <Badge variant="secondary" className="text-xs">
-                                  <CreditCard className="mr-1 h-3 w-3" />
-                                  {item.card.templateName}
-                                </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  余{item.card.remainingCount}次
-                                </span>
-                              </div>
-                            ) : (
-                              <p className="text-xs text-muted-foreground mt-0.5">
-                                {item.service.duration ? `${item.service.duration}分钟` : ''}
-                                {item.service.category ? ` · ${item.service.category}` : ''}
-                              </p>
-                            )}
-                            {item.card && !isWalkIn && (
-                              <Button
-                                variant="link"
-                                size="sm"
-                                className="h-auto p-0 text-xs"
-                                onClick={() => toggleCardUse(index)}
-                              >
-                                {item.useCard ? "改为现金支付" : "使用次卡抵扣"}
-                              </Button>
-                            )}
-                          </div>
+                          ) : (
+                            <p className="text-[11px] text-muted-foreground mt-0.5">
+                              {[item.service.duration && `${item.service.duration}分钟`, item.service.category].filter(Boolean).join(' · ')}
+                            </p>
+                          )}
+                          {item.card && !isWalkIn && (
+                            <Button
+                              variant="link"
+                              size="sm"
+                              className="h-auto p-0 text-[11px]"
+                              onClick={() => toggleCardUse(index)}
+                            >
+                              {item.useCard ? "改为现金支付" : "使用次卡抵扣"}
+                            </Button>
+                          )}
                         </div>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-10 w-10 shrink-0"
+                          className="h-7 w-7 shrink-0 opacity-0 group-hover/item:opacity-100 transition-opacity"
                           onClick={() => removeFromCart(index)}
                           aria-label={`移除${item.service.name}`}
                         >
-                          <Trash2 className="h-4 w-4 text-destructive" />
+                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
                         </Button>
                       </div>
                     ))}
                   </div>
 
-                  <Separator />
+                  {/* 费用汇总区 */}
+                  <div className="bg-muted/30 border-t border-border px-4 py-3 space-y-3">
+                    {/* 次卡使用汇总 */}
+                    {cardUsageInfo.length > 0 && (
+                      <div className="space-y-1">
+                        {cardUsageInfo.map((card, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-xs">
+                            <span className="flex items-center gap-1 text-muted-foreground">
+                              <CreditCard className="h-3 w-3" />
+                              {card.cardName}
+                            </span>
+                            <span className="tabular-nums">
+                              <span className="text-destructive">-{card.consumedCount}次</span>
+                              <span className="text-muted-foreground mx-1">→</span>
+                              <span className="text-primary font-medium">余{card.remainingCount}次</span>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-                  {/* 次卡使用汇总 */}
-                  {cardUsageInfo.length > 0 && (
-                    <div className="rounded-lg bg-chart-3/10 p-3 space-y-1.5">
-                      <p className="text-xs font-medium text-foreground flex items-center gap-1">
-                        <CreditCard className="h-3.5 w-3.5" />
-                        次卡抵扣汇总
-                      </p>
-                      {cardUsageInfo.map((card, idx) => (
-                        <div key={idx} className="flex items-center justify-between text-xs">
-                          <span className="text-muted-foreground">{card.cardName}</span>
-                          <span>
-                            <span className="text-destructive">-{card.consumedCount}次</span>
-                            <span className="text-muted-foreground mx-1">→</span>
-                            <span className="text-primary font-medium">余{card.remainingCount}次</span>
-                          </span>
+                    {/* 费用明细 */}
+                    <div className="space-y-1.5 text-sm">
+                      <div className="flex justify-between text-muted-foreground">
+                        <span>服务总价</span>
+                        <span className="tabular-nums">¥{total}</span>
+                      </div>
+                      {cardDeductTotal > 0 && (
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>次卡抵扣</span>
+                          <span className="text-chart-2 tabular-nums">-¥{cardDeductTotal}</span>
                         </div>
-                      ))}
+                      )}
+                      {balanceDeduct > 0 && (
+                        <div className="flex justify-between text-muted-foreground">
+                          <span>余额支付</span>
+                          <span className="tabular-nums">-¥{balanceDeduct}</span>
+                        </div>
+                      )}
                     </div>
-                  )}
 
-                  {/* 费用明细 */}
-                  <div className="space-y-2 text-sm">
-                    <p className="text-xs font-medium text-muted-foreground">费用明细</p>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">服务总价</span>
-                      <span>¥{total}</span>
-                    </div>
-                    {cardDeductTotal > 0 && (
-                      <div className="flex justify-between">
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <CreditCard className="h-3.5 w-3.5" />
-                          次卡抵扣
-                        </span>
-                        <span className="text-chart-2">-¥{cardDeductTotal}</span>
-                      </div>
-                    )}
-                    {balanceDeduct > 0 && (
-                      <div className="flex justify-between">
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <Wallet className="h-3.5 w-3.5" />
-                          余额支付
-                        </span>
-                        <span>-¥{balanceDeduct}</span>
-                      </div>
-                    )}
-                    {cashNeed > 0 && (
-                      <div className="rounded-lg bg-primary/10 p-3">
-                        <div className="flex justify-between font-medium">
-                          <span>{isWalkIn ? '应付金额' : '需补差价'}</span>
-                          <span className="text-lg text-primary">¥{cashNeed}</span>
+                    {/* 应付/无需支付 */}
+                    {cashNeed > 0 ? (
+                      <div className="rounded-md bg-primary/10 p-2.5">
+                        <div className="flex justify-between items-baseline font-medium">
+                          <span className="text-sm">{isWalkIn ? '应付金额' : '需补差价'}</span>
+                          <span className="text-base text-primary tabular-nums">¥{cashNeed}</span>
                         </div>
                         {!isWalkIn && balanceDeduct > 0 && (
-                          <p className="mt-1 text-xs text-muted-foreground">
-                            余额不足，需额外支付 ¥{cashNeed}
+                          <p className="mt-1 text-[11px] text-muted-foreground">
+                            余额不足，需额外支付
                           </p>
                         )}
                       </div>
-                    )}
-                    {/* 纯余额/次卡结账无需额外支付 */}
-                    {cashNeed === 0 && cart.length > 0 && !isWalkIn && (
-                      <div className="rounded-lg bg-chart-2/10 p-3 text-center">
-                        <p className="text-sm font-medium text-chart-2">✓ 无需额外支付</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">
+                    ) : cart.length > 0 && !isWalkIn ? (
+                      <div className="rounded-md bg-chart-2/10 p-2.5 text-center">
+                        <p className="text-xs font-medium text-chart-2">✓ 无需额外支付</p>
+                        <p className="text-[11px] text-muted-foreground mt-0.5">
                           {cardDeductTotal > 0 && balanceDeduct > 0
                             ? '次卡 + 余额全额覆盖'
                             : cardDeductTotal > 0
@@ -612,60 +598,58 @@ export default function Cashier() {
                               : '余额全额支付'}
                         </p>
                       </div>
+                    ) : null}
+
+                    {/* 支付方式 */}
+                    {cashNeed > 0 && (
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">{isWalkIn ? '支付方式' : '补差价方式'}</Label>
+                        <RadioGroup
+                          value={paymentMethod}
+                          onValueChange={(v) =>
+                            setPaymentMethod(v as "wechat" | "alipay" | "cash")
+                          }
+                          className="flex gap-3"
+                        >
+                          <div className="flex items-center space-x-1.5">
+                            <RadioGroupItem value="wechat" id="c-wechat" />
+                            <Label htmlFor="c-wechat" className="cursor-pointer text-sm">微信</Label>
+                          </div>
+                          <div className="flex items-center space-x-1.5">
+                            <RadioGroupItem value="alipay" id="c-alipay" />
+                            <Label htmlFor="c-alipay" className="cursor-pointer text-sm">支付宝</Label>
+                          </div>
+                          <div className="flex items-center space-x-1.5">
+                            <RadioGroupItem value="cash" id="c-cash" />
+                            <Label htmlFor="c-cash" className="cursor-pointer text-sm">现金</Label>
+                          </div>
+                        </RadioGroup>
+                      </div>
+                    )}
+
+                    {/* 会员余额预览 */}
+                    {!isWalkIn && selectedMember && balanceDeduct > 0 && (
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span>余额变化</span>
+                        <span className="tabular-nums">
+                          ¥{selectedMember.balance.toFixed(2)}
+                          <span className="mx-1">→</span>
+                          <span className="text-primary font-medium">¥{(selectedMember.balance - balanceDeduct).toFixed(2)}</span>
+                        </span>
+                      </div>
                     )}
                   </div>
 
-                  {/* 支付方式 */}
-                  {cashNeed > 0 && (
-                    <div className="space-y-2">
-                      <Label>{isWalkIn ? '支付方式' : '补差价方式'}</Label>
-                      <RadioGroup
-                        value={paymentMethod}
-                        onValueChange={(v) =>
-                          setPaymentMethod(v as "wechat" | "alipay" | "cash")
-                        }
-                        className="flex gap-4"
-                      >
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="wechat" id="c-wechat" />
-                          <Label htmlFor="c-wechat" className="cursor-pointer">微信</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="alipay" id="c-alipay" />
-                          <Label htmlFor="c-alipay" className="cursor-pointer">支付宝</Label>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="cash" id="c-cash" />
-                          <Label htmlFor="c-cash" className="cursor-pointer">现金</Label>
-                        </div>
-                      </RadioGroup>
-                    </div>
-                  )}
-
-                  <Separator />
-
-                  {/* 会员余额预览 */}
-                  {!isWalkIn && selectedMember && balanceDeduct > 0 && (
-                    <div className="flex items-center justify-between text-xs text-muted-foreground rounded-lg bg-muted/50 p-2">
-                      <span>会员余额变化</span>
-                      <span>
-                        ¥{selectedMember.balance.toFixed(2)}
-                        <span className="mx-1">→</span>
-                        <span className="text-primary font-medium">¥{(selectedMember.balance - balanceDeduct).toFixed(2)}</span>
-                      </span>
-                    </div>
-                  )}
-
-                  {/* 合计和结账 */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between text-lg font-semibold">
-                      <span>消费总计</span>
-                      <span className="text-primary">¥{total}</span>
+                  {/* 底部结账栏 */}
+                  <div className="px-4 py-3 border-t border-border space-y-2">
+                    <div className="flex items-baseline justify-between">
+                      <span className="text-sm font-medium">合计</span>
+                      <span className="text-xl font-bold text-primary tabular-nums">¥{total}</span>
                     </div>
                     {cashNeed > 0 && cashNeed !== total && (
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-muted-foreground">实付金额</span>
-                        <span className="font-medium text-primary">¥{cashNeed}</span>
+                      <div className="flex items-center justify-between text-xs text-muted-foreground">
+                        <span>实付</span>
+                        <span className="font-medium text-foreground tabular-nums">¥{cashNeed}</span>
                       </div>
                     )}
                     <LoadingButton
