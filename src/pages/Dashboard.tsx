@@ -35,22 +35,21 @@ interface StatCardWithTooltipProps {
 }
 
 function StatCardWithTooltip({ title, value, description, icon: Icon, color, hidden }: StatCardWithTooltipProps) {
-  // Extract the bg color class from text color (e.g. text-chart-1 -> bg-chart-1/10)
   const bgColor = color.replace("text-", "bg-") + "/10";
   return (
     <Card className="relative overflow-hidden transition-all duration-200 hover:shadow-md group">
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between mb-3">
-          <p className="text-sm font-medium text-muted-foreground leading-tight">
+      <CardContent className="p-3 sm:p-4">
+        <div className="flex items-start justify-between mb-2 sm:mb-3">
+          <p className="text-xs sm:text-sm font-medium text-muted-foreground leading-tight">
             {title}
           </p>
-          <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${bgColor} transition-transform duration-200 group-hover:scale-110`}>
-            <Icon className={`h-4.5 w-4.5 ${color}`} />
+          <div className={`flex h-7 w-7 sm:h-9 sm:w-9 shrink-0 items-center justify-center rounded-lg ${bgColor} transition-transform duration-200 group-hover:scale-110`}>
+            <Icon className={`h-3.5 w-3.5 sm:h-4.5 sm:w-4.5 ${color}`} />
           </div>
         </div>
-        <div className="space-y-1">
-          <div className="text-2xl font-bold tracking-tight tabular-nums">{hidden ? "****" : value}</div>
-          <p className="text-xs text-muted-foreground">{description}</p>
+        <div className="space-y-0.5">
+          <div className="text-lg sm:text-2xl font-bold tracking-tight tabular-nums">{hidden ? "****" : value}</div>
+          <p className="text-[10px] sm:text-xs text-muted-foreground line-clamp-1">{description}</p>
         </div>
       </CardContent>
     </Card>
@@ -145,34 +144,32 @@ export default function Dashboard() {
   const recentTransactions = transactions.filter(t => !t.voided).slice(0, 5);
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header - 移动端更紧凑 */}
+      <div className="flex flex-col gap-1 sm:gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">仪表盘</h1>
-          <p className="text-muted-foreground">实时掌握今日营收、会员动态与预约概况</p>
+          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">仪表盘</h1>
+          <p className="text-xs sm:text-sm text-muted-foreground">实时掌握今日营收、会员动态与预约概况</p>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="font-normal">
-            {format(new Date(), "yyyy年M月d日 EEEE", { locale: zhCN })}
-          </Badge>
-        </div>
+        <Badge variant="outline" className="font-normal text-xs self-start sm:self-auto">
+          {format(new Date(), "M月d日 EEEE", { locale: zhCN })}
+        </Badge>
       </div>
 
-      {/* Stats Grid */}
+      {/* Stats Grid - 移动端2列紧凑 */}
       <div className={`transition-opacity duration-200 ${isHidden("stats") ? "opacity-30" : ""}`}>
-        <div className="mb-2 flex items-center justify-end">
+        <div className="mb-1.5 flex items-center justify-end">
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8 opacity-30 hover:opacity-100"
+            className="h-7 w-7 opacity-30 hover:opacity-100"
             onClick={() => toggleSectionVisibility("stats")}
             aria-label={isHidden("stats") ? "显示统计数据" : "隐藏统计数据"}
           >
-            {isHidden("stats") ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+            {isHidden("stats") ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
           </Button>
         </div>
-        <div className="grid gap-4 grid-cols-2 lg:grid-cols-5">
+        <div className="grid gap-2 sm:gap-4 grid-cols-2 lg:grid-cols-5">
           {statCards.map((stat) => (
             <StatCardWithTooltip
               key={stat.title}
@@ -187,21 +184,22 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Quick Actions */}
+      {/* Quick Actions - 移动端横向滚动 */}
       <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">快捷操作</CardTitle>
+        <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 pt-3 sm:pt-6">
+          <CardTitle className="text-base sm:text-lg">快捷操作</CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-wrap gap-3">
+        <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-1 -mx-1 px-1">
             {quickActions.map((action) => (
               <Button
                 key={action.title}
                 variant={action.variant}
                 onClick={action.onClick}
-                className="gap-2 min-h-[44px]"
+                className="gap-1.5 sm:gap-2 min-h-[40px] sm:min-h-[44px] text-xs sm:text-sm whitespace-nowrap shrink-0"
+                size="sm"
               >
-                <action.icon className="h-4 w-4" />
+                <action.icon className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                 {action.title}
               </Button>
             ))}
@@ -209,16 +207,17 @@ export default function Dashboard() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      {/* 最近会员 & 最近交易 - 移动端纵向堆叠 */}
+      <div className="grid gap-4 sm:gap-6 grid-cols-1 lg:grid-cols-2">
         {/* Recent Members */}
         <Card className={`transition-opacity duration-200 ${isHidden("members") ? "opacity-30" : ""}`}>
-          <CardHeader className="flex flex-row items-center justify-between pb-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">最近会员</CardTitle>
-            <div className="flex items-center gap-1">
+          <CardHeader className="flex flex-row items-center justify-between pb-0 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">最近会员</CardTitle>
+            <div className="flex items-center gap-0.5">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 opacity-30 hover:opacity-100"
+                className="h-6 w-6 sm:h-7 sm:w-7 opacity-30 hover:opacity-100"
                 onClick={() => toggleSectionVisibility("members")}
                 aria-label={isHidden("members") ? "显示会员列表" : "隐藏会员列表"}
               >
@@ -227,7 +226,7 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-1 h-7 text-xs text-muted-foreground hover:text-foreground"
+                className="gap-0.5 h-6 sm:h-7 text-[10px] sm:text-xs text-muted-foreground hover:text-foreground px-1.5"
                 onClick={() => navigate("/members")}
               >
                 全部
@@ -235,7 +234,7 @@ export default function Dashboard() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="pt-3">
+          <CardContent className="pt-2 sm:pt-3 px-3 sm:px-6 pb-3 sm:pb-6">
             {members.length === 0 ? (
               <EmptyState
                 icon={Users}
@@ -257,25 +256,25 @@ export default function Dashboard() {
                     role="button"
                     tabIndex={0}
                     onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navigate("/members"); } }}
-                    className="flex cursor-pointer items-center justify-between py-3 first:pt-0 last:pb-0 transition-colors duration-150 hover:bg-muted/30 -mx-2 px-2 rounded-md"
+                    className="flex cursor-pointer items-center justify-between py-2 sm:py-3 first:pt-0 last:pb-0 transition-colors duration-150 hover:bg-muted/30 -mx-1.5 px-1.5 rounded-md"
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-foreground shrink-0">
+                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                      <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-muted text-xs font-medium text-foreground shrink-0">
                         {isHidden("members") ? "*" : member.name.charAt(0)}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{isHidden("members") ? "***" : member.name}</p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs sm:text-sm font-medium truncate">{isHidden("members") ? "***" : member.name}</p>
+                        <p className="text-[10px] sm:text-xs text-muted-foreground">
                           {isHidden("members") ? "****" : member.phone}
                         </p>
                       </div>
                     </div>
-                    <div className="text-right shrink-0 ml-3">
-                      <p className="text-sm font-medium tabular-nums">
-                        {isHidden("members") ? "****" : `¥${member.balance.toFixed(2)}`}
+                    <div className="text-right shrink-0 ml-2">
+                      <p className="text-xs sm:text-sm font-medium tabular-nums">
+                        {isHidden("members") ? "****" : `¥${member.balance.toFixed(0)}`}
                       </p>
-                      <p className="text-xs text-muted-foreground">
-                        {member.cards.length > 0 ? `${member.cards.length}张次卡` : "无次卡"}
+                      <p className="text-[10px] sm:text-xs text-muted-foreground">
+                        {member.cards.length > 0 ? `${member.cards.length}张卡` : "无次卡"}
                       </p>
                     </div>
                   </div>
@@ -287,13 +286,13 @@ export default function Dashboard() {
 
         {/* Recent Transactions */}
         <Card className={`transition-opacity duration-200 ${isHidden("transactions") ? "opacity-30" : ""}`}>
-          <CardHeader className="flex flex-row items-center justify-between pb-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">最近交易</CardTitle>
-            <div className="flex items-center gap-1">
+          <CardHeader className="flex flex-row items-center justify-between pb-0 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">最近交易</CardTitle>
+            <div className="flex items-center gap-0.5">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 opacity-30 hover:opacity-100"
+                className="h-6 w-6 sm:h-7 sm:w-7 opacity-30 hover:opacity-100"
                 onClick={() => toggleSectionVisibility("transactions")}
                 aria-label={isHidden("transactions") ? "显示交易列表" : "隐藏交易列表"}
               >
@@ -302,7 +301,7 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-1 h-7 text-xs text-muted-foreground hover:text-foreground"
+                className="gap-0.5 h-6 sm:h-7 text-[10px] sm:text-xs text-muted-foreground hover:text-foreground px-1.5"
                 onClick={() => navigate("/transactions")}
               >
                 全部
@@ -310,7 +309,7 @@ export default function Dashboard() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="pt-3">
+          <CardContent className="pt-2 sm:pt-3 px-3 sm:px-6 pb-3 sm:pb-6">
             {recentTransactions.length === 0 ? (
               <EmptyState
                 icon={CreditCard}
@@ -325,40 +324,40 @@ export default function Dashboard() {
                   return (
                     <div
                       key={tx.id}
-                      className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                      className="flex items-center justify-between py-2 sm:py-3 first:pt-0 last:pb-0"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                         <div className={cn(
-                          "flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium shrink-0",
+                          "flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full text-[10px] sm:text-xs font-medium shrink-0",
                           isIncome ? "bg-chart-2/10 text-chart-2" : "bg-muted text-muted-foreground"
                         )}>
                           {isIncome ? "+" : "−"}
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-medium truncate">
+                          <div className="flex items-center gap-1">
+                            <p className="text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none">
                               {isHidden("transactions") ? "****" : tx.description}
                             </p>
-                            <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 font-normal shrink-0">
+                            <Badge variant="secondary" className="text-[9px] sm:text-[10px] px-1 py-0 h-3.5 sm:h-4 font-normal shrink-0">
                               {typeLabel}
                             </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground">
                             {isHidden("transactions") ? "***" : tx.memberName}
-                            <span className="mx-1">·</span>
+                            <span className="mx-0.5 sm:mx-1">·</span>
                             {format(new Date(tx.createdAt), "HH:mm")}
                           </p>
                         </div>
                       </div>
                       <span
                         className={cn(
-                          "text-sm font-medium tabular-nums shrink-0 ml-3",
+                          "text-xs sm:text-sm font-medium tabular-nums shrink-0 ml-2",
                           isIncome ? "text-chart-2" : "text-foreground"
                         )}
                       >
                         {isHidden("transactions") 
                           ? "****" 
-                          : `${isIncome ? "+" : "-"}¥${tx.amount.toFixed(2)}`
+                          : `${isIncome ? "+" : "-"}¥${tx.amount.toFixed(0)}`
                         }
                       </span>
                     </div>
