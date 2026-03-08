@@ -198,7 +198,7 @@ export default function Cashier() {
 
         // 确定交易类型
         let mainTransactionType: 'card_deduct' | 'consume';
-        let mainPaymentMethod: string | undefined;
+        let mainPaymentMethod: 'balance' | 'wechat' | 'alipay' | 'cash' | undefined;
         let mainAmount: number;
 
         if (hasCardDeduct) {
