@@ -159,7 +159,9 @@ export default function Appointments() {
             <Button
               variant="ghost"
               size="icon"
+              className="h-10 w-10"
               onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
+              aria-label="上个月"
             >
               <ChevronLeft className="h-5 w-5" />
             </Button>
@@ -169,7 +171,9 @@ export default function Appointments() {
             <Button
               variant="ghost"
               size="icon"
+              className="h-10 w-10"
               onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
+              aria-label="下个月"
             >
               <ChevronRight className="h-5 w-5" />
             </Button>
@@ -202,7 +206,10 @@ export default function Appointments() {
                 <div
                   key={day.toISOString()}
                   onClick={() => handleDateClick(day)}
-                  className={`min-h-[80px] cursor-pointer border-b border-r border-border p-1.5 transition-all hover:bg-muted/50 ${
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleDateClick(day); } }}
+                  className={`min-h-[80px] cursor-pointer border-b border-r border-border p-1.5 transition-colors duration-150 hover:bg-muted/50 ${
                     !isCurrentMonth ? "bg-muted/20" : ""
                   } ${isSelected ? "bg-primary/10 ring-2 ring-inset ring-primary" : ""}`}
                 >

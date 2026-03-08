@@ -406,7 +406,10 @@ export default function Cashier() {
                             <div
                               key={service.id}
                               onClick={() => addToCart(service)}
-                              className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 transition-all hover:border-primary/50 hover:bg-muted/30"
+                              role="button"
+                              tabIndex={0}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addToCart(service); } }}
+                              className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 min-h-[44px] transition-colors duration-150 hover:border-primary/50 hover:bg-muted/30"
                             >
                               <div>
                                 <p className="font-medium">{service.name}</p>
@@ -420,7 +423,7 @@ export default function Cashier() {
                                   )}
                                 </div>
                               </div>
-                              <Button variant="ghost" size="icon" className="shrink-0">
+                              <Button variant="ghost" size="icon" className="shrink-0 h-10 w-10" aria-label={`添加${service.name}到购物车`}>
                                 <ShoppingCart className="h-4 w-4" />
                               </Button>
                             </div>
@@ -471,7 +474,7 @@ export default function Cashier() {
                     {cart.map((item, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between rounded-lg border border-border p-3 transition-colors hover:bg-muted/30"
+                        className="flex items-center justify-between rounded-lg border border-border p-3 min-h-[44px] transition-colors duration-150 hover:bg-muted/30"
                       >
                         <div className="flex-1">
                           <p className="font-medium">{item.service.name}</p>
@@ -499,7 +502,9 @@ export default function Cashier() {
                         <Button
                           variant="ghost"
                           size="icon"
+                          className="h-10 w-10"
                           onClick={() => removeFromCart(index)}
+                          aria-label={`移除${item.service.name}`}
                         >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
