@@ -254,7 +254,7 @@ export function TransactionRefundDialog({
                   const isPriceDiff = sub.type === 'price_diff';
                   
                   return (
-                    <div key={index} className="flex items-center gap-3 text-sm rounded-lg border border-border/50 p-2.5 bg-background">
+                    <div key={index} className="flex items-center gap-3 text-sm rounded-lg border border-border p-2.5 bg-background">
                       <div className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${
                         isCard ? 'bg-chart-3/10' : isBalance ? 'bg-chart-2/10' : 'bg-chart-1/10'
                       }`}>
