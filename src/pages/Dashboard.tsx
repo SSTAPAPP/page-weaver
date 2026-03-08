@@ -141,7 +141,33 @@ export default function Dashboard() {
     },
   ];
 
-  const recentTransactions = transactions.slice(0, 5);
+  // 分组交易：主交易 + 关联退款
+  const recentGroupedTransactions = useMemo(() => {
+    const groups: { mainTransaction: typeof transactions[0]; refundTransaction?: typeof transactions[0] }[] = [];
+    const processedIds = new Set<string>();
+    const refundMap = new Map<string, typeof transactions[0]>();
+    
+    transactions.forEach((tx) => {
+      if (tx.type === 'refund' && tx.relatedTransactionId) {
+        refundMap.set(tx.relatedTransactionId, tx);
+      }
+    });
+    
+    transactions.forEach((tx) => {
+      if (processedIds.has(tx.id)) return;
+      if (tx.type === 'refund') {
+        if (!tx.relatedTransactionId) groups.push({ mainTransaction: tx });
+        processedIds.add(tx.id);
+        return;
+      }
+      const refundTx = refundMap.get(tx.id);
+      groups.push({ mainTransaction: tx, refundTransaction: refundTx });
+      processedIds.add(tx.id);
+      if (refundTx) processedIds.add(refundTx.id);
+    });
+    
+    return groups.slice(0, 5);
+  }, [transactions]);
 
   return (
     <div className="space-y-4 sm:space-y-6">
