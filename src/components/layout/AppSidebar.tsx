@@ -24,14 +24,14 @@ import {
 
 const navGroups = [
   {
-    label: "工作台",
+    label: "日常",
     items: [
       { title: "仪表盘", url: "/", icon: LayoutDashboard },
       { title: "收银台", url: "/cashier", icon: ShoppingCart },
     ],
   },
   {
-    label: "业务管理",
+    label: "管理",
     items: [
       { title: "会员管理", url: "/members", icon: Users },
       { title: "预约管理", url: "/appointments", icon: Calendar },
@@ -39,7 +39,7 @@ const navGroups = [
     ],
   },
   {
-    label: "数据 & 系统",
+    label: "统计",
     items: [
       { title: "数据报表", url: "/reports", icon: BarChart3 },
       { title: "交易流水", url: "/transactions", icon: FileText },
@@ -79,12 +79,12 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
           "group relative flex items-center gap-3 rounded-md min-h-9 text-[13px] font-medium transition-all duration-150",
           isCollapsed ? "justify-center w-9 h-9 mx-auto rounded-lg" : "px-2.5 py-1.5",
           isActive
-            ? "bg-background text-foreground shadow-[0_1px_3px_0_hsl(var(--foreground)/0.06)]"
-            : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+            ? "bg-background/80 text-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-background/40"
         )}
       >
         {isActive && !isCollapsed && (
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2.5px] rounded-r-full bg-foreground" />
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-3.5 w-[2px] rounded-r-full bg-foreground/70" />
         )}
         <item.icon
           className={cn(
