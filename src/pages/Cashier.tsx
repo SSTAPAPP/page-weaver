@@ -471,7 +471,7 @@ export default function Cashier() {
         {/* 右侧：购物车和结算 */}
         <div className="space-y-4">
           <Card className="sticky top-6 overflow-hidden">
-            <CardHeader className="pb-2 border-b border-muted/20">
+            <CardHeader className="pb-2 border-b border-border">
               <CardTitle className="flex items-center gap-2 text-base">
                 <ShoppingCart className="h-4 w-4" />
                 结算清单
