@@ -183,24 +183,24 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
         <nav
           className={cn(
             "flex-1 overflow-y-auto",
-            isCollapsed ? "px-1.5 py-2" : "px-3 py-2"
+            isCollapsed ? "px-1.5 py-3" : "px-2.5 py-3"
           )}
           aria-label="主导航"
         >
-          <div className="space-y-4">
-            {navGroups.map((group) => (
+          <div className="space-y-5">
+            {navGroups.map((group, idx) => (
               <div key={group.label}>
                 {!isCollapsed && (
-                  <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                  <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/50">
                     {group.label}
                   </p>
                 )}
-                {isCollapsed && (
-                  <div className="mx-auto mb-1.5 h-px w-6 bg-border" />
+                {isCollapsed && idx > 0 && (
+                  <div className="mx-auto mb-2 h-px w-5 bg-border/60" />
                 )}
                 <div
                   className={cn(
-                    "space-y-0.5",
+                    "space-y-1",
                     isCollapsed && "flex flex-col items-center"
                   )}
                 >
@@ -216,8 +216,8 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
         {/* Bottom settings */}
         <div
           className={cn(
-            "shrink-0 pb-3",
-            isCollapsed ? "px-1.5" : "px-3"
+            "shrink-0 border-t border-border py-2.5",
+            isCollapsed ? "px-1.5" : "px-2.5"
           )}
         >
           <div
