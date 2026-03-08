@@ -36,12 +36,12 @@ export function CustomerSelector({
           </div>
           <div className="flex items-center gap-3 shrink-0">
             <div className="text-right">
-              <p className="text-[11px] text-muted-foreground leading-none mb-0.5">余额</p>
+              <p className="text-xs text-muted-foreground leading-none mb-0.5">余额</p>
               <p className="text-sm font-semibold tabular-nums">¥{selectedMember.balance.toFixed(2)}</p>
             </div>
             {selectedMember.cards.length > 0 && (
               <div className="text-right">
-                <p className="text-[11px] text-muted-foreground leading-none mb-0.5">次卡</p>
+                <p className="text-xs text-muted-foreground leading-none mb-0.5">次卡</p>
                 <p className="text-sm font-semibold tabular-nums">{selectedMember.cards.length}张</p>
               </div>
             )}
@@ -91,8 +91,7 @@ export function CustomerSelector({
             <div
               key={member.id}
               onClick={() => onSelectMember(member)}
-              className="cursor-pointer px-3 py-2.5 transition-colors hover:bg-muted/40"
-            >
+              className="cursor-pointer px-3 py-3 transition-colors hover:bg-muted/40 min-h-[48px]"
               <div className="flex items-center justify-between">
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">{member.name}</p>
@@ -101,7 +100,7 @@ export function CustomerSelector({
                 <div className="flex items-center gap-3 shrink-0 ml-3">
                   <span className="text-sm tabular-nums font-medium">¥{member.balance.toFixed(2)}</span>
                   {member.cards.length > 0 && (
-                    <Badge variant="secondary" className="text-[10px]">{member.cards.length}卡</Badge>
+                    <Badge variant="secondary" className="text-2xs">{member.cards.length}卡</Badge>
                   )}
                 </div>
               </div>

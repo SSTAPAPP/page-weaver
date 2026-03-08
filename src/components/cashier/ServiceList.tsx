@@ -62,7 +62,7 @@ export function ServiceList({
                   type="button"
                   onClick={() => onAddToCart(service)}
                   className={cn(
-                    "flex items-center justify-between rounded-md border px-3 py-2.5 text-left transition-colors hover:bg-muted/30 active:scale-[0.98]",
+                    "flex items-center justify-between rounded-md border px-3 py-3 text-left transition-colors hover:bg-muted/30 active:scale-[0.97] min-h-[48px]",
                     countInCart > 0 && "border-primary/20 bg-primary/5"
                   )}
                 >
@@ -75,7 +75,7 @@ export function ServiceList({
                       {hasCard && (
                         <Badge
                           variant="secondary"
-                          className="text-[10px] font-normal px-1.5 py-0"
+                          className="text-2xs font-normal px-1.5 py-0"
                         >
                           有次卡
                         </Badge>
@@ -84,7 +84,7 @@ export function ServiceList({
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0 ml-2">
                     {countInCart > 0 && (
-                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-semibold text-primary-foreground">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-primary text-2xs font-semibold text-primary-foreground">
                         {countInCart}
                       </span>
                     )}
