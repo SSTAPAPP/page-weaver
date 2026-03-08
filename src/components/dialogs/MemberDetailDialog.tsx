@@ -76,7 +76,7 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
     setIsEditing(false);
   };
 
-  const handleSaveEdit = () => {
+  const handleRequestSave = () => {
     if (!editName.trim()) {
       toast({ title: "请输入姓名", variant: "destructive" });
       return;
@@ -85,7 +85,10 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
       toast({ title: "请输入正确的手机号", variant: "destructive" });
       return;
     }
+    setAdminPasswordDialogOpen(true);
+  };
 
+  const handleSaveEdit = () => {
     updateMember(member.id, {
       name: editName.trim(),
       phone: editPhone.trim(),
