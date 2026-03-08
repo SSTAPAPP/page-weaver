@@ -116,10 +116,10 @@ All colors MUST be HSL.
     --destructive: 0 62% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    /* 边框/输入框 - 白色低透明度 */
-    --border: 0 0% 100% / 10%;
-    --input: 0 0% 100% / 12%;
-    --ring: 240 4% 50%;
+    /* 边框/输入框 - 降低透明度，减少刺眼感 */
+    --border: 0 0% 100% / 6%;
+    --input: 0 0% 100% / 8%;
+    --ring: 240 4% 40%;
 
     /* 侧边栏 - 最深层级 */
     --sidebar-background: 240 6% 8%;
