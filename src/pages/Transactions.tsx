@@ -214,7 +214,7 @@ export default function Transactions() {
       ) : (
         <>
           <Card>
-            <CardContent className="p-4">
+            <CardContent className="p-3 sm:p-4">
               <div className="divide-y divide-border">
                 {paginatedGroups.map((group) => {
                   const tx = group.mainTransaction;
