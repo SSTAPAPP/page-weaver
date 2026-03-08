@@ -419,7 +419,7 @@ export default function Cashier() {
                             role="button"
                             tabIndex={0}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addToCart(service); } }}
-                            className="group relative flex items-center justify-between rounded-lg border border-muted/20 p-3 cursor-pointer transition-all duration-150 hover:border-primary/50 hover:bg-muted/30 hover:shadow-sm active:scale-[0.99]"
+                            className="group relative flex items-center justify-between rounded-lg border border-border p-3 cursor-pointer transition-all duration-150 hover:border-primary/50 hover:bg-muted/30 hover:shadow-sm active:scale-[0.99]"
                           >
                             {/* 已添加数量角标 */}
                             {cartCount > 0 && (
