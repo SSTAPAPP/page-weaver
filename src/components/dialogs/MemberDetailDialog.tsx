@@ -380,6 +380,12 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
         onOpenChange={setDeleteDialogOpen}
         onDeleted={handleMemberDeleted}
       />
+      <AdminPasswordDialog
+        open={adminPasswordDialogOpen}
+        onOpenChange={setAdminPasswordDialogOpen}
+        onConfirm={handleSaveEdit}
+        title="修改会员信息"
+        description="修改会员信息需要管理员密码确认"
+      />
     </>
   );
-}
