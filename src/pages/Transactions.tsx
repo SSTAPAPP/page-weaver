@@ -232,16 +232,28 @@ export default function Transactions() {
 
                   return (
                     <div key={tx.id}>
-                      <div className="relative">
+                      <div className="relative group/row">
                         {renderRow(tx, rowNumber)}
-                        {hasRefund && !tx.voided && (
-                          <div className="absolute right-2 top-3">
+                        <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                          {hasRefund && !tx.voided && (
                             <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 font-normal text-chart-4 border-chart-4/30">
                               <Link2 className="h-2.5 w-2.5 mr-0.5" />
                               已退款
                             </Badge>
-                          </div>
-                        )}
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-0 group-hover/row:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              printTransactionReceipt(tx, shopInfo, refundTx);
+                            }}
+                            aria-label="打印凭证"
+                          >
+                            <Printer className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
                       </div>
                       {refundTx && renderRow(refundTx, rowNumber, true)}
                     </div>
