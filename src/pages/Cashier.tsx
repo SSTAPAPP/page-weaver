@@ -453,7 +453,12 @@ export default function Cashier() {
                             role="button"
                             tabIndex={0}
                             onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addToCart(service); } }}
-                            className="group relative flex items-center justify-between rounded-lg border border-border p-3 cursor-pointer transition-all duration-150 hover:border-primary/50 hover:bg-muted/30 hover:shadow-sm active:scale-[0.99]"
+                            className={cn(
+                              "group relative flex items-center justify-between rounded-lg border p-3 cursor-pointer transition-all duration-150 hover:shadow-sm active:scale-[0.99]",
+                              hasCard
+                                ? "border-chart-2/40 bg-chart-2/5 hover:border-chart-2/60 hover:bg-chart-2/10 ring-1 ring-chart-2/20"
+                                : "border-border hover:border-primary/50 hover:bg-muted/30"
+                            )}
                           >
                             {/* 已添加数量角标 */}
                             {cartCount > 0 && (
@@ -467,17 +472,20 @@ export default function Cashier() {
                               <div className="flex items-center gap-1.5">
                                 <p className="text-sm font-medium truncate">{service.name}</p>
                                 {hasCard && (
-                                  <Badge className="text-[10px] px-1.5 py-0 font-normal bg-chart-2/15 text-chart-2 border-0 shrink-0">
+                                  <Badge className="text-[10px] px-1.5 py-0 font-semibold bg-chart-2 text-background border-0 shrink-0 animate-pulse">
                                     <CreditCard className="h-2.5 w-2.5 mr-0.5" />
-                                    {availableCard.remainingCount}次
+                                    次卡 {availableCard.remainingCount}次
                                   </Badge>
                                 )}
                               </div>
                               <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
                                 <span className="flex items-center gap-1">
                                   <DollarSign className="h-3 w-3" />
-                                  ¥{service.price}
+                                  {hasCard ? <span className="line-through">¥{service.price}</span> : <>¥{service.price}</>}
                                 </span>
+                                {hasCard && (
+                                  <span className="text-chart-2 font-medium">次卡优先</span>
+                                )}
                                 <span className="flex items-center gap-1">
                                   <Clock className="h-3 w-3" />
                                   {service.duration || 30}分钟
@@ -487,7 +495,12 @@ export default function Cashier() {
                             
                             {/* 右侧：添加按钮 */}
                             <div className="flex items-center shrink-0">
-                              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+                              <div className={cn(
+                                "flex h-8 w-8 items-center justify-center rounded-full transition-colors",
+                                hasCard
+                                  ? "bg-chart-2/20 text-chart-2 group-hover:bg-chart-2 group-hover:text-background"
+                                  : "bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground"
+                              )}>
                                 <Plus className="h-4 w-4" />
                               </div>
                             </div>
