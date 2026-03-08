@@ -1,12 +1,11 @@
 import { useState, useMemo } from "react";
-import { Search, UserPlus, Phone, CreditCard, Wallet, Calendar, Clock, Tag } from "lucide-react";
+import { Search, UserPlus, Phone, CreditCard, Wallet, Clock } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Separator } from "@/components/ui/separator";
 import { useStore } from "@/stores/useStore";
 import { QuickMemberDialog } from "@/components/dialogs/QuickMemberDialog";
 import { QuickRechargeDialog } from "@/components/dialogs/QuickRechargeDialog";
@@ -116,7 +115,7 @@ export default function Members() {
           }
         />
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {filteredMembers.map((member) => {
             const consumeCount = memberConsumeCounts[member.id] || 0;
             const totalSpent = memberTotalSpent[member.id] || 0;
@@ -126,93 +125,90 @@ export default function Members() {
             return (
               <Card
                 key={member.id}
-                className="group cursor-pointer transition-all duration-200 hover:border-primary/50 hover:shadow-md"
+                className="group cursor-pointer transition-all duration-200 hover:border-primary/50 hover:shadow-md overflow-hidden"
                 onClick={() => setSelectedMemberId(member.id)}
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedMemberId(member.id); } }}
               >
-                <CardContent className="p-5">
-                  {/* Top: Avatar + Name + Level */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-bold text-primary transition-colors duration-150 group-hover:bg-primary/20">
+                <CardContent className="p-0">
+                  {/* Top: Avatar + Name + Tag */}
+                  <div className="flex items-center gap-3 p-4 pb-3">
+                    <div className="relative">
+                      <div className="flex h-11 w-11 items-center justify-center rounded-full bg-primary/10 text-base font-bold text-primary transition-colors duration-150 group-hover:bg-primary/20">
                         {member.name.charAt(0)}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold text-base">{member.name}</p>
-                          <Badge variant={member.gender === "male" ? "secondary" : "outline"} className="text-[10px] px-1.5 py-0">
-                            {member.gender === "male" ? "男" : "女"}
+                      <span className={`absolute -bottom-0.5 -right-0.5 h-3.5 w-3.5 rounded-full border-2 border-card text-[8px] flex items-center justify-center ${member.gender === 'male' ? 'bg-chart-3 text-card' : 'bg-chart-1 text-card'}`}>
+                        {member.gender === 'male' ? '♂' : '♀'}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-sm truncate">{member.name}</p>
+                        {member.tag && (
+                          <Badge variant="outline" className={`text-[10px] px-1.5 py-0 font-medium border ${TAG_COLORS[member.tag] || 'bg-muted text-muted-foreground border-border'}`}>
+                            {member.tag}
                           </Badge>
-                        </div>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground mt-0.5">
-                          <Phone className="h-3 w-3" />
-                          {member.phone}
-                        </div>
+                        )}
                       </div>
-                    </div>
-                    {member.tag && (
-                      <Badge variant="outline" className={`text-[10px] font-semibold border ${TAG_COLORS[member.tag] || 'bg-muted text-muted-foreground border-border'}`}>
-                        {member.tag}
-                      </Badge>
-                    )}
-                  </div>
-
-                  <Separator className="my-3" />
-
-                  {/* Stats Grid */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="text-center">
-                      <p className="text-[11px] text-muted-foreground">储值余额</p>
-                      <p className="text-base font-bold mt-0.5">¥{member.balance.toFixed(0)}</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[11px] text-muted-foreground">次卡剩余</p>
-                      <div className="flex items-center justify-center gap-1 mt-0.5">
-                        <CreditCard className="h-3.5 w-3.5 text-chart-2" />
-                        <span className="text-base font-bold">{totalCardRemaining}</span>
-                        <span className="text-[11px] text-muted-foreground">次</span>
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground mt-0.5">
+                        <Phone className="h-3 w-3" />
+                        {member.phone}
                       </div>
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[11px] text-muted-foreground">到店次数</p>
-                      <p className="text-base font-bold mt-0.5">{consumeCount}</p>
                     </div>
                   </div>
 
-                  {/* Cards list */}
-                  {member.cards.length > 0 && (
-                    <>
-                      <Separator className="my-3" />
+                  {/* Stats Row */}
+                  <div className="grid grid-cols-3 divide-x divide-border border-y border-border bg-muted/30">
+                    <div className="py-2.5 px-3 text-center">
+                      <p className="text-[10px] text-muted-foreground leading-tight">储值余额</p>
+                      <p className="text-sm font-bold tabular-nums mt-0.5">¥{member.balance.toFixed(0)}</p>
+                    </div>
+                    <div className="py-2.5 px-3 text-center">
+                      <p className="text-[10px] text-muted-foreground leading-tight">次卡余次</p>
+                      <p className="text-sm font-bold tabular-nums mt-0.5">
+                        {totalCardRemaining}<span className="text-[10px] font-normal text-muted-foreground ml-0.5">次</span>
+                      </p>
+                    </div>
+                    <div className="py-2.5 px-3 text-center">
+                      <p className="text-[10px] text-muted-foreground leading-tight">到店次数</p>
+                      <p className="text-sm font-bold tabular-nums mt-0.5">{consumeCount}</p>
+                    </div>
+                  </div>
+
+                  {/* Cards + Footer */}
+                  <div className="p-4 pt-3 space-y-2.5">
+                    {/* Cards list */}
+                    {member.cards.length > 0 && (
                       <div className="flex flex-wrap gap-1.5">
                         {member.cards.slice(0, 3).map((card) => (
                           <Badge
                             key={card.id}
                             variant={card.remainingCount <= 1 ? "destructive" : "secondary"}
-                            className="text-[11px]"
+                            className="text-[10px] font-normal"
                           >
-                            {card.templateName} 余{card.remainingCount}/{card.originalTotalCount}
+                            {card.templateName}
+                            <span className="ml-1 font-medium">{card.remainingCount}/{card.originalTotalCount}</span>
                           </Badge>
                         ))}
                         {member.cards.length > 3 && (
-                          <Badge variant="outline" className="text-[11px]">
+                          <Badge variant="outline" className="text-[10px]">
                             +{member.cards.length - 3}
                           </Badge>
                         )}
                       </div>
-                    </>
-                  )}
-
-                  {/* Footer: joined time + total spent */}
-                  <div className="mt-3 flex items-center justify-between text-[11px] text-muted-foreground">
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      <span>{memberSince}加入</span>
-                    </div>
-                    {totalSpent > 0 && (
-                      <span>累计消费 ¥{totalSpent.toFixed(0)}</span>
                     )}
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                      <div className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        <span>{memberSince}加入</span>
+                      </div>
+                      {totalSpent > 0 && (
+                        <span className="tabular-nums">累计 ¥{totalSpent.toFixed(0)}</span>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>
