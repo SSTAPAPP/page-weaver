@@ -1,17 +1,15 @@
 import { useState, useMemo, useEffect } from "react";
 import {
-  Download, Save, Eye, EyeOff, Database, AlertTriangle,
-  Moon, Sun, Type, Store, MapPin, Phone, ChevronRight,
+  Download, Save, Eye, EyeOff, Database,
+  Moon, Sun, Type, Store, MapPin, Phone,
   Building, Palette, Lock, HardDrive, Cloud,
   History, FileSpreadsheet, FileText, Trash2,
   Upload, Check, Keyboard,
   Monitor, Shield, Info, Globe
 } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
@@ -20,7 +18,6 @@ import { FormField } from "@/components/ui/form-field";
 import { Slider } from "@/components/ui/slider";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Progress } from "@/components/ui/progress";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -54,11 +51,11 @@ type FontSize = "xs" | "sm" | "base" | "lg" | "xl";
 type SettingsCategory = "shop" | "appearance" | "security" | "data" | "about";
 
 const categories = [
-  { id: "shop" as const, label: "店铺信息", icon: Building, description: "基本信息设置" },
-  { id: "appearance" as const, label: "外观设置", icon: Palette, description: "主题与显示" },
-  { id: "security" as const, label: "安全设置", icon: Lock, description: "密码与日志" },
-  { id: "data" as const, label: "数据管理", icon: HardDrive, description: "导出与同步" },
-  { id: "about" as const, label: "关于系统", icon: Info, description: "版本与帮助" },
+  { id: "shop" as const, label: "店铺信息", icon: Building },
+  { id: "appearance" as const, label: "外观设置", icon: Palette },
+  { id: "security" as const, label: "安全设置", icon: Lock },
+  { id: "data" as const, label: "数据管理", icon: HardDrive },
+  { id: "about" as const, label: "关于", icon: Info },
 ];
 
 const auditCategoryLabels: Record<string, string> = {
@@ -78,8 +75,15 @@ const keyboardShortcuts = [
   { keys: ["Esc"], description: "关闭弹窗" },
 ];
 
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return <h3 className="text-sm font-semibold text-foreground">{children}</h3>;
+}
+
+function SectionDesc({ children }: { children: React.ReactNode }) {
+  return <p className="text-xs text-muted-foreground">{children}</p>;
+}
+
 export default function Settings() {
-  
   const {
     shopInfo, setShopInfo,
     auditLogs, clearAuditLogs, syncConfig, setSyncConfig
@@ -91,7 +95,6 @@ export default function Settings() {
   const updateCloudSettings = useUpdateSettings();
   const { theme, setTheme, fontSize, setFontSize } = useTheme();
 
-  // Initialize from cloud settings
   useEffect(() => {
     if (cloudSettings) {
       setEditShopName(cloudSettings.shopInfo.name);
@@ -111,22 +114,17 @@ export default function Settings() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [exportFormat, setExportFormat] = useState<"csv" | "excel" | "pdf">("csv");
 
-  // 店铺信息编辑状态
   const [editShopName, setEditShopName] = useState(shopInfo.name);
   const [editShopAddress, setEditShopAddress] = useState(shopInfo.address);
   const [editShopPhone, setEditShopPhone] = useState(shopInfo.phone);
   const [isSavingShop, setIsSavingShop] = useState(false);
 
-
-  // 云端同步配置
   const [syncApiUrl, setSyncApiUrl] = useState(syncConfig.apiUrl);
 
-  // 迁移对话框
   const [showMigrationDialog, setShowMigrationDialog] = useState(false);
   const [isMigrated, setIsMigrated] = useState(() => migrationService.isMigrated());
   const [hasLocalData, setHasLocalData] = useState(() => migrationService.hasLocalData());
 
-  // 检查是否需要迁移
   useEffect(() => {
     if (hasLocalData && !isMigrated) {
       const timer = setTimeout(() => {
@@ -136,7 +134,6 @@ export default function Settings() {
     }
   }, [hasLocalData, isMigrated]);
 
-  // 存储使用情况
   const storageUsage = useMemo(() => getStorageUsage(), [members, transactions]);
 
   const handleExportMembers = async () => {
@@ -144,7 +141,6 @@ export default function Settings() {
       toast.error("无数据可导出", { description: "暂无会员数据" });
       return;
     }
-
     setIsExporting(true);
     try {
       await new Promise((r) => setTimeout(r, 500));
@@ -153,7 +149,6 @@ export default function Settings() {
         余额: m.balance.toFixed(2), 次卡数量: m.cards.length,
         注册时间: new Date(m.createdAt).toLocaleDateString("zh-CN"),
       }));
-
       if (exportFormat === "pdf") {
         printReport();
         toast.success("打印预览已打开", { description: "请在打印对话框中选择【另存为PDF】" });
@@ -172,7 +167,6 @@ export default function Settings() {
       toast.error("无数据可导出", { description: "暂无交易记录" });
       return;
     }
-
     setIsExportingTx(true);
     try {
       await new Promise((r) => setTimeout(r, 500));
@@ -225,7 +219,7 @@ export default function Settings() {
       const shopInfoData = { name: editShopName, address: editShopAddress, phone: editShopPhone };
       await settingsService.update({ shopInfo: shopInfoData });
       setShopInfo(shopInfoData);
-      toast.success("保存成功", { description: "店铺信息已更新并同步到云端" });
+      toast.success("保存成功", { description: "店铺信息已更新" });
     } catch (error) {
       toast.error("保存失败", { description: "请检查网络连接" });
     } finally {
@@ -237,7 +231,7 @@ export default function Settings() {
     try {
       await settingsService.update({ syncConfig: { ...syncConfig, apiUrl: syncApiUrl } });
       setSyncConfig({ apiUrl: syncApiUrl });
-      toast.success("保存成功", { description: "同步配置已更新并保存到云端" });
+      toast.success("保存成功", { description: "同步配置已更新" });
     } catch (error) {
       toast.error("保存失败");
     }
@@ -249,37 +243,37 @@ export default function Settings() {
     switch (activeCategory) {
       case "shop":
         return (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
-              <h3 className="text-lg font-semibold mb-1">店铺信息</h3>
-              <p className="text-sm text-muted-foreground">设置您的店铺基本信息，这些信息会显示在收据和报表上</p>
+              <SectionTitle>店铺信息</SectionTitle>
+              <SectionDesc>这些信息将显示在收据和报表上</SectionDesc>
             </div>
-            <Separator />
-            <div className="space-y-4 max-w-md">
-              <div className="space-y-2">
-                <Label htmlFor="shop-name" className="flex items-center gap-2">
-                  <Store className="h-4 w-4 text-muted-foreground" />
+            <div className="h-px bg-border" />
+            <div className="space-y-3 max-w-sm">
+              <div className="space-y-1.5">
+                <Label htmlFor="shop-name" className="text-xs flex items-center gap-1.5">
+                  <Store className="h-3.5 w-3.5 text-muted-foreground" />
                   店铺名称
                 </Label>
-                <Input id="shop-name" value={editShopName} onChange={(e) => setEditShopName(e.target.value)} placeholder="请输入店铺名称" />
+                <Input id="shop-name" value={editShopName} onChange={(e) => setEditShopName(e.target.value)} placeholder="请输入店铺名称" className="h-9" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="shop-address" className="flex items-center gap-2">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
+              <div className="space-y-1.5">
+                <Label htmlFor="shop-address" className="text-xs flex items-center gap-1.5">
+                  <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
                   店铺地址
                 </Label>
-                <Input id="shop-address" value={editShopAddress} onChange={(e) => setEditShopAddress(e.target.value)} placeholder="请输入店铺地址" />
+                <Input id="shop-address" value={editShopAddress} onChange={(e) => setEditShopAddress(e.target.value)} placeholder="请输入店铺地址" className="h-9" />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="shop-phone" className="flex items-center gap-2">
-                  <Phone className="h-4 w-4 text-muted-foreground" />
+              <div className="space-y-1.5">
+                <Label htmlFor="shop-phone" className="text-xs flex items-center gap-1.5">
+                  <Phone className="h-3.5 w-3.5 text-muted-foreground" />
                   联系电话
                 </Label>
-                <Input id="shop-phone" value={editShopPhone} onChange={(e) => setEditShopPhone(e.target.value)} placeholder="请输入联系电话" />
+                <Input id="shop-phone" value={editShopPhone} onChange={(e) => setEditShopPhone(e.target.value)} placeholder="请输入联系电话" className="h-9" />
               </div>
-              <LoadingButton onClick={handleSaveShopInfo} loading={isSavingShop} className="mt-4">
-                <Save className="mr-2 h-4 w-4" />
-                保存店铺信息
+              <LoadingButton onClick={handleSaveShopInfo} loading={isSavingShop} size="sm" className="mt-2">
+                <Save className="mr-1.5 h-3.5 w-3.5" />
+                保存
               </LoadingButton>
             </div>
           </div>
@@ -287,90 +281,85 @@ export default function Settings() {
 
       case "appearance":
         return (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
-              <h3 className="text-lg font-semibold mb-1">外观设置</h3>
-              <p className="text-sm text-muted-foreground">自定义界面显示效果，让系统更符合您的使用习惯</p>
+              <SectionTitle>外观设置</SectionTitle>
+              <SectionDesc>自定义界面显示效果</SectionDesc>
             </div>
-            <Separator />
-            <div className="space-y-6 max-w-md">
-              {/* 主题模式 */}
-              <div className="space-y-3">
-                <Label className="flex items-center gap-2">
-                  {theme === "dark" ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                  主题模式
-                </Label>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { value: "light", label: "浅色", icon: Sun, desc: "明亮清爽" },
-                    { value: "dark", label: "深色", icon: Moon, desc: "护眼模式" },
-                    { value: "system", label: "系统", icon: Monitor, desc: "自动切换" },
-                  ].map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => setTheme(option.value as "light" | "dark" | "system")}
-                      className={cn(
-                        "flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all duration-200",
-                        theme === option.value
-                          ? "border-primary bg-primary/5"
-                          : "border-border hover:border-primary/30 hover:bg-accent/50"
-                      )}
-                    >
-                      <option.icon className={cn("h-5 w-5", theme === option.value ? "text-primary" : "text-muted-foreground")} />
-                      <span className={cn("text-sm font-medium", theme === option.value ? "text-primary" : "text-foreground")}>{option.label}</span>
-                      <span className="text-2xs text-muted-foreground">{option.desc}</span>
-                    </button>
-                  ))}
-                </div>
+            <div className="h-px bg-border" />
+
+            {/* Theme */}
+            <div className="space-y-2.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                {theme === "dark" ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
+                主题模式
+              </Label>
+              <div className="grid grid-cols-3 gap-2 max-w-sm">
+                {[
+                  { value: "light", label: "浅色", icon: Sun },
+                  { value: "dark", label: "深色", icon: Moon },
+                  { value: "system", label: "系统", icon: Monitor },
+                ].map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => setTheme(option.value as "light" | "dark" | "system")}
+                    className={cn(
+                      "flex items-center justify-center gap-1.5 rounded-lg border py-2 text-xs font-medium transition-all",
+                      theme === option.value
+                        ? "border-primary bg-primary/5 text-primary"
+                        : "border-border hover:border-foreground/20 text-muted-foreground hover:text-foreground"
+                    )}
+                  >
+                    <option.icon className="h-3.5 w-3.5" />
+                    {option.label}
+                  </button>
+                ))}
               </div>
+            </div>
 
-              <Separator />
+            <div className="h-px bg-border" />
 
-              {/* 字体大小 */}
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <Label className="flex items-center gap-2">
-                    <Type className="h-4 w-4" />
-                    字体大小
-                  </Label>
-                  <p className="text-sm text-muted-foreground">当前：{fontSizeLabels[fontSize]}</p>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-xs text-muted-foreground w-4">A</span>
-                  <Slider
-                    value={[fontSizeValue]}
-                    onValueChange={(v) => setFontSize(["xs", "sm", "base", "lg", "xl"][v[0]] as FontSize)}
-                    max={4} step={1} className="flex-1"
-                  />
-                  <span className="text-lg text-muted-foreground w-4">A</span>
-                </div>
-                <div className="flex justify-between text-[10px] text-muted-foreground px-5">
-                  <span>较小</span><span>小</span><span>标准</span><span>大</span><span>较大</span>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* 快捷键 */}
-              <div className="space-y-3">
-                <Label className="flex items-center gap-2">
-                  <Keyboard className="h-4 w-4" />
-                  键盘快捷键
+            {/* Font size */}
+            <div className="space-y-2.5 max-w-sm">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <Type className="h-3.5 w-3.5" />
+                  字体大小
                 </Label>
-                <div className="rounded-xl border border-border divide-y divide-border">
-                  {keyboardShortcuts.map((shortcut) => (
-                    <div key={shortcut.description} className="flex items-center justify-between px-4 py-2.5">
-                      <span className="text-sm text-muted-foreground">{shortcut.description}</span>
-                      <div className="flex items-center gap-1">
-                        {shortcut.keys.map((key) => (
-                          <kbd key={key} className="inline-flex h-6 min-w-[24px] items-center justify-center rounded-md border border-border bg-muted px-1.5 text-[10px] font-medium text-muted-foreground">
-                            {key}
-                          </kbd>
-                        ))}
-                      </div>
+                <span className="text-xs text-muted-foreground">{fontSizeLabels[fontSize]}</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-[10px] text-muted-foreground">A</span>
+                <Slider
+                  value={[fontSizeValue]}
+                  onValueChange={(v) => setFontSize(["xs", "sm", "base", "lg", "xl"][v[0]] as FontSize)}
+                  max={4} step={1} className="flex-1"
+                />
+                <span className="text-base text-muted-foreground">A</span>
+              </div>
+            </div>
+
+            <div className="h-px bg-border" />
+
+            {/* Shortcuts */}
+            <div className="space-y-2.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                <Keyboard className="h-3.5 w-3.5" />
+                快捷键
+              </Label>
+              <div className="rounded-lg border border-border divide-y divide-border max-w-sm">
+                {keyboardShortcuts.map((s) => (
+                  <div key={s.description} className="flex items-center justify-between px-3 py-2">
+                    <span className="text-xs text-muted-foreground">{s.description}</span>
+                    <div className="flex items-center gap-0.5">
+                      {s.keys.map((key) => (
+                        <kbd key={key} className="inline-flex h-5 min-w-[20px] items-center justify-center rounded border border-border bg-muted px-1 text-[10px] font-mono text-muted-foreground">
+                          {key}
+                        </kbd>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
@@ -378,240 +367,205 @@ export default function Settings() {
 
       case "security":
         return (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
-              <h3 className="text-lg font-semibold mb-1">安全设置</h3>
-              <p className="text-sm text-muted-foreground">管理员密码与操作日志</p>
+              <SectionTitle>安全设置</SectionTitle>
+              <SectionDesc>管理员密码与操作日志</SectionDesc>
             </div>
-            <Separator />
+            <div className="h-px bg-border" />
 
-            {/* 密码设置 */}
-            <div className="space-y-4 max-w-md">
-              <Alert className="border-warning/30 bg-warning/5">
-                <Shield className="h-4 w-4 text-warning" />
-                <AlertDescription>
-                  默认密码为 <code className="rounded bg-muted px-1.5 py-0.5 text-xs font-mono">123456</code>，请尽快修改以保障账户安全
+            {/* Password */}
+            <div className="space-y-3 max-w-sm">
+              <Alert className="border-foreground/10 bg-accent/50 py-2.5">
+                <Shield className="h-3.5 w-3.5" />
+                <AlertDescription className="text-xs">
+                  默认密码 <code className="rounded bg-muted px-1 py-0.5 text-[10px] font-mono">123456</code>，请尽快修改
                 </AlertDescription>
               </Alert>
 
               <FormField label="当前密码" required type={showPasswords ? "text" : "password"} value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.target.value)} placeholder="请输入当前密码" error={errors.current} />
-              <Separator />
               <FormField label="新密码" required type={showPasswords ? "text" : "password"} value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)} placeholder="请输入新密码（至少4位）" error={errors.new} />
+                onChange={(e) => setNewPassword(e.target.value)} placeholder="至少4位" error={errors.new} />
               <FormField label="确认新密码" required type={showPasswords ? "text" : "password"} value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)} placeholder="请再次输入新密码" error={errors.confirm} />
+                onChange={(e) => setConfirmPassword(e.target.value)} placeholder="再次输入新密码" error={errors.confirm} />
 
-              <div className="flex items-center justify-between pt-2">
-                <Button variant="ghost" size="sm" onClick={() => setShowPasswords(!showPasswords)}>
-                  {showPasswords ? <EyeOff className="mr-2 h-4 w-4" /> : <Eye className="mr-2 h-4 w-4" />}
-                  {showPasswords ? "隐藏密码" : "显示密码"}
+              <div className="flex items-center justify-between pt-1">
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setShowPasswords(!showPasswords)}>
+                  {showPasswords ? <EyeOff className="mr-1 h-3 w-3" /> : <Eye className="mr-1 h-3 w-3" />}
+                  {showPasswords ? "隐藏" : "显示"}
                 </Button>
-                <LoadingButton onClick={handleChangePassword} loading={isSaving}>
-                  <Save className="mr-2 h-4 w-4" />
-                  保存修改
+                <LoadingButton onClick={handleChangePassword} loading={isSaving} size="sm">
+                  <Save className="mr-1.5 h-3.5 w-3.5" />
+                  保存
                 </LoadingButton>
               </div>
             </div>
 
-            <Separator />
+            <div className="h-px bg-border" />
 
-            {/* 操作日志 */}
-            <div className="space-y-4">
+            {/* Audit logs */}
+            <div className="space-y-2.5">
               <div className="flex items-center justify-between">
-                <Label className="flex items-center gap-2">
-                  <History className="h-4 w-4" />
+                <Label className="text-xs flex items-center gap-1.5">
+                  <History className="h-3.5 w-3.5" />
                   操作日志
+                  <span className="text-muted-foreground font-normal">({auditLogs.length})</span>
                 </Label>
                 {auditLogs.length > 0 && (
-                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive"
+                  <Button variant="ghost" size="sm" className="h-7 text-xs text-destructive hover:text-destructive"
                     onClick={() => { clearAuditLogs(); toast.success("日志已清空"); }}>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    清空日志
+                    <Trash2 className="mr-1 h-3 w-3" />
+                    清空
                   </Button>
                 )}
               </div>
 
-              <div className="rounded-xl border border-border">
+              <div className="rounded-lg border border-border">
                 {auditLogs.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-center">
-                    <History className="mb-2 h-8 w-8 text-muted-foreground/30" />
-                    <p className="text-sm text-muted-foreground">暂无操作记录</p>
+                    <History className="mb-1.5 h-6 w-6 text-muted-foreground/20" />
+                    <p className="text-xs text-muted-foreground">暂无操作记录</p>
                   </div>
                 ) : (
-                  <ScrollArea className="h-[300px]">
+                  <ScrollArea className="h-[260px]">
                     <div className="divide-y divide-border">
                       {auditLogs.slice(0, 100).map((log) => (
-                        <div key={log.id} className="p-3 hover:bg-accent/30 transition-colors">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge variant="secondary" className="text-[10px]">
-                                  {auditCategoryLabels[log.category] || log.category}
-                                </Badge>
-                                <span className="text-[10px] text-muted-foreground">
-                                  {format(new Date(log.timestamp), "MM-dd HH:mm:ss", { locale: zhCN })}
-                                </span>
-                              </div>
-                              <p className="text-sm font-medium truncate">{log.action}</p>
-                              <p className="text-xs text-muted-foreground truncate">{log.details}</p>
-                            </div>
+                        <div key={log.id} className="px-3 py-2 hover:bg-accent/30 transition-colors">
+                          <div className="flex items-center gap-2 mb-0.5">
+                            <Badge variant="secondary" className="text-[10px] h-4 px-1.5 rounded">
+                              {auditCategoryLabels[log.category] || log.category}
+                            </Badge>
+                            <span className="text-[10px] text-muted-foreground">
+                              {format(new Date(log.timestamp), "MM-dd HH:mm", { locale: zhCN })}
+                            </span>
                           </div>
+                          <p className="text-xs font-medium truncate">{log.action}</p>
+                          {log.details && <p className="text-[11px] text-muted-foreground truncate">{log.details}</p>}
                         </div>
                       ))}
                     </div>
                   </ScrollArea>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">
-                共 {auditLogs.length} 条记录（最多保留1000条）
-              </p>
             </div>
           </div>
         );
 
       case "data":
         return (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
-              <h3 className="text-lg font-semibold mb-1">数据管理</h3>
-              <p className="text-sm text-muted-foreground">云端同步与数据导出</p>
+              <SectionTitle>数据管理</SectionTitle>
+              <SectionDesc>云端同步与数据导出</SectionDesc>
             </div>
-            <Separator />
+            <div className="h-px bg-border" />
 
-            {/* 云端数据库状态 */}
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2">
-                <Cloud className="h-4 w-4" />
+            {/* Cloud status */}
+            <div className="space-y-2.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                <Cloud className="h-3.5 w-3.5" />
                 Lovable Cloud
               </Label>
-              <div className="rounded-xl border border-border p-4 bg-accent/30">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <p className="font-medium">连接状态</p>
-                    <p className="text-sm text-muted-foreground">Lovable Cloud 已启用</p>
-                  </div>
-                  <Badge variant="default" className="bg-success">
-                    <Check className="mr-1 h-3 w-3" />
+              <div className="rounded-lg border border-border p-3 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground">连接状态</span>
+                  <Badge variant="default" className="bg-success text-[10px] h-5">
+                    <Check className="mr-0.5 h-2.5 w-2.5" />
                     已连接
                   </Badge>
                 </div>
 
-                {/* Cloud data counts */}
                 {cloudCounts && (
-                  <div className="grid grid-cols-2 gap-2 mt-3">
-                    <div className="rounded-lg bg-background/60 p-2.5">
-                      <p className="text-xs text-muted-foreground">会员</p>
-                      <p className="font-semibold">{cloudCounts.members} 条</p>
-                    </div>
-                    <div className="rounded-lg bg-background/60 p-2.5">
-                      <p className="text-xs text-muted-foreground">交易</p>
-                      <p className="font-semibold">{cloudCounts.transactions} 条</p>
-                    </div>
-                    <div className="rounded-lg bg-background/60 p-2.5">
-                      <p className="text-xs text-muted-foreground">服务</p>
-                      <p className="font-semibold">{cloudCounts.services} 条</p>
-                    </div>
-                    <div className="rounded-lg bg-background/60 p-2.5">
-                      <p className="text-xs text-muted-foreground">预约</p>
-                      <p className="font-semibold">{cloudCounts.appointments} 条</p>
-                    </div>
+                  <div className="grid grid-cols-4 gap-2">
+                    {[
+                      { label: "会员", count: cloudCounts.members },
+                      { label: "交易", count: cloudCounts.transactions },
+                      { label: "服务", count: cloudCounts.services },
+                      { label: "预约", count: cloudCounts.appointments },
+                    ].map((item) => (
+                      <div key={item.label} className="rounded-md bg-accent/50 px-2 py-1.5 text-center">
+                        <p className="text-[10px] text-muted-foreground">{item.label}</p>
+                        <p className="text-sm font-semibold tabular-nums">{item.count}</p>
+                      </div>
+                    ))}
                   </div>
                 )}
 
                 {hasLocalData && !isMigrated && (
-                  <Alert className="mt-3">
-                    <Upload className="h-4 w-4" />
-                    <AlertDescription className="flex items-center justify-between">
+                  <Alert className="py-2">
+                    <Upload className="h-3.5 w-3.5" />
+                    <AlertDescription className="flex items-center justify-between text-xs">
                       <span>检测到本地数据，建议迁移到云端</span>
-                      <Button size="sm" onClick={() => setShowMigrationDialog(true)} className="ml-3">
-                        开始迁移
+                      <Button size="sm" className="h-7 text-xs ml-3" onClick={() => setShowMigrationDialog(true)}>
+                        迁移
                       </Button>
                     </AlertDescription>
                   </Alert>
                 )}
 
                 {isMigrated && (
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground mt-3">
-                    <Check className="h-4 w-4 text-success" />
+                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <Check className="h-3.5 w-3.5 text-success" />
                     数据已迁移到云端
                   </div>
                 )}
               </div>
             </div>
 
-            <Separator />
+            <div className="h-px bg-border" />
 
-            {/* 数据导出 */}
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2">
-                <Download className="h-4 w-4" />
-                数据导出
-              </Label>
-
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-sm text-muted-foreground">导出格式：</span>
+            {/* Export */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs flex items-center gap-1.5">
+                  <Download className="h-3.5 w-3.5" />
+                  数据导出
+                </Label>
                 <Select value={exportFormat} onValueChange={(v) => setExportFormat(v as "csv" | "excel" | "pdf")}>
-                  <SelectTrigger className="w-32">
+                  <SelectTrigger className="w-24 h-7 text-xs">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="csv">
-                      <div className="flex items-center gap-2"><FileSpreadsheet className="h-4 w-4" />CSV</div>
-                    </SelectItem>
-                    <SelectItem value="excel">
-                      <div className="flex items-center gap-2"><FileSpreadsheet className="h-4 w-4" />Excel</div>
-                    </SelectItem>
-                    <SelectItem value="pdf">
-                      <div className="flex items-center gap-2"><FileText className="h-4 w-4" />PDF</div>
-                    </SelectItem>
+                    <SelectItem value="csv"><span className="flex items-center gap-1.5"><FileSpreadsheet className="h-3 w-3" />CSV</span></SelectItem>
+                    <SelectItem value="excel"><span className="flex items-center gap-1.5"><FileSpreadsheet className="h-3 w-3" />Excel</span></SelectItem>
+                    <SelectItem value="pdf"><span className="flex items-center gap-1.5"><FileText className="h-3 w-3" />PDF</span></SelectItem>
                   </SelectContent>
                 </Select>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-center justify-between rounded-xl border border-border p-4 transition-colors hover:bg-accent/30">
-                  <div>
-                    <p className="font-medium">会员数据</p>
-                    <p className="text-sm text-muted-foreground">云端 {cloudCounts?.members ?? members.length} 条记录</p>
+              <div className="space-y-2">
+                {[
+                  { label: "会员数据", count: cloudCounts?.members ?? members.length, loading: isExporting, handler: handleExportMembers, disabled: members.length === 0 },
+                  { label: "交易记录", count: cloudCounts?.transactions ?? transactions.length, loading: isExportingTx, handler: handleExportTransactions, disabled: transactions.length === 0 },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center justify-between rounded-lg border border-border px-3 py-2.5 hover:bg-accent/30 transition-colors">
+                    <div>
+                      <p className="text-xs font-medium">{item.label}</p>
+                      <p className="text-[10px] text-muted-foreground">{item.count} 条记录</p>
+                    </div>
+                    <LoadingButton onClick={item.handler} loading={item.loading} disabled={item.disabled} size="sm" variant="outline" className="h-7 text-xs">
+                      <Download className="mr-1 h-3 w-3" />导出
+                    </LoadingButton>
                   </div>
-                  <LoadingButton onClick={handleExportMembers} loading={isExporting} disabled={members.length === 0} size="sm">
-                    <Download className="mr-2 h-4 w-4" />导出
-                  </LoadingButton>
-                </div>
-
-                <div className="flex items-center justify-between rounded-xl border border-border p-4 transition-colors hover:bg-accent/30">
-                  <div>
-                    <p className="font-medium">交易记录</p>
-                    <p className="text-sm text-muted-foreground">云端 {cloudCounts?.transactions ?? transactions.length} 条记录</p>
-                  </div>
-                  <LoadingButton onClick={handleExportTransactions} loading={isExportingTx} disabled={transactions.length === 0} size="sm">
-                    <Download className="mr-2 h-4 w-4" />导出
-                  </LoadingButton>
-                </div>
+                ))}
               </div>
             </div>
 
-            <Separator />
+            <div className="h-px bg-border" />
 
-            {/* 存储信息 */}
-            <div className="space-y-3">
-              <Label className="flex items-center gap-2">
-                <Database className="h-4 w-4" />
-                存储信息
+            {/* Storage */}
+            <div className="space-y-2.5">
+              <Label className="text-xs flex items-center gap-1.5">
+                <Database className="h-3.5 w-3.5" />
+                本地存储
               </Label>
-              <div className="rounded-xl border border-border p-4 bg-accent/30 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="font-medium">本地存储使用量</p>
-                    <p className="text-sm text-muted-foreground">{storageUsage.usedKB} KB / {storageUsage.maxMB} MB</p>
-                  </div>
-                  <span className="text-sm font-medium">{storageUsage.percentage}%</span>
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-muted-foreground">{storageUsage.usedKB} KB / {storageUsage.maxMB} MB</span>
+                  <span className="font-medium tabular-nums">{storageUsage.percentage}%</span>
                 </div>
-                <Progress value={storageUsage.percentage} className="h-2" />
-                <p className="text-xs text-muted-foreground">
-                  支持存储约 {Math.floor((storageUsage.maxMB * 1024 - parseFloat(storageUsage.usedKB)) / 0.5)} 位会员数据
-                </p>
+                <Progress value={storageUsage.percentage} className="h-1.5" />
               </div>
             </div>
           </div>
@@ -619,67 +573,64 @@ export default function Settings() {
 
       case "about":
         return (
-          <div className="space-y-6">
+          <div className="space-y-5">
             <div>
-              <h3 className="text-lg font-semibold mb-1">关于系统</h3>
-              <p className="text-sm text-muted-foreground">系统版本和相关信息</p>
+              <SectionTitle>关于系统</SectionTitle>
+              <SectionDesc>版本和相关信息</SectionDesc>
             </div>
-            <Separator />
+            <div className="h-px bg-border" />
 
-            {/* 系统品牌 */}
-            <div className="flex flex-col items-center py-6">
-              <div className="flex h-16 w-16 items-center justify-center rounded-xl bg-primary shadow-md mb-4">
-                <span className="text-2xl font-black text-primary-foreground">F</span>
+            {/* Brand */}
+            <div className="flex items-center gap-3 py-2">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary">
+                <span className="text-base font-black text-primary-foreground">F</span>
               </div>
-              <h2 className="text-xl font-bold">FFk Barber</h2>
-              <p className="text-sm text-muted-foreground">理发店会员管理系统</p>
-              <Badge variant="outline" className="mt-2">v1.0.0</Badge>
-            </div>
-
-            <Separator />
-
-            {/* 系统信息 */}
-            <div className="space-y-3">
-              <Label>系统概况</Label>
-              <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl bg-accent/50 p-4">
-                  <p className="text-xs text-muted-foreground mb-1">数据存储</p>
-                  <p className="font-medium">Lovable Cloud</p>
-                </div>
-                <div className="rounded-xl bg-accent/50 p-4">
-                  <p className="text-xs text-muted-foreground mb-1">客户端</p>
-                  <p className="font-medium flex items-center gap-1.5">
-                    <Globe className="h-3.5 w-3.5" />
-                    Web + Desktop
-                  </p>
-                </div>
-                <div className="rounded-xl bg-accent/50 p-4">
-                  <p className="text-xs text-muted-foreground mb-1">会员总数</p>
-                  <p className="font-medium">{cloudCounts?.members ?? members.length} 位</p>
-                </div>
-                <div className="rounded-xl bg-accent/50 p-4">
-                  <p className="text-xs text-muted-foreground mb-1">交易记录</p>
-                  <p className="font-medium">{cloudCounts?.transactions ?? transactions.length} 条</p>
-                </div>
+              <div>
+                <h2 className="text-sm font-bold">FFk Barber</h2>
+                <p className="text-[11px] text-muted-foreground">理发店会员管理系统</p>
               </div>
+              <Badge variant="outline" className="ml-auto text-[10px] h-5">v1.0.0</Badge>
             </div>
 
-            <Separator />
+            <div className="h-px bg-border" />
 
-            {/* 功能特性 */}
-            <div className="space-y-3">
-              <Label>功能特性</Label>
-              <div className="space-y-2">
+            {/* System info */}
+            <div className="space-y-2.5">
+              <Label className="text-xs">系统概况</Label>
+              <div className="grid gap-2 sm:grid-cols-2 max-w-sm">
                 {[
-                  { icon: "shield", text: "安全认证与数据加密" },
-                  { icon: "cloud", text: "云端数据同步，多设备使用" },
-                  { icon: "smartphone", text: "响应式设计，支持桌面和移动端" },
-                  { icon: "search", text: "拼音首字母智能搜索" },
-                  { icon: "moon", text: "深色模式支持" },
-                ].map((feature) => (
-                  <div key={feature.text} className="flex items-center gap-2.5 text-sm">
-                    <Check className="h-4 w-4 text-success shrink-0" />
-                    <span className="text-muted-foreground">{feature.text}</span>
+                  { label: "数据存储", value: "Lovable Cloud" },
+                  { label: "客户端", value: "Web + Desktop", icon: Globe },
+                  { label: "会员总数", value: `${cloudCounts?.members ?? members.length} 位` },
+                  { label: "交易记录", value: `${cloudCounts?.transactions ?? transactions.length} 条` },
+                ].map((item) => (
+                  <div key={item.label} className="rounded-lg bg-accent/50 px-3 py-2">
+                    <p className="text-[10px] text-muted-foreground">{item.label}</p>
+                    <p className="text-xs font-medium flex items-center gap-1">
+                      {item.icon && <item.icon className="h-3 w-3" />}
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="h-px bg-border" />
+
+            {/* Features */}
+            <div className="space-y-2">
+              <Label className="text-xs">功能特性</Label>
+              <div className="space-y-1">
+                {[
+                  "安全认证与数据加密",
+                  "云端数据同步，多设备使用",
+                  "响应式设计，桌面/移动端",
+                  "拼音首字母智能搜索",
+                  "深色模式支持",
+                ].map((text) => (
+                  <div key={text} className="flex items-center gap-2 text-xs">
+                    <Check className="h-3 w-3 text-success shrink-0" />
+                    <span className="text-muted-foreground">{text}</span>
                   </div>
                 ))}
               </div>
@@ -690,60 +641,41 @@ export default function Settings() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <PageHeader title="设置" description="系统设置和数据管理" />
 
-      <div className="flex flex-col lg:flex-row gap-6">
-        {/* Left Navigation */}
-        <Card className="lg:w-64 shrink-0">
-          <CardContent className="p-2">
-            <nav className="space-y-0.5">
-              {categories.map((category) => {
-                const Icon = category.icon;
-                const isActive = activeCategory === category.id;
-                return (
-                  <button
-                    key={category.id}
-                    onClick={() => setActiveCategory(category.id)}
-                    className={cn(
-                      "w-full flex items-center gap-3 rounded-xl px-3 py-2.5 text-left transition-all duration-200",
-                      isActive
-                        ? "bg-primary text-primary-foreground shadow-sm"
-                        : "hover:bg-accent text-muted-foreground hover:text-foreground"
-                    )}
-                  >
-                    <Icon className="h-4 w-4 shrink-0" />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{category.label}</p>
-                      <p className={cn(
-                        "text-[10px] truncate",
-                        isActive ? "text-primary-foreground/70" : "text-muted-foreground"
-                      )}>
-                        {category.description}
-                      </p>
-                    </div>
-                    <ChevronRight className={cn(
-                      "h-4 w-4 shrink-0",
-                      isActive ? "text-primary-foreground" : "text-muted-foreground/50"
-                    )} />
-                  </button>
-                );
-              })}
-            </nav>
-          </CardContent>
-        </Card>
+      <div className="flex flex-col lg:flex-row gap-4">
+        {/* Left Nav */}
+        <div className="lg:w-48 shrink-0">
+          <nav className="flex lg:flex-col gap-1 overflow-x-auto lg:overflow-visible pb-1 lg:pb-0">
+            {categories.map((cat) => {
+              const Icon = cat.icon;
+              const isActive = activeCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => setActiveCategory(cat.id)}
+                  className={cn(
+                    "flex items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium whitespace-nowrap transition-colors",
+                    isActive
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5 shrink-0" />
+                  {cat.label}
+                </button>
+              );
+            })}
+          </nav>
+        </div>
 
-        {/* Right Content Area */}
-        <Card className="flex-1">
-          <CardContent className="p-6">
-            <ScrollArea className="h-full">
-              {renderContent()}
-            </ScrollArea>
-          </CardContent>
-        </Card>
+        {/* Content */}
+        <div className="flex-1 rounded-lg border border-border bg-card p-5">
+          {renderContent()}
+        </div>
       </div>
 
-      {/* Migration Dialog */}
       <MigrationDialog
         open={showMigrationDialog}
         onOpenChange={setShowMigrationDialog}
