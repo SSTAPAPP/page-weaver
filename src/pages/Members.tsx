@@ -88,7 +88,7 @@ export default function Members() {
         <EmptyState
           icon={UserPlus}
           title={searchQuery ? "未找到匹配会员" : "暂无会员"}
-          description={searchQuery ? "尝试其他搜索条件" : "点击"开卡"添加第一位会员"}
+          description={searchQuery ? "尝试其他搜索条件" : '点击"开卡"添加第一位会员'}
           action={!searchQuery ? (
             <Button size="sm" className="h-8 text-xs" onClick={() => setMemberDialogOpen(true)}>
               <UserPlus className="mr-1 h-3 w-3" />开卡
