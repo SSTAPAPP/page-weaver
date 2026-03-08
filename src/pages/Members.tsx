@@ -111,7 +111,6 @@ export default function Members() {
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {filteredMembers.map((member) => {
-            const level = getMemberLevel(member.balance, member.cards.length);
             const consumeCount = memberConsumeCounts[member.id] || 0;
             const totalSpent = memberTotalSpent[member.id] || 0;
             const totalCardRemaining = member.cards.reduce((s, c) => s + c.remainingCount, 0);
