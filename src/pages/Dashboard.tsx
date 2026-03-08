@@ -286,13 +286,13 @@ export default function Dashboard() {
 
         {/* Recent Transactions */}
         <Card className={`transition-opacity duration-200 ${isHidden("transactions") ? "opacity-30" : ""}`}>
-          <CardHeader className="flex flex-row items-center justify-between pb-0">
-            <CardTitle className="text-sm font-medium text-muted-foreground">最近交易</CardTitle>
-            <div className="flex items-center gap-1">
+          <CardHeader className="flex flex-row items-center justify-between pb-0 px-3 sm:px-6 pt-3 sm:pt-6">
+            <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">最近交易</CardTitle>
+            <div className="flex items-center gap-0.5">
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 opacity-30 hover:opacity-100"
+                className="h-6 w-6 sm:h-7 sm:w-7 opacity-30 hover:opacity-100"
                 onClick={() => toggleSectionVisibility("transactions")}
                 aria-label={isHidden("transactions") ? "显示交易列表" : "隐藏交易列表"}
               >
@@ -301,7 +301,7 @@ export default function Dashboard() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="gap-1 h-7 text-xs text-muted-foreground hover:text-foreground"
+                className="gap-0.5 h-6 sm:h-7 text-[10px] sm:text-xs text-muted-foreground hover:text-foreground px-1.5"
                 onClick={() => navigate("/transactions")}
               >
                 全部
@@ -309,7 +309,7 @@ export default function Dashboard() {
               </Button>
             </div>
           </CardHeader>
-          <CardContent className="pt-3">
+          <CardContent className="pt-2 sm:pt-3 px-3 sm:px-6 pb-3 sm:pb-6">
             {recentTransactions.length === 0 ? (
               <EmptyState
                 icon={CreditCard}
@@ -324,40 +324,40 @@ export default function Dashboard() {
                   return (
                     <div
                       key={tx.id}
-                      className="flex items-center justify-between py-3 first:pt-0 last:pb-0"
+                      className="flex items-center justify-between py-2 sm:py-3 first:pt-0 last:pb-0"
                     >
-                      <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                         <div className={cn(
-                          "flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium shrink-0",
+                          "flex h-6 w-6 sm:h-8 sm:w-8 items-center justify-center rounded-full text-[10px] sm:text-xs font-medium shrink-0",
                           isIncome ? "bg-chart-2/10 text-chart-2" : "bg-muted text-muted-foreground"
                         )}>
                           {isIncome ? "+" : "−"}
                         </div>
                         <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-sm font-medium truncate">
+                          <div className="flex items-center gap-1">
+                            <p className="text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none">
                               {isHidden("transactions") ? "****" : tx.description}
                             </p>
-                            <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 font-normal shrink-0">
+                            <Badge variant="secondary" className="text-[9px] sm:text-[10px] px-1 py-0 h-3.5 sm:h-4 font-normal shrink-0">
                               {typeLabel}
                             </Badge>
                           </div>
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-[10px] sm:text-xs text-muted-foreground">
                             {isHidden("transactions") ? "***" : tx.memberName}
-                            <span className="mx-1">·</span>
+                            <span className="mx-0.5 sm:mx-1">·</span>
                             {format(new Date(tx.createdAt), "HH:mm")}
                           </p>
                         </div>
                       </div>
                       <span
                         className={cn(
-                          "text-sm font-medium tabular-nums shrink-0 ml-3",
+                          "text-xs sm:text-sm font-medium tabular-nums shrink-0 ml-2",
                           isIncome ? "text-chart-2" : "text-foreground"
                         )}
                       >
                         {isHidden("transactions") 
                           ? "****" 
-                          : `${isIncome ? "+" : "-"}¥${tx.amount.toFixed(2)}`
+                          : `${isIncome ? "+" : "-"}¥${tx.amount.toFixed(0)}`
                         }
                       </span>
                     </div>
