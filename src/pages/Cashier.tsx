@@ -321,7 +321,7 @@ export default function Cashier() {
             </CardHeader>
             <CardContent>
               {selectedMember ? (
-                <div className="flex items-center justify-between rounded-lg border border-primary bg-primary/5 p-4 transition-all">
+                <div className="flex items-center justify-between rounded-lg border border-primary/20 bg-primary/5 p-4 transition-all">
                   <div className="flex items-center gap-3">
                     <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/20 text-lg font-bold text-primary">
                       {selectedMember.name.charAt(0)}
