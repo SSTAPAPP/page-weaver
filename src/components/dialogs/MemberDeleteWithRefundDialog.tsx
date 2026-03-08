@@ -149,7 +149,7 @@ export function MemberDeleteWithRefundDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 -mx-6 px-6">
+        <div className="flex-1 min-h-0 -mx-6 px-6 overflow-y-auto overflow-x-hidden scroll-hint-bottom">
           {step === "refund" ? (
             <div className="space-y-4 pb-4">
               {/* 会员信息 */}
