@@ -280,7 +280,7 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                     </div>
                   ) : (
                     <div className="max-h-[180px] overflow-auto divide-y divide-border">
-                      {memberTransactions.map((tx) => {
+                      {memberTransactions.map((tx, idx) => {
                         const info = typeMap[tx.type] || typeMap.consume;
                         const isVoided = tx.voided;
 
@@ -288,10 +288,14 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                           <div
                             key={tx.id}
                             className={cn(
-                              "flex items-center gap-3 py-2.5",
+                              "flex items-center gap-2 py-2.5",
                               isVoided && "opacity-50"
                             )}
                           >
+                            {/* 序号 */}
+                            <span className="text-xs text-muted-foreground tabular-nums w-5 shrink-0">
+                              {idx + 1}
+                            </span>
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-1.5">
                                 <p className={cn(
