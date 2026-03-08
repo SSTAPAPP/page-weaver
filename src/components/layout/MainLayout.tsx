@@ -33,7 +33,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     return (
       <div className="flex min-h-screen w-full flex-col bg-background">
         <main className="flex-1 overflow-auto">
-          <div key={location.pathname} className="px-4 py-4 pb-20 page-enter">
+          <div key={location.pathname} className="px-5 py-5 pb-24 page-enter">
             {children}
           </div>
         </main>
@@ -48,8 +48,8 @@ export function MainLayout({ children }: MainLayoutProps) {
       <aside
         className={cn(
           "fixed left-0 top-0 h-screen z-50",
-          "transition-[width] duration-300 ease-[var(--ease-out)]",
-          collapsed ? "w-14" : "w-56"
+          "transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
+          collapsed ? "w-[60px]" : "w-[220px]"
         )}
       >
         <AppSidebar collapsed={collapsed} onCollapsedChange={setCollapsed} />
@@ -58,11 +58,11 @@ export function MainLayout({ children }: MainLayoutProps) {
       <main
         className={cn(
           "flex-1 overflow-auto",
-          "transition-[margin] duration-300 ease-[var(--ease-out)]",
-          collapsed ? "ml-14" : "ml-56"
+          "transition-[margin] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
+          collapsed ? "ml-[60px]" : "ml-[220px]"
         )}
       >
-        <div key={location.pathname} className="mx-auto max-w-5xl px-6 py-6 page-enter">
+        <div key={location.pathname} className="mx-auto max-w-5xl px-8 py-8 page-enter">
           {children}
         </div>
       </main>

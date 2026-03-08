@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
-import { Search, UserPlus, Phone, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
+import { Search, UserPlus, ChevronLeft, ChevronRight, Wallet } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,30 +48,30 @@ export default function Members() {
   }, [members]);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       <PageHeader
         title="会员管理"
         description={isLoading ? "加载中…" : `${members.length} 位会员 · 总余额 ¥${totalBalance.toFixed(2)}`}
       >
-        <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => setRechargeDialogOpen(true)}>
-          <Wallet className="mr-1 h-3 w-3" />充值
+        <Button variant="outline" size="sm" onClick={() => setRechargeDialogOpen(true)}>
+          <Wallet className="mr-1.5 h-3.5 w-3.5" />充值
         </Button>
-        <Button size="sm" className="h-8 text-xs" onClick={() => setMemberDialogOpen(true)}>
-          <UserPlus className="mr-1 h-3 w-3" />开卡
+        <Button size="sm" onClick={() => setMemberDialogOpen(true)}>
+          <UserPlus className="mr-1.5 h-3.5 w-3.5" />开卡
         </Button>
       </PageHeader>
 
       {/* Search */}
       <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground" />
+        <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="搜索姓名或手机号"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-9 h-9 text-sm"
+          className="pl-11 h-10"
         />
         {searchQuery && (
-          <Button variant="ghost" size="sm" className="absolute right-0.5 top-1/2 h-7 -translate-y-1/2 px-2 text-xs" onClick={() => setSearchQuery("")}>
+          <Button variant="ghost" size="sm" className="absolute right-1 top-1/2 h-8 -translate-y-1/2 px-3 text-xs" onClick={() => setSearchQuery("")}>
             清除
           </Button>
         )}
@@ -79,9 +79,9 @@ export default function Members() {
 
       {/* Grid */}
       {isLoading ? (
-        <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i}><CardContent className="p-0"><Skeleton className="h-24" /></CardContent></Card>
+            <Card key={i}><CardContent className="p-0"><Skeleton className="h-28 rounded-2xl" /></CardContent></Card>
           ))}
         </div>
       ) : filteredMembers.length === 0 ? (
@@ -90,40 +90,40 @@ export default function Members() {
           title={searchQuery ? "未找到匹配会员" : "暂无会员"}
           description={searchQuery ? "尝试其他搜索条件" : '点击"开卡"添加第一位会员'}
           action={!searchQuery ? (
-            <Button size="sm" className="h-8 text-xs" onClick={() => setMemberDialogOpen(true)}>
-              <UserPlus className="mr-1 h-3 w-3" />开卡
+            <Button size="sm" onClick={() => setMemberDialogOpen(true)}>
+              <UserPlus className="mr-1.5 h-3.5 w-3.5" />开卡
             </Button>
           ) : undefined}
         />
       ) : (
         <>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {paginatedMembers.map((member) => (
               <Card
                 key={member.id}
-                className="cursor-pointer transition-colors hover:bg-muted/20"
+                className="cursor-pointer transition-all duration-300 hover:shadow-md hover:-translate-y-0.5"
                 onClick={() => setSelectedMemberId(member.id)}
               >
                 <CardContent className="p-0">
-                  <div className="flex items-center justify-between px-3 py-3">
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
+                  <div className="flex items-center justify-between px-4 py-4">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold">
                         {member.name.charAt(0)}
                       </div>
                       <div className="min-w-0">
-                        <p className="text-sm font-medium truncate">{member.name}</p>
-                        <p className="text-xs text-muted-foreground font-mono">{member.phone}</p>
+                        <p className="text-sm font-semibold truncate">{member.name}</p>
+                        <p className="text-xs text-muted-foreground font-mono mt-0.5">{member.phone}</p>
                       </div>
                     </div>
-                    <div className="text-right shrink-0 ml-2">
-                      <p className="text-sm font-semibold tabular-nums">¥{member.balance.toFixed(2)}</p>
+                    <div className="text-right shrink-0 ml-3">
+                      <p className="text-base font-bold tabular-nums">¥{member.balance.toFixed(2)}</p>
                       {member.cards.length > 0 && (
-                        <p className="text-xs text-muted-foreground">{member.cards.length}卡</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{member.cards.length} 张卡</p>
                       )}
                     </div>
                   </div>
                   {member.cards.length > 0 && (
-                    <div className="border-t border-border px-3 py-2 flex flex-wrap gap-1">
+                    <div className="border-t border-border px-4 py-2.5 flex flex-wrap gap-1.5">
                       {member.cards.slice(0, 3).map((card) => (
                         <Badge
                           key={card.id}
@@ -144,15 +144,15 @@ export default function Members() {
           </div>
 
           {totalPages > 1 && (
-            <div className="flex items-center justify-center gap-2 pt-2">
-              <Button variant="outline" size="sm" className="h-8" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
-                <ChevronLeft className="h-3.5 w-3.5" />
+            <div className="flex items-center justify-center gap-3 pt-4">
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
+                <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-xs text-muted-foreground tabular-nums">
-                {currentPage}/{totalPages}
+              <span className="text-sm text-muted-foreground tabular-nums">
+                {currentPage} / {totalPages}
               </span>
-              <Button variant="outline" size="sm" className="h-8" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
-                <ChevronRight className="h-3.5 w-3.5" />
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
+                <ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           )}

@@ -25,25 +25,25 @@ export default function Dashboard() {
   const isHidden = (id: string) => hiddenSections.includes(id);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight text-foreground">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             仪表盘
           </h1>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-sm text-muted-foreground mt-1">
             {format(new Date(), "yyyy年M月d日 EEEE", { locale: zhCN })}
           </p>
         </div>
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-muted-foreground/40 hover:text-foreground"
+          className="h-9 w-9 text-muted-foreground/30 hover:text-foreground"
           onClick={() => toggleSectionVisibility("stats")}
           title={isHidden("stats") ? "显示数据" : "隐藏数据"}
         >
-          {isHidden("stats") ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+          {isHidden("stats") ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
         </Button>
       </div>
 
@@ -66,7 +66,7 @@ export default function Dashboard() {
       />
 
       {/* Lists */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-8 lg:grid-cols-2">
         <RecentMembers
           members={members}
           isLoading={isMembersLoading}
