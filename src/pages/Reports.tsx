@@ -21,29 +21,6 @@ import {
   Legend,
 } from "recharts";
 
-const metricsInfo: Record<string, { title: string; brief: string; formula: string; example: string; note: string }> = {
-  "今日实收": {
-    title: "实收金额",
-    brief: "真实进账现金流",
-    formula: "现金 + 微信 + 支付宝 + 补差价",
-    example: "余额50元消费80元，补差价30元现金 → 实收30元",
-    note: "余额消费不计入（已在充值时收过）",
-  },
-  "今日充值": {
-    title: "充值金额",
-    brief: "储值/次卡销售额",
-    formula: "储值卡销售 + 次卡销售",
-    example: "会员充值500元储值卡 → 充值500元",
-    note: "预收款项，体现客户信任度",
-  },
-  "今日消耗": {
-    title: "消耗金额",
-    brief: "余额/次卡核销值",
-    formula: "余额消费 + 次卡消费（按原价）",
-    example: "用余额支付38元洗剪吹 → 消耗38元",
-    note: "补差价不计入（已在实收统计）",
-  },
-};
 
 interface StatCardWithTooltipProps {
   title: string;
