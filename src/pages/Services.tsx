@@ -211,6 +211,7 @@ export default function Services() {
 
   const handleRequestDelete = (type: "service" | "card", id: string, name: string) => {
     setDeleteTarget({ type, id, name });
+    setAdminPasswordAction("delete");
     setAdminPasswordDialogOpen(true);
   };
 

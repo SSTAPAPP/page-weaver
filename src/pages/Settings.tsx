@@ -164,6 +164,10 @@ export default function Settings() {
     }
   };
 
+  const handleRequestSaveShopInfo = () => {
+    setShopPasswordDialogOpen(true);
+  };
+
   const handleSaveShopInfo = async () => {
     setIsSavingShop(true);
     try {
