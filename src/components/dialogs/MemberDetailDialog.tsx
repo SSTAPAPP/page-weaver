@@ -279,57 +279,48 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                       <p className="text-sm text-muted-foreground">暂无交易记录</p>
                     </div>
                   ) : (
-                    <div className="space-y-2 max-h-[180px] overflow-auto">
+                    <div className="max-h-[180px] overflow-auto divide-y divide-border">
                       {memberTransactions.map((tx) => {
-                        const typeInfo = typeMap[tx.type] || typeMap.consume;
+                        const info = typeMap[tx.type] || typeMap.consume;
                         const isVoided = tx.voided;
-                        const isPositive = tx.type === "recharge" || tx.type === "refund";
 
                         return (
                           <div
                             key={tx.id}
-                            className={`flex items-center justify-between rounded-lg border border-border p-2.5 text-sm ${
-                              isVoided ? "opacity-50" : ""
-                            }`}
+                            className={cn(
+                              "flex items-center gap-3 py-2.5",
+                              isVoided && "opacity-50"
+                            )}
                           >
                             <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <p className={`font-medium truncate ${isVoided ? "line-through text-muted-foreground" : ""}`}>
+                              <div className="flex items-center gap-1.5">
+                                <p className={cn(
+                                  "text-sm font-medium truncate",
+                                  isVoided && "line-through text-muted-foreground"
+                                )}>
                                   {tx.description}
                                 </p>
-                                <Badge 
-                                  variant="outline" 
-                                  className={`text-xs shrink-0 ${isVoided ? "bg-muted text-muted-foreground border-muted" : typeInfo.color}`}
-                                >
-                                  {typeInfo.label}
-                                </Badge>
                                 {isVoided && (
-                                  <Badge variant="destructive" className="text-xs shrink-0">
+                                  <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4 font-normal shrink-0">
                                     已作废
                                   </Badge>
                                 )}
-                                {tx.relatedTransactionId && (
-                                  <Badge variant="outline" className="text-xs shrink-0 text-chart-4 border-chart-4/30">
-                                    <Link2 className="h-2.5 w-2.5 mr-0.5" />
-                                    关联
-                                  </Badge>
-                                )}
                               </div>
-                              <p className="text-xs text-muted-foreground mt-0.5">
+                              <p className="text-xs text-muted-foreground">
                                 {format(new Date(tx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
                               </p>
                             </div>
-                            <span
-                              className={`font-semibold shrink-0 ml-2 ${
-                                isVoided 
-                                  ? "line-through text-muted-foreground" 
-                                  : isPositive 
-                                    ? "text-chart-2" 
-                                    : "text-destructive"
-                              }`}
-                            >
-                              {isPositive ? "+" : "-"}¥{tx.amount.toFixed(2)}
-                            </span>
+                            <div className="flex items-center gap-2 shrink-0">
+                              <span className={cn(
+                                "text-sm font-medium tabular-nums",
+                                isVoided ? "line-through text-muted-foreground" : info.color
+                              )}>
+                                {info.sign}¥{tx.amount.toFixed(2)}
+                              </span>
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4 font-normal w-8 justify-center">
+                                {info.label}
+                              </Badge>
+                            </div>
                           </div>
                         );
                       })}
