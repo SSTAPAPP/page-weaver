@@ -561,7 +561,7 @@ export default function Cashier() {
                   </div>
 
                   {/* 费用汇总区 */}
-                  <div className="bg-muted/30 border-t border-border px-4 py-3 space-y-3">
+                  <div className="bg-muted/30 border-t border-muted/20 px-4 py-3 space-y-3">
                     {/* 次卡使用汇总 */}
                     {cardUsageInfo.length > 0 && (
                       <div className="space-y-2">
