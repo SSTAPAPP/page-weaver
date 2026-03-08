@@ -26,6 +26,13 @@ import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
 
+const isToday = (date: Date) => {
+  const today = new Date();
+  return date.getDate() === today.getDate() &&
+    date.getMonth() === today.getMonth() &&
+    date.getFullYear() === today.getFullYear();
+};
+
 
 interface StatCardWithTooltipProps {
   title: string;
