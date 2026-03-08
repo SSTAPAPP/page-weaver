@@ -320,11 +320,15 @@ export default function Dashboard() {
               <div className="divide-y divide-border">
                 {recentTransactions.map((tx, idx) => {
                   const isIncome = tx.type === "recharge" || tx.type === "refund";
+                  const isVoided = tx.voided;
                   const typeLabel = tx.type === "recharge" ? "充值" : tx.type === "consume" ? "消费" : tx.type === "card_deduct" ? "次卡" : tx.type === "refund" ? "退款" : "其他";
                   return (
                     <div
                       key={tx.id}
-                      className="flex items-center justify-between py-2 sm:py-3 first:pt-0 last:pb-0"
+                      className={cn(
+                        "flex items-center justify-between py-2 sm:py-3 first:pt-0 last:pb-0",
+                        isVoided && "opacity-50"
+                      )}
                     >
                       {/* 序号 */}
                       <span className="text-xs text-muted-foreground tabular-nums w-5 shrink-0">
@@ -333,12 +337,20 @@ export default function Dashboard() {
                       <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
                         <div className="min-w-0">
                           <div className="flex items-center gap-1">
-                            <p className="text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none">
+                            <p className={cn(
+                              "text-xs sm:text-sm font-medium truncate max-w-[120px] sm:max-w-none",
+                              isVoided && "line-through text-muted-foreground"
+                            )}>
                               {isHidden("transactions") ? "****" : tx.description}
                             </p>
                             <Badge variant="secondary" className="text-[9px] sm:text-[10px] px-1 py-0 h-3.5 sm:h-4 font-normal shrink-0">
                               {typeLabel}
                             </Badge>
+                            {isVoided && (
+                              <Badge variant="destructive" className="text-[9px] sm:text-[10px] px-1 py-0 h-3.5 sm:h-4 font-normal shrink-0">
+                                已作废
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-[10px] sm:text-xs text-muted-foreground">
                             {isHidden("transactions") ? "***" : tx.memberName}
@@ -350,7 +362,7 @@ export default function Dashboard() {
                       <span
                         className={cn(
                           "text-xs sm:text-sm font-medium tabular-nums shrink-0 ml-2",
-                          isIncome ? "text-chart-2" : "text-foreground"
+                          isVoided ? "line-through text-muted-foreground" : (isIncome ? "text-chart-2" : "text-foreground")
                         )}
                       >
                         {isHidden("transactions") 
