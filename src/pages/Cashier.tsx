@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, ShoppingCart, Trash2, CreditCard, Wallet, UserX, AlertCircle, Clock, DollarSign, Plus } from "lucide-react";
+import { Search, ShoppingCart, Trash2, CreditCard, Wallet, UserX, AlertCircle, Clock, DollarSign, Plus, CheckCircle2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,15 @@ import { useToast } from "@/hooks/use-toast";
 import { Member, Service, MemberCard } from "@/types";
 import { matchMemberSearch } from "@/lib/pinyin";
 import { CheckoutConfirmDialog } from "@/components/dialogs/CheckoutConfirmDialog";
+import { CheckoutReceipt, ReceiptData } from "@/components/receipt/CheckoutReceipt";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 
 interface CartItem {
   service: Service;
