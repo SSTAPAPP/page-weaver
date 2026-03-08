@@ -66,6 +66,7 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
     setEditName(member.name);
     setEditPhone(member.phone);
     setEditGender(member.gender);
+    setEditTag(member.tag || "");
     setIsEditing(true);
   };
 
