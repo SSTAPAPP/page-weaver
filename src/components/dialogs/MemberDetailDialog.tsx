@@ -93,6 +93,7 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
 
     toast({ title: "修改成功", description: "会员信息已更新" });
     setIsEditing(false);
+    onOpenChange(false);
   };
 
   const handleClose = () => {
