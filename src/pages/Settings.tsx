@@ -236,7 +236,7 @@ export default function Settings() {
                 />
               </div>
               <LoadingButton 
-                onClick={handleSaveShopInfo} 
+                onClick={handleRequestSaveShopInfo} 
                 loading={isSavingShop}
                 className="mt-4"
               >
