@@ -291,10 +291,32 @@ export default function Cashier() {
         });
       }
 
-      toast({
-        title: "结账成功",
-        description: `${isWalkIn ? "散客" : selectedMember?.name}消费 ¥${total}`,
-      });
+      // 生成订单号和收据数据
+      const orderNo = `ORD${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).substring(2, 6).toUpperCase()}`;
+      const receiptData: ReceiptData = {
+        orderNo,
+        isWalkIn,
+        memberName: selectedMember?.name,
+        memberPhone: selectedMember?.phone,
+        memberBalance: selectedMember ? (selectedMember.balance + balanceDeduct) : undefined, // 结账前余额
+        balanceAfter: selectedMember?.balance,
+        services: cart.map((item) => ({
+          name: item.service.name,
+          price: item.service.price,
+          useCard: item.useCard,
+          cardName: item.card?.templateName,
+        })),
+        cardDeductTotal,
+        balanceDeduct,
+        cashNeed,
+        total,
+        paymentMethod,
+        cardUsageInfo,
+        createdAt: new Date(),
+      };
+
+      setLastReceiptData(receiptData);
+      setSuccessDialogOpen(true);
 
       // 重置
       setSelectedMember(null);
