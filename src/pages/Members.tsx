@@ -49,7 +49,7 @@ export default function Members() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="输入姓名拼音首字母（如：李安全输入laq）或手机号搜索..."
+          placeholder="搜索姓名、拼音首字母或手机号"
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           className="pl-10"
