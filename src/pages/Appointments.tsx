@@ -13,25 +13,17 @@ import {
   isToday,
 } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import {
-  ChevronLeft,
-  ChevronRight,
-  Plus,
-  Calendar,
-  CheckCircle,
-  AlertCircle,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, Calendar } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { PageHeader } from "@/components/ui/page-header";
-import { StatCard } from "@/components/ui/stat-card";
 import { useAppointments } from "@/hooks/useCloudData";
-import { Skeleton } from "@/components/ui/skeleton";
 import { NewAppointmentDialog } from "@/components/dialogs/NewAppointmentDialog";
 import { AppointmentDetailDialog } from "@/components/dialogs/AppointmentDetailDialog";
 import type { Appointment } from "@/types";
 
-const statusMap = {
+const statusMap: Record<string, { label: string; color: string }> = {
   pending: { label: "待确认", color: "bg-chart-4" },
   confirmed: { label: "已确认", color: "bg-primary" },
   cancelled: { label: "已取消", color: "bg-muted-foreground" },
@@ -48,7 +40,6 @@ export default function Appointments() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 
-  // 获取当月日历格子（包括前后补齐的日期）
   const calendarDays = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
@@ -57,7 +48,6 @@ export default function Appointments() {
     return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   }, [currentMonth]);
 
-  // 按日期分组预约
   const appointmentsByDate = useMemo(() => {
     const map = new Map<string, Appointment[]>();
     appointments.forEach((apt) => {
@@ -68,22 +58,16 @@ export default function Appointments() {
     return map;
   }, [appointments]);
 
-  // 选中日期的预约
   const selectedDayAppointments = useMemo(() => {
     if (!selectedDate) return [];
     const dateKey = format(selectedDate, "yyyy-MM-dd");
     return appointmentsByDate.get(dateKey) || [];
   }, [selectedDate, appointmentsByDate]);
 
-  // 统计本月预约
   const monthStats = useMemo(() => {
     const monthStart = startOfMonth(currentMonth);
     const monthEnd = endOfMonth(currentMonth);
-    let total = 0;
-    let pending = 0;
-    let confirmed = 0;
-    let completed = 0;
-
+    let total = 0, pending = 0, confirmed = 0, completed = 0;
     appointments.forEach((apt) => {
       const aptDate = new Date(apt.date);
       if (aptDate >= monthStart && aptDate <= monthEnd) {
@@ -93,7 +77,6 @@ export default function Appointments() {
         if (apt.status === "completed") completed++;
       }
     });
-
     return { total, pending, confirmed, completed };
   }, [appointments, currentMonth]);
 
@@ -114,84 +97,44 @@ export default function Appointments() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <PageHeader
-        title="预约管理"
-        description="管理客户预约"
-      >
-        <Button onClick={() => setDialogOpen(true)}>
-          <Plus className="mr-2 h-4 w-4" />
-          新增预约
+      <PageHeader title="预约管理" description="管理客户预约">
+        <Button size="sm" onClick={() => setDialogOpen(true)}>
+          <Plus className="mr-1.5 h-3.5 w-3.5" />新增预约
         </Button>
       </PageHeader>
 
-      {/* 月度统计 */}
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-        <StatCard
-          title="本月预约"
-          value={monthStats.total}
-          icon={Calendar}
-          iconColor="text-primary"
-        />
-        <StatCard
-          title="待确认"
-          value={monthStats.pending}
-          icon={AlertCircle}
-          iconColor="text-chart-4"
-        />
-        <StatCard
-          title="已确认"
-          value={monthStats.confirmed}
-          icon={CheckCircle}
-          iconColor="text-primary"
-        />
-        <StatCard
-          title="已完成"
-          value={monthStats.completed}
-          icon={CheckCircle}
-          iconColor="text-chart-2"
-        />
+      {/* Month stats — inline text, consistent with Dashboard style */}
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <span className="text-muted-foreground">本月：</span>
+        <Badge variant="secondary" className="font-normal">{monthStats.total} 预约</Badge>
+        {monthStats.pending > 0 && <Badge variant="outline" className="font-normal">{monthStats.pending} 待确认</Badge>}
+        {monthStats.confirmed > 0 && <Badge variant="outline" className="font-normal">{monthStats.confirmed} 已确认</Badge>}
+        {monthStats.completed > 0 && <Badge variant="outline" className="font-normal">{monthStats.completed} 已完成</Badge>}
       </div>
 
-      {/* 日历 */}
+      {/* Calendar */}
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}
-            >
+            <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
               <ChevronLeft className="h-5 w-5" />
             </Button>
-            <CardTitle className="text-lg">
+            <CardTitle className="text-base font-serif">
               {format(currentMonth, "yyyy年 M月", { locale: zhCN })}
             </CardTitle>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}
-            >
+            <Button variant="ghost" size="icon" onClick={() => setCurrentMonth(addMonths(currentMonth, 1))}>
               <ChevronRight className="h-5 w-5" />
             </Button>
           </div>
         </CardHeader>
         <CardContent>
-          {/* 星期标题 */}
           <div className="grid grid-cols-7 border-b border-border">
             {WEEKDAYS.map((day, i) => (
-              <div
-                key={day}
-                className={`py-2 text-center text-sm font-medium ${
-                  i === 0 || i === 6 ? "text-destructive/70" : "text-muted-foreground"
-                }`}
-              >
+              <div key={day} className={`py-2 text-center text-xs font-medium ${i === 0 || i === 6 ? "text-destructive/70" : "text-muted-foreground"}`}>
                 {day}
               </div>
             ))}
           </div>
-
-          {/* 日期格子 */}
           <div className="grid grid-cols-7">
             {calendarDays.map((day) => {
               const dayAppointments = getAppointmentsForDay(day);
@@ -203,50 +146,32 @@ export default function Appointments() {
                 <div
                   key={day.toISOString()}
                   onClick={() => handleDateClick(day)}
-                  className={`min-h-[80px] cursor-pointer border-b border-r border-border p-1.5 transition-all hover:bg-muted/50 ${
+                  className={`min-h-[72px] cursor-pointer border-b border-r border-border p-1.5 transition-colors hover:bg-muted/40 ${
                     !isCurrentMonth ? "bg-muted/20" : ""
-                  } ${isSelected ? "bg-primary/10 ring-2 ring-inset ring-primary" : ""}`}
+                  } ${isSelected ? "bg-primary/10 ring-1 ring-inset ring-primary/40" : ""}`}
                 >
                   <div className="flex items-center justify-between">
-                    <span
-                      className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-medium transition-colors ${
-                        isToday(day)
-                          ? "bg-primary text-primary-foreground"
-                          : !isCurrentMonth
-                          ? "text-muted-foreground/50"
-                          : "text-foreground"
-                      }`}
-                    >
+                    <span className={`flex h-6 w-6 items-center justify-center rounded-md text-xs font-medium ${
+                      isToday(day)
+                        ? "bg-primary text-primary-foreground"
+                        : !isCurrentMonth
+                        ? "text-muted-foreground/40"
+                        : "text-foreground"
+                    }`}>
                       {format(day, "d")}
                     </span>
                     {dayAppointments.length > 0 && (
-                      <div className="flex items-center gap-1">
-                        {pendingCount > 0 && (
-                          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-chart-4 text-xs text-primary-foreground">
-                            {pendingCount}
-                          </span>
-                        )}
-                        <span className="text-xs text-muted-foreground">
-                          {dayAppointments.length}个
-                        </span>
-                      </div>
+                      <span className="text-xs text-muted-foreground">{dayAppointments.length}</span>
                     )}
                   </div>
-                  
-                  {/* 显示最多2条预约 */}
                   <div className="mt-1 space-y-0.5">
                     {dayAppointments.slice(0, 2).map((apt) => (
-                      <div
-                        key={apt.id}
-                        className={`truncate rounded px-1 py-0.5 text-xs text-primary-foreground ${statusMap[apt.status].color}`}
-                      >
+                      <div key={apt.id} className={`truncate rounded px-1 py-0.5 text-xs text-primary-foreground ${statusMap[apt.status]?.color || "bg-muted"}`}>
                         {apt.time} {apt.memberName}
                       </div>
                     ))}
                     {dayAppointments.length > 2 && (
-                      <div className="text-xs text-muted-foreground">
-                        +{dayAppointments.length - 2} 更多
-                      </div>
+                      <div className="text-xs text-muted-foreground">+{dayAppointments.length - 2}</div>
                     )}
                   </div>
                 </div>
@@ -256,7 +181,6 @@ export default function Appointments() {
         </CardContent>
       </Card>
 
-      {/* 预约详情弹窗 */}
       <AppointmentDetailDialog
         selectedDate={selectedDate}
         open={detailDialogOpen}
@@ -264,7 +188,6 @@ export default function Appointments() {
         onAddAppointment={handleAddAppointment}
         appointments={selectedDayAppointments}
       />
-
       <NewAppointmentDialog
         open={dialogOpen}
         onOpenChange={setDialogOpen}
