@@ -140,29 +140,38 @@ export default function Services() {
   const handleCardSubmit = async () => {
     if (!validateCardForm()) return;
 
-    setIsSubmitting(true);
-    try {
-      await new Promise((r) => setTimeout(r, 300));
-      
-      const data = {
-        name: cardName.trim(),
-        price: parseFloat(cardPrice),
-        totalCount: parseInt(cardCount),
-        serviceIds: selectedServices,
-      };
+    const data = {
+      name: cardName.trim(),
+      price: parseFloat(cardPrice),
+      totalCount: parseInt(cardCount),
+      serviceIds: selectedServices,
+    };
 
-      if (editingCard) {
-        updateCardTemplate(editingCard.id, data);
-        toast({ title: "次卡模板已更新" });
-      } else {
+    if (editingCard) {
+      setPendingCardData(data);
+      setAdminPasswordAction("editCard");
+      setAdminPasswordDialogOpen(true);
+    } else {
+      setIsSubmitting(true);
+      try {
+        await new Promise((r) => setTimeout(r, 300));
         addCardTemplate(data);
         toast({ title: "次卡模板已添加" });
+        resetCardForm();
+        setCardDialogOpen(false);
+      } finally {
+        setIsSubmitting(false);
       }
+    }
+  };
 
+  const handleCardEditConfirmed = () => {
+    if (editingCard && pendingCardData) {
+      updateCardTemplate(editingCard.id, pendingCardData);
+      toast({ title: "次卡模板已更新" });
       resetCardForm();
       setCardDialogOpen(false);
-    } finally {
-      setIsSubmitting(false);
+      setPendingCardData(null);
     }
   };
 
