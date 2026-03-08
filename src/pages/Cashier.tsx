@@ -150,46 +150,10 @@ export default function Cashier() {
   const handleConfirmCheckout = async () => {
     setIsCheckingOut(true);
     try {
-      const serviceNames = cart.map(c => c.service.name).join(", ");
-
-      // Build card usage map for atomic deduction
-      const cardUsageMap: Record<string, number> = {};
-      const subTransactions: { type: string; amount: number; paymentMethod?: string; cardId?: string }[] = [];
-
-      if (selectedMember) {
-        cart.forEach((item) => {
-          if (item.useCard && item.card) {
-            cardUsageMap[item.card.id] = (cardUsageMap[item.card.id] || 0) + 1;
-            subTransactions.push({ type: 'card', amount: item.service.price, cardId: item.card.id });
-          }
-        });
-
-        if (balanceDeduct > 0) {
-          subTransactions.push({ type: 'balance', amount: balanceDeduct });
-        }
-        if (cashNeed > 0) {
-          subTransactions.push({ type: 'price_diff', amount: cashNeed, paymentMethod });
-        }
-      }
-
-      const mainTransactionType = selectedMember
-        ? (cardDeductTotal > 0 ? "card_deduct" : "consume")
-        : "consume";
-
-      const mainDescription = selectedMember
-        ? (cashNeed > 0 ? `${serviceNames} (含补差价¥${cashNeed})` : serviceNames)
-        : `散客消费 - ${serviceNames}`;
-
+      // Server handles all amount calculation and validation
       const memberId = selectedMember?.id || generateWalkInId();
       const memberName = selectedMember?.name || "散客";
 
-      const payments: { method: string; amount: number }[] = [
-        ...(cardDeductTotal > 0 ? [{ method: "card" as const, amount: cardDeductTotal }] : []),
-        ...(balanceDeduct > 0 ? [{ method: "balance" as const, amount: balanceDeduct }] : []),
-        ...(cashNeed > 0 ? [{ method: paymentMethod, amount: cashNeed }] : []),
-      ];
-
-      // Single atomic call to checkout Edge Function
       const result = await processCheckout({
         memberId,
         memberName,
@@ -202,15 +166,6 @@ export default function Cashier() {
         })),
         paymentMethod,
         isWalkIn,
-        balanceDeduct,
-        cardDeductTotal,
-        cashNeed,
-        total,
-        cardUsageMap,
-        subTransactions: selectedMember ? subTransactions : undefined,
-        transactionType: mainTransactionType,
-        transactionDescription: mainDescription,
-        payments,
       });
 
       if (!result.success) {

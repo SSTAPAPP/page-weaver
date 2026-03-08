@@ -112,7 +112,7 @@ async function verifyAdminPassword(password: string): Promise<boolean> {
 }
 
 // Verify JWT and return authenticated user ID
-async function verifyAuth(c: any): Promise<{ userId: string } | null> {
+async function verifyAuth(c: { req: { header: (name: string) => string | undefined } }): Promise<{ userId: string } | null> {
   const authHeader = c.req.header('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return null;
