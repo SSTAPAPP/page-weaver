@@ -27,6 +27,7 @@ import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
 import { Phone, Calendar, CreditCard, Wallet, Pencil, Trash2, Save, X, History, ArrowUpCircle, ArrowDownCircle, Link2, Tag } from "lucide-react";
 import { MemberDeleteWithRefundDialog } from "@/components/dialogs/MemberDeleteWithRefundDialog";
+import { AdminPasswordDialog } from "@/components/dialogs/AdminPasswordDialog";
 import { MEMBER_TAG_OPTIONS } from "@/types";
 
 // Transaction type mapping for consistent display
