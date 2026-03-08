@@ -83,21 +83,29 @@ export function CheckoutConfirmDialog({
 
               {/* 消费明细 */}
               <div className="space-y-2">
-                <p className="text-sm font-medium text-foreground">消费明细</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-medium text-foreground">消费明细</p>
+                  <span className="text-xs text-muted-foreground">共 {services.length} 项</span>
+                </div>
                 {services.map((service, index) => (
                   <div
                     key={index}
-                    className="flex justify-between text-sm"
+                    className="flex items-center justify-between text-sm gap-2"
                   >
-                    <span className="flex items-center gap-1">
-                      {service.name}
+                    <span className="flex items-center gap-2 min-w-0">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-muted text-xs text-muted-foreground">
+                        {index + 1}
+                      </span>
+                      <span className="truncate">{service.name}</span>
                       {service.useCard && (
-                        <Badge variant="outline" className="text-xs">
-                          次卡
+                        <Badge variant="outline" className="text-xs shrink-0">
+                          {service.cardName || '次卡'}
                         </Badge>
                       )}
                     </span>
-                    <span>¥{service.price}</span>
+                    <span className={`shrink-0 ${service.useCard ? 'line-through text-muted-foreground' : ''}`}>
+                      ¥{service.price}
+                    </span>
                   </div>
                 ))}
               </div>
