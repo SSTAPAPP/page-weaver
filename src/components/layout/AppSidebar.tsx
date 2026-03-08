@@ -1,16 +1,7 @@
 import { useLocation } from "react-router-dom";
 import {
-  LayoutDashboard,
-  Users,
-  ShoppingCart,
-  Calendar,
-  Scissors,
-  BarChart3,
-  FileText,
-  PanelLeftClose,
-  PanelLeft,
-  Settings,
-  LogOut,
+  LayoutDashboard, Users, ShoppingCart, Calendar, Scissors,
+  BarChart3, FileText, PanelLeftClose, PanelLeft, Settings, LogOut,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
@@ -19,10 +10,7 @@ import { SyncStatusIndicator } from "@/components/SyncStatusIndicator";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
+  Tooltip, TooltipContent, TooltipProvider, TooltipTrigger,
 } from "@/components/ui/tooltip";
 
 const mainMenuItems = [
@@ -44,9 +32,7 @@ interface AppSidebarProps {
 }
 
 function SidebarNavItem({
-  item,
-  isActive,
-  collapsed,
+  item, isActive, collapsed,
 }: {
   item: { title: string; url: string; icon: React.ElementType };
   isActive: boolean;
@@ -56,15 +42,15 @@ function SidebarNavItem({
     <NavLink
       to={item.url}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors duration-150",
-        "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        "flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition-colors",
+        "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
         isActive && "bg-sidebar-accent text-sidebar-accent-foreground font-medium",
         collapsed && "justify-center px-0"
       )}
     >
       <item.icon className={cn(
-        "h-[18px] w-[18px] shrink-0",
-        isActive ? "text-sidebar-accent-foreground" : "text-sidebar-foreground/50"
+        "h-4 w-4 shrink-0",
+        isActive ? "text-sidebar-accent-foreground" : "text-sidebar-foreground/40"
       )} />
       {!collapsed && <span>{item.title}</span>}
     </NavLink>
@@ -74,13 +60,12 @@ function SidebarNavItem({
     return (
       <Tooltip delayDuration={0}>
         <TooltipTrigger asChild>{link}</TooltipTrigger>
-        <TooltipContent side="right" sideOffset={12}>
+        <TooltipContent side="right" sideOffset={12} className="text-xs">
           {item.title}
         </TooltipContent>
       </Tooltip>
     );
   }
-
   return link;
 }
 
@@ -92,39 +77,28 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
     try {
       await signOut();
       toast.success("已退出登录");
-    } catch (error) {
-      console.error("Logout error:", error);
-      toast.error("退出失败，请重试");
+    } catch {
+      toast.error("退出失败");
     }
   };
 
-  const userInitial = user?.email?.charAt(0)?.toUpperCase() || "U";
-
   return (
     <TooltipProvider>
-      <div
-        className={cn(
-          "flex h-full flex-col bg-sidebar transition-all duration-300",
-          collapsed ? "w-16" : "w-60"
-        )}
-      >
+      <div className={cn(
+        "flex h-full flex-col bg-sidebar border-r border-sidebar-border/50 transition-all duration-300",
+        collapsed ? "w-14" : "w-56"
+      )}>
         {/* Brand */}
-        <div className={cn(
-          "flex h-14 items-center",
-          collapsed ? "justify-center px-2" : "justify-between px-4"
-        )}>
+        <div className={cn("flex h-12 items-center shrink-0", collapsed ? "justify-center" : "justify-between px-3")}>
           {!collapsed ? (
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-sidebar-accent text-sidebar-accent-foreground font-bold text-xs">
                 F
               </div>
-              <div className="flex flex-col">
-                <span className="font-semibold text-sidebar-accent-foreground text-sm leading-tight">FFk Barber</span>
-                <span className="text-[10px] text-sidebar-foreground/40 leading-tight">经营管理</span>
-              </div>
+              <span className="font-medium text-sidebar-accent-foreground text-[13px]">FFk Barber</span>
             </div>
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold text-sm">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-sidebar-accent text-sidebar-accent-foreground font-bold text-xs">
               F
             </div>
           )}
@@ -132,63 +106,52 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
             <Button
               variant="ghost"
               size="icon"
-              onClick={() => onCollapsedChange(!collapsed)}
-              className="h-7 w-7 shrink-0 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              onClick={() => onCollapsedChange(true)}
+              className="h-6 w-6 text-sidebar-foreground/30 hover:text-sidebar-foreground hover:bg-sidebar-accent"
             >
               <PanelLeftClose className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
 
-        {/* Collapsed expand */}
         {collapsed && (
-          <div className="flex justify-center py-2">
+          <div className="flex justify-center py-1">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => onCollapsedChange(false)}
-              className="h-7 w-7 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              className="h-6 w-6 text-sidebar-foreground/30 hover:text-sidebar-foreground hover:bg-sidebar-accent"
             >
               <PanelLeft className="h-3.5 w-3.5" />
             </Button>
           </div>
         )}
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto px-2.5 py-4">
+        {/* Nav */}
+        <nav className="flex-1 overflow-y-auto px-2 py-3">
           <div className="space-y-0.5">
             {mainMenuItems.map((item) => (
-              <SidebarNavItem
-                key={item.url}
-                item={item}
-                isActive={location.pathname === item.url}
-                collapsed={collapsed}
-              />
+              <SidebarNavItem key={item.url} item={item} isActive={location.pathname === item.url} collapsed={collapsed} />
             ))}
           </div>
 
-          <div className={cn("my-4", collapsed ? "mx-2" : "mx-3")}>
-            <div className="h-px bg-sidebar-border/40" />
+          <div className={cn("my-3", collapsed ? "mx-1.5" : "mx-2.5")}>
+            <div className="h-px bg-sidebar-border/30" />
           </div>
 
           {!collapsed && (
-            <p className="mb-2 px-3 text-[10px] font-medium text-sidebar-foreground/30 tracking-wide">
+            <p className="mb-1.5 px-2.5 text-[10px] font-medium text-sidebar-foreground/25 uppercase tracking-wider">
               管理
             </p>
           )}
           <div className="space-y-0.5">
             {manageMenuItems.map((item) => (
-              <SidebarNavItem
-                key={item.url}
-                item={item}
-                isActive={location.pathname === item.url}
-                collapsed={collapsed}
-              />
+              <SidebarNavItem key={item.url} item={item} isActive={location.pathname === item.url} collapsed={collapsed} />
             ))}
           </div>
 
-          <div className={cn("my-4", collapsed ? "mx-2" : "mx-3")}>
-            <div className="h-px bg-sidebar-border/40" />
+          <div className={cn("my-3", collapsed ? "mx-1.5" : "mx-2.5")}>
+            <div className="h-px bg-sidebar-border/30" />
           </div>
 
           <SidebarNavItem
@@ -199,35 +162,33 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
         </nav>
 
         {/* Bottom */}
-        <div className="p-2.5 space-y-2">
+        <div className="p-2 space-y-1.5 shrink-0">
           <SyncStatusIndicator collapsed={collapsed} />
 
           <div className={cn(
-            "rounded-lg bg-sidebar-accent/50 p-2.5",
-            collapsed && "flex flex-col items-center gap-1"
+            "rounded-md bg-sidebar-accent/40 p-2",
+            collapsed && "flex justify-center"
           )}>
             {!collapsed ? (
-              <div className="flex items-center gap-2.5">
-                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/20 text-xs font-medium text-primary">
-                  {userInitial}
+              <div className="flex items-center gap-2">
+                <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-sidebar-foreground/10 text-[10px] font-medium text-sidebar-foreground/60">
+                  {user?.email?.charAt(0)?.toUpperCase() || "U"}
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-sidebar-accent-foreground truncate">
-                    {user?.email || "管理员"}
-                  </p>
-                </div>
+                <p className="text-[11px] text-sidebar-foreground/50 truncate flex-1 min-w-0">
+                  {user?.email || "管理员"}
+                </p>
                 <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
                     <Button
                       variant="ghost"
                       size="icon"
                       onClick={handleLogout}
-                      className="h-7 w-7 shrink-0 text-sidebar-foreground/40 hover:text-destructive hover:bg-sidebar-accent"
+                      className="h-6 w-6 shrink-0 text-sidebar-foreground/30 hover:text-destructive hover:bg-sidebar-accent"
                     >
-                      <LogOut className="h-3.5 w-3.5" />
+                      <LogOut className="h-3 w-3" />
                     </Button>
                   </TooltipTrigger>
-                  <TooltipContent side="right">退出登录</TooltipContent>
+                  <TooltipContent side="right" className="text-xs">退出</TooltipContent>
                 </Tooltip>
               </div>
             ) : (
@@ -237,12 +198,12 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
                     variant="ghost"
                     size="icon"
                     onClick={handleLogout}
-                    className="h-8 w-8 text-sidebar-foreground/40 hover:text-destructive hover:bg-sidebar-accent"
+                    className="h-7 w-7 text-sidebar-foreground/30 hover:text-destructive hover:bg-sidebar-accent"
                   >
-                    <LogOut className="h-4 w-4" />
+                    <LogOut className="h-3.5 w-3.5" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent side="right">退出登录</TooltipContent>
+                <TooltipContent side="right" className="text-xs">退出</TooltipContent>
               </Tooltip>
             )}
           </div>

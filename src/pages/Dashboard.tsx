@@ -25,21 +25,21 @@ export default function Dashboard() {
   const isHidden = (id: string) => hiddenSections.includes(id);
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-end justify-between animate-slide-up">
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-foreground">
+          <h1 className="text-lg font-semibold tracking-tight text-foreground">
             仪表盘
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
+          <p className="text-xs text-muted-foreground mt-0.5">
             {format(new Date(), "yyyy年M月d日 EEEE", { locale: zhCN })}
           </p>
         </div>
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 text-muted-foreground/50 hover:text-foreground"
+          className="h-7 w-7 text-muted-foreground/40 hover:text-foreground"
           onClick={() => toggleSectionVisibility("stats")}
           title={isHidden("stats") ? "显示数据" : "隐藏数据"}
         >
@@ -47,51 +47,42 @@ export default function Dashboard() {
         </Button>
       </div>
 
-      {/* Today Stats */}
-      <div className="animate-list-item stagger-1">
-        <DashboardStats
-          stats={stats}
-          isLoading={isStatsLoading}
-          isError={isStatsError}
-          refetch={refetchStats}
-          hidden={isHidden("stats")}
-        />
-      </div>
+      {/* Stats */}
+      <DashboardStats
+        stats={stats}
+        isLoading={isStatsLoading}
+        isError={isStatsError}
+        refetch={refetchStats}
+        hidden={isHidden("stats")}
+      />
 
       {/* Quick Actions */}
-      <div className="animate-list-item stagger-2">
-        <QuickActions
+      <QuickActions
+        onAddMember={() => setMemberDialogOpen(true)}
+        onRecharge={() => setRechargeDialogOpen(true)}
+        onCashier={() => navigate("/cashier")}
+        onSearchMember={() => navigate("/members")}
+        onNewAppointment={() => navigate("/appointments")}
+      />
+
+      {/* Lists */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        <RecentMembers
+          members={members}
+          isLoading={isMembersLoading}
+          hidden={isHidden("members")}
+          onToggleHidden={() => toggleSectionVisibility("members")}
+          onViewAll={() => navigate("/members")}
           onAddMember={() => setMemberDialogOpen(true)}
-          onRecharge={() => setRechargeDialogOpen(true)}
-          onCashier={() => navigate("/cashier")}
-          onSearchMember={() => navigate("/members")}
-          onNewAppointment={() => navigate("/appointments")}
+        />
+        <RecentTransactions
+          transactions={transactions}
+          isLoading={isTxLoading}
+          hidden={isHidden("transactions")}
+          onViewAll={() => navigate("/transactions")}
         />
       </div>
 
-      {/* Lists */}
-      <div className="grid gap-8 lg:grid-cols-2">
-        <div className="animate-list-item stagger-3">
-          <RecentMembers
-            members={members}
-            isLoading={isMembersLoading}
-            hidden={isHidden("members")}
-            onToggleHidden={() => toggleSectionVisibility("members")}
-            onViewAll={() => navigate("/members")}
-            onAddMember={() => setMemberDialogOpen(true)}
-          />
-        </div>
-        <div className="animate-list-item stagger-4">
-          <RecentTransactions
-            transactions={transactions}
-            isLoading={isTxLoading}
-            hidden={isHidden("transactions")}
-            onViewAll={() => navigate("/transactions")}
-          />
-        </div>
-      </div>
-
-      {/* Dialogs */}
       <QuickMemberDialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen} />
       <QuickRechargeDialog open={rechargeDialogOpen} onOpenChange={setRechargeDialogOpen} />
     </div>

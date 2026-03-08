@@ -25,7 +25,6 @@ export function MainLayout({ children }: MainLayoutProps) {
     localStorage.setItem(SIDEBAR_COLLAPSED_KEY, String(collapsed));
   }, [collapsed]);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMenuOpen(false);
   }, [location.pathname]);
@@ -46,26 +45,24 @@ export function MainLayout({ children }: MainLayoutProps) {
 
   return (
     <div className="flex min-h-screen w-full bg-background">
-      {/* Fixed Sidebar */}
       <aside
         className={cn(
           "fixed left-0 top-0 h-screen z-50",
-          "transition-[width] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
-          collapsed ? "w-16" : "w-60"
+          "transition-[width] duration-300 ease-[var(--ease-out)]",
+          collapsed ? "w-14" : "w-56"
         )}
       >
         <AppSidebar collapsed={collapsed} onCollapsedChange={setCollapsed} />
       </aside>
 
-      {/* Main content */}
       <main
         className={cn(
           "flex-1 overflow-auto",
-          "transition-[margin] duration-[var(--duration-slow)] ease-[var(--ease-out)]",
-          collapsed ? "ml-16" : "ml-60"
+          "transition-[margin] duration-300 ease-[var(--ease-out)]",
+          collapsed ? "ml-14" : "ml-56"
         )}
       >
-        <div key={location.pathname} className="container py-6 page-enter">
+        <div key={location.pathname} className="mx-auto max-w-5xl px-6 py-6 page-enter">
           {children}
         </div>
       </main>

@@ -22,13 +22,13 @@ export function RecentMembers({
   onAddMember,
 }: RecentMembersProps) {
   return (
-    <section className={cn("transition-opacity duration-300", hidden && "opacity-30")}>
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-semibold">最近会员</h2>
+    <section className={cn("transition-opacity duration-300", hidden && "opacity-20")}>
+      <div className="flex items-center justify-between mb-2">
+        <h2 className="text-sm font-medium">最近会员</h2>
         <Button
           variant="ghost"
           size="sm"
-          className="gap-1 text-muted-foreground text-xs h-7"
+          className="gap-1 text-muted-foreground text-xs h-6 px-2"
           onClick={onViewAll}
         >
           全部 <ArrowRight className="h-3 w-3" />
@@ -38,15 +38,15 @@ export function RecentMembers({
       {isLoading ? (
         <div className="divide-y divide-border rounded-lg border">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="flex items-center justify-between px-4 py-3">
-              <div className="flex items-center gap-3">
-                <Skeleton className="h-8 w-8 rounded-md" />
-                <div className="space-y-1.5">
+            <div key={i} className="flex items-center justify-between px-3 py-2.5">
+              <div className="flex items-center gap-2.5">
+                <Skeleton className="h-7 w-7 rounded-full" />
+                <div className="space-y-1">
                   <Skeleton className="h-3.5 w-14" />
-                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-3 w-20" />
                 </div>
               </div>
-              <Skeleton className="h-4 w-14" />
+              <Skeleton className="h-3.5 w-14" />
             </div>
           ))}
         </div>
@@ -54,11 +54,10 @@ export function RecentMembers({
         <EmptyState
           icon={Users}
           title="暂无会员"
-          description="点击下方按钮添加第一位会员"
+          description="添加第一位会员"
           action={
-            <Button size="sm" onClick={onAddMember}>
-              <UserPlus className="mr-1.5 h-3.5 w-3.5" />
-              快速开卡
+            <Button size="sm" className="h-8 text-xs" onClick={onAddMember}>
+              <UserPlus className="mr-1 h-3 w-3" />开卡
             </Button>
           }
         />
@@ -68,31 +67,24 @@ export function RecentMembers({
             <div
               key={member.id}
               onClick={onViewAll}
-              className="flex cursor-pointer items-center justify-between px-4 py-2.5 transition-colors hover:bg-muted/40"
+              className="flex cursor-pointer items-center justify-between px-3 py-2.5 transition-colors hover:bg-muted/30"
             >
-              <div className="flex items-center gap-3 min-w-0">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-brand/10 text-brand text-xs font-medium">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-medium">
                   {member.name.charAt(0)}
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium truncate">
                     {hidden ? "***" : member.name}
                   </p>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground font-mono">
                     {hidden ? "****" : member.phone}
                   </p>
                 </div>
               </div>
-              <div className="text-right shrink-0 ml-3">
-                <p className="text-sm font-medium tabular-nums">
-                  {hidden ? "****" : `¥${member.balance.toFixed(2)}`}
-                </p>
-                {member.cards.length > 0 && (
-                  <p className="text-xs text-muted-foreground">
-                    {member.cards.length}张次卡
-                  </p>
-                )}
-              </div>
+              <p className="text-sm font-medium tabular-nums shrink-0 ml-3">
+                {hidden ? "****" : `¥${member.balance.toFixed(2)}`}
+              </p>
             </div>
           ))}
         </div>

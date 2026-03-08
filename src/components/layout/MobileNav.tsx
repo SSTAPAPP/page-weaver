@@ -1,11 +1,5 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import {
-  LayoutDashboard,
-  ShoppingCart,
-  Users,
-  BarChart3,
-  Menu,
-} from "lucide-react";
+import { LayoutDashboard, ShoppingCart, Users, BarChart3, Menu } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const tabs = [
@@ -25,7 +19,7 @@ export function MobileNav({ onOpenMenu }: MobileNavProps) {
   const navigate = useNavigate();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur-sm safe-area-bottom">
+    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-background safe-area-bottom">
       <div className="flex items-stretch">
         {tabs.map((tab) => {
           const isMenu = tab.url === "##menu";
@@ -35,21 +29,14 @@ export function MobileNav({ onOpenMenu }: MobileNavProps) {
             <button
               key={tab.url}
               type="button"
-              onClick={() => {
-                if (isMenu) {
-                  onOpenMenu();
-                } else {
-                  navigate(tab.url);
-                }
-              }}
+              onClick={() => isMenu ? onOpenMenu() : navigate(tab.url)}
               className={cn(
                 "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 min-h-[52px]",
-                "text-muted-foreground transition-colors duration-[var(--duration-fast)]",
-                "active:bg-muted/40",
-                isActive && "text-primary"
+                "text-muted-foreground/50 transition-colors active:bg-muted/20",
+                isActive && "text-foreground"
               )}
             >
-              <tab.icon className="h-5 w-5" />
+              <tab.icon className={cn("h-4.5 w-4.5", isActive ? "h-5 w-5" : "h-4.5 w-4.5")} />
               <span className="text-2xs font-medium">{tab.title}</span>
             </button>
           );
