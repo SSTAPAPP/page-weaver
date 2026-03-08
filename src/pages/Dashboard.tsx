@@ -190,7 +190,7 @@ export default function Dashboard() {
           <CardTitle className="text-base sm:text-lg">快捷操作</CardTitle>
         </CardHeader>
         <CardContent className="px-3 sm:px-6 pb-3 sm:pb-6">
-          <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-1 -mx-1 px-1">
+          <div className="flex gap-2 sm:gap-3 overflow-x-auto overscroll-x-contain touch-pan-x pb-1 -mx-1 px-1" style={{ WebkitOverflowScrolling: 'touch' }}>
             {quickActions.map((action) => (
               <Button
                 key={action.title}
