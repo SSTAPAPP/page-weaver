@@ -152,7 +152,7 @@ export default function Transactions() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
-              placeholder="搜索会员或描述..."
+              placeholder="搜索会员姓名 / 交易描述"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
