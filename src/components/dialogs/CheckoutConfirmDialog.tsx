@@ -9,7 +9,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+
 import { CreditCard, Wallet, Banknote, User } from "lucide-react";
 
 interface CardUsageInfo {
