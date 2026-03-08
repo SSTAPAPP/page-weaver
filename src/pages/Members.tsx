@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Search, UserPlus, Phone, CreditCard, Wallet, Calendar, Clock } from "lucide-react";
+import { Search, UserPlus, Phone, CreditCard, Wallet, Calendar, Clock, Tag } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -14,6 +14,13 @@ import { MemberDetailDialog } from "@/components/dialogs/MemberDetailDialog";
 import { matchMemberSearch } from "@/lib/pinyin";
 import { format, formatDistanceToNow } from "date-fns";
 import { zhCN } from "date-fns/locale";
+import { MEMBER_TAG_OPTIONS } from "@/types";
+
+const TAG_COLORS: Record<string, string> = {
+  '金卡': 'bg-chart-5/15 text-chart-5 border-chart-5/30',
+  '银卡': 'bg-muted-foreground/15 text-muted-foreground border-muted-foreground/30',
+  '普通': 'bg-muted text-muted-foreground border-border',
+};
 
 
 export default function Members() {
@@ -145,6 +152,11 @@ export default function Members() {
                         </div>
                       </div>
                     </div>
+                    {member.tag && (
+                      <Badge variant="outline" className={`text-[10px] font-semibold border ${TAG_COLORS[member.tag] || 'bg-muted text-muted-foreground border-border'}`}>
+                        {member.tag}
+                      </Badge>
+                    )}
                   </div>
 
                   <Separator className="my-3" />

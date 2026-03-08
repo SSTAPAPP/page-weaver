@@ -5,9 +5,13 @@ export interface Member {
   name: string;
   gender: 'male' | 'female';
   balance: number;
+  tag?: string;
   createdAt: Date;
   cards: MemberCard[];
 }
+
+// 预设会员标签选项
+export const MEMBER_TAG_OPTIONS = ['金卡', '银卡', '普通'] as const;
 
 // 会员次卡
 export interface MemberCard {

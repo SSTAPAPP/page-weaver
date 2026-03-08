@@ -16,10 +16,18 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { useStore } from "@/stores/useStore";
 import { useToast } from "@/hooks/use-toast";
-import { Phone, Calendar, CreditCard, Wallet, Pencil, Trash2, Save, X, History, ArrowUpCircle, ArrowDownCircle, Link2 } from "lucide-react";
+import { Phone, Calendar, CreditCard, Wallet, Pencil, Trash2, Save, X, History, ArrowUpCircle, ArrowDownCircle, Link2, Tag } from "lucide-react";
 import { MemberDeleteWithRefundDialog } from "@/components/dialogs/MemberDeleteWithRefundDialog";
+import { MEMBER_TAG_OPTIONS } from "@/types";
 
 // Transaction type mapping for consistent display
 const typeMap = {
@@ -45,6 +53,7 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
   const [editName, setEditName] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editGender, setEditGender] = useState<"male" | "female">("male");
+  const [editTag, setEditTag] = useState<string>("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   if (!member) return null;
@@ -57,6 +66,7 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
     setEditName(member.name);
     setEditPhone(member.phone);
     setEditGender(member.gender);
+    setEditTag(member.tag || "");
     setIsEditing(true);
   };
 
@@ -78,6 +88,7 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
       name: editName.trim(),
       phone: editPhone.trim(),
       gender: editGender,
+      tag: editTag === "none" ? undefined : (editTag || undefined),
     });
 
     toast({ title: "修改成功", description: "会员信息已更新" });
@@ -149,6 +160,20 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                       </div>
                     </RadioGroup>
                   </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs">会员标签</Label>
+                    <Select value={editTag} onValueChange={setEditTag}>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="选择标签（可选）" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">无标签</SelectItem>
+                        {MEMBER_TAG_OPTIONS.map((tag) => (
+                          <SelectItem key={tag} value={tag}>{tag}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center gap-3 rounded-lg border border-border p-3">
@@ -161,6 +186,12 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                       <Badge variant={member.gender === "male" ? "secondary" : "outline"} className="shrink-0 text-xs">
                         {member.gender === "male" ? "男" : "女"}
                       </Badge>
+                      {member.tag && (
+                        <Badge variant="outline" className="shrink-0 text-xs">
+                          <Tag className="h-3 w-3 mr-0.5" />
+                          {member.tag}
+                        </Badge>
+                      )}
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                       <span className="flex items-center gap-1">
