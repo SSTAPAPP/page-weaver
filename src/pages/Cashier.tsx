@@ -357,7 +357,7 @@ export default function Cashier() {
                     />
                   </div>
                   {searchResults.length > 0 && (
-                    <div className="max-h-48 space-y-1 overflow-auto rounded-lg border border-border">
+                    <div className="max-h-48 space-y-1 overflow-auto rounded-lg border border-muted/20">
                       {searchResults.map((member) => (
                         <div
                           key={member.id}
