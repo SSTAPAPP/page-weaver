@@ -1,13 +1,14 @@
 import { useMemo, useState, useEffect } from "react";
 import { format } from "date-fns";
 import { zhCN } from "date-fns/locale";
-import { Search, ArrowUpCircle, ArrowDownCircle, CreditCard, ChevronLeft, ChevronRight, Filter, X, Link2 } from "lucide-react";
+import { Search, CreditCard, ChevronLeft, ChevronRight, Filter, X, Link2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
 import {
   Select,
   SelectContent,
@@ -19,12 +20,12 @@ import { useStore } from "@/stores/useStore";
 import { TransactionRefundDialog } from "@/components/dialogs/TransactionRefundDialog";
 import type { Transaction } from "@/types";
 
-const typeMap = {
-  recharge: { label: "充值", icon: ArrowUpCircle, color: "text-chart-2", bgColor: "bg-chart-2/10" },
-  consume: { label: "消费", icon: ArrowDownCircle, color: "text-destructive", bgColor: "bg-destructive/10" },
-  card_deduct: { label: "次卡扣除", icon: CreditCard, color: "text-chart-3", bgColor: "bg-chart-3/10" },
-  refund: { label: "退款", icon: ArrowUpCircle, color: "text-chart-4", bgColor: "bg-chart-4/10" },
-  price_diff: { label: "补差价", icon: ArrowDownCircle, color: "text-chart-1", bgColor: "bg-chart-1/10" },
+const typeMap: Record<string, { label: string; sign: string; color: string }> = {
+  recharge: { label: "充值", sign: "+", color: "text-chart-2" },
+  consume: { label: "消费", sign: "-", color: "text-foreground" },
+  card_deduct: { label: "次卡", sign: "-", color: "text-foreground" },
+  refund: { label: "退款", sign: "+", color: "text-chart-4" },
+  price_diff: { label: "补差价", sign: "-", color: "text-chart-1" },
 };
 
 const paymentMethodMap: Record<string, string> = {
@@ -37,7 +38,6 @@ const paymentMethodMap: Record<string, string> = {
 const PAGE_SIZE = 8;
 const MAX_PAGES = 5;
 
-// 将交易进行分组：消费和对应退款合并显示
 interface GroupedTransaction {
   mainTransaction: Transaction;
   refundTransaction?: Transaction;
@@ -51,86 +51,54 @@ export default function Transactions() {
   const [selectedTransaction, setSelectedTransaction] = useState<Transaction | null>(null);
   const [refundDialogOpen, setRefundDialogOpen] = useState(false);
 
-  // 对交易进行分组处理
   const groupedTransactions = useMemo(() => {
     const groups: GroupedTransaction[] = [];
     const processedIds = new Set<string>();
-    
-    // 先找出所有退款交易的关联ID
     const refundMap = new Map<string, Transaction>();
     transactions.forEach((tx) => {
       if (tx.type === 'refund' && tx.relatedTransactionId) {
         refundMap.set(tx.relatedTransactionId, tx);
       }
     });
-    
     transactions.forEach((tx) => {
-      // 跳过已处理的交易和独立的旧price_diff交易
       if (processedIds.has(tx.id)) return;
-      
-      // 跳过退款交易（会作为关联显示）
       if (tx.type === 'refund') {
-        // 如果这个退款没有关联到任何交易，单独显示
-        if (!tx.relatedTransactionId) {
-          groups.push({ mainTransaction: tx });
-        }
+        if (!tx.relatedTransactionId) groups.push({ mainTransaction: tx });
         processedIds.add(tx.id);
         return;
       }
-      
-      // 处理主交易
       const refundTx = refundMap.get(tx.id);
-      groups.push({
-        mainTransaction: tx,
-        refundTransaction: refundTx,
-      });
+      groups.push({ mainTransaction: tx, refundTransaction: refundTx });
       processedIds.add(tx.id);
-      if (refundTx) {
-        processedIds.add(refundTx.id);
-      }
+      if (refundTx) processedIds.add(refundTx.id);
     });
-    
     return groups;
   }, [transactions]);
 
   const filteredGroups = useMemo(() => {
     return groupedTransactions.filter((group) => {
       const tx = group.mainTransaction;
-      
       const matchesSearch =
         searchQuery === "" ||
         tx.memberName.toLowerCase().includes(searchQuery.toLowerCase()) ||
         tx.description.toLowerCase().includes(searchQuery.toLowerCase());
-
-      const matchesType = typeFilter === "all" || tx.type === typeFilter || 
+      const matchesType = typeFilter === "all" || tx.type === typeFilter ||
         (typeFilter === "refund" && group.refundTransaction);
-
       return matchesSearch && matchesType;
     });
   }, [groupedTransactions, searchQuery, typeFilter]);
 
-  // 当筛选条件变化时重置页码
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, typeFilter]);
+  useEffect(() => { setCurrentPage(1); }, [searchQuery, typeFilter]);
 
-  // 分页逻辑
   const totalPages = Math.min(Math.ceil(filteredGroups.length / PAGE_SIZE), MAX_PAGES);
   const startIndex = (currentPage - 1) * PAGE_SIZE;
-  const endIndex = startIndex + PAGE_SIZE;
-  const paginatedGroups = filteredGroups.slice(startIndex, endIndex);
+  const paginatedGroups = filteredGroups.slice(startIndex, startIndex + PAGE_SIZE);
 
   const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-    }
+    if (page >= 1 && page <= totalPages) setCurrentPage(page);
   };
 
-  const clearFilters = () => {
-    setSearchQuery("");
-    setTypeFilter("all");
-  };
-
+  const clearFilters = () => { setSearchQuery(""); setTypeFilter("all"); };
   const hasFilters = searchQuery !== "" || typeFilter !== "all";
 
   const handleTransactionClick = (tx: Transaction) => {
@@ -138,9 +106,78 @@ export default function Transactions() {
     setRefundDialogOpen(true);
   };
 
+  const renderRow = (tx: Transaction, isRefundRow = false) => {
+    const info = typeMap[tx.type] || typeMap.consume;
+    const isVoided = tx.voided;
+    const isIncome = tx.type === "recharge" || tx.type === "refund";
+
+    return (
+      <div
+        className={cn(
+          "flex items-center justify-between py-3 cursor-pointer transition-colors duration-150 hover:bg-muted/30 -mx-2 px-2 rounded-md",
+          isVoided && "opacity-50",
+          isRefundRow && "ml-6"
+        )}
+        onClick={() => handleTransactionClick(tx)}
+      >
+        <div className="flex items-center gap-3 min-w-0">
+          <div className={cn(
+            "flex h-8 w-8 items-center justify-center rounded-full text-xs font-medium shrink-0",
+            isIncome ? "bg-chart-2/10 text-chart-2" : "bg-muted text-muted-foreground"
+          )}>
+            {isIncome ? "+" : "−"}
+          </div>
+          <div className="min-w-0">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <p className={cn(
+                "text-sm font-medium truncate",
+                isVoided && "line-through text-muted-foreground"
+              )}>
+                {tx.description}
+              </p>
+              <Badge variant="secondary" className="text-[10px] px-1 py-0 h-4 font-normal shrink-0">
+                {info.label}
+              </Badge>
+              {isVoided && (
+                <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4 font-normal shrink-0">
+                  已作废
+                </Badge>
+              )}
+              {tx.paymentMethod && (
+                <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 font-normal shrink-0">
+                  {paymentMethodMap[tx.paymentMethod]}
+                </Badge>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {tx.memberName}
+              <span className="mx-1">·</span>
+              {format(new Date(tx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
+            </p>
+            {tx.subTransactions && tx.subTransactions.length > 0 && (
+              <div className="mt-1 flex flex-wrap gap-1">
+                {tx.subTransactions.map((sub, index) => (
+                  <Badge key={index} variant="outline" className="text-[10px] px-1 py-0 h-4 font-normal">
+                    {sub.type === 'balance' ? '余额' : sub.type === 'card' ? '次卡' : '补差价'}
+                    ¥{sub.amount}
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+        <span className={cn(
+          "text-sm font-medium tabular-nums shrink-0 ml-3",
+          isVoided ? "line-through text-muted-foreground" : info.color
+        )}>
+          {info.sign}¥{tx.amount.toFixed(2)}
+        </span>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6">
-      {/* Header */}
       <PageHeader
         title="交易流水"
         description={`完整的充值、消费、退款记录，共 ${filteredGroups.length} 条${filteredGroups.length > PAGE_SIZE * MAX_PAGES ? `（显示前 ${PAGE_SIZE * MAX_PAGES} 条）` : ""}`}
@@ -148,7 +185,7 @@ export default function Transactions() {
 
       {/* Filters */}
       <Card>
-        <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
+        <CardContent className="flex flex-col gap-3 p-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -160,8 +197,8 @@ export default function Transactions() {
           </div>
           <div className="flex gap-2">
             <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-full sm:w-36">
-                <Filter className="mr-2 h-4 w-4" />
+              <SelectTrigger className="w-full sm:w-32">
+                <Filter className="mr-2 h-3.5 w-3.5" />
                 <SelectValue placeholder="全部类型" />
               </SelectTrigger>
               <SelectContent>
@@ -173,7 +210,7 @@ export default function Transactions() {
               </SelectContent>
             </Select>
             {hasFilters && (
-              <Button variant="ghost" size="icon" className="h-10 w-10" onClick={clearFilters} aria-label="清除筛选">
+              <Button variant="ghost" size="icon" className="h-9 w-9" onClick={clearFilters} aria-label="清除筛选">
                 <X className="h-4 w-4" />
               </Button>
             )}
@@ -187,134 +224,38 @@ export default function Transactions() {
           icon={CreditCard}
           title={hasFilters ? "未找到匹配的记录" : "暂无交易记录"}
           description={hasFilters ? "请尝试其他筛选条件" : "交易流水将在这里显示"}
-          action={
-            hasFilters ? (
-              <Button variant="outline" onClick={clearFilters}>
-                清除筛选
-              </Button>
-            ) : undefined
-          }
+          action={hasFilters ? <Button variant="outline" size="sm" onClick={clearFilters}>清除筛选</Button> : undefined}
         />
       ) : (
         <>
-          <div className="space-y-3">
-            {paginatedGroups.map((group) => {
-              const tx = group.mainTransaction;
-              const refundTx = group.refundTransaction;
-              const typeInfo = typeMap[tx.type] || typeMap.consume;
-              const TypeIcon = typeInfo.icon;
-              const isVoided = tx.voided;
-              const hasRefund = !!refundTx;
+          <Card>
+            <CardContent className="p-4">
+              <div className="divide-y divide-border">
+                {paginatedGroups.map((group) => {
+                  const tx = group.mainTransaction;
+                  const refundTx = group.refundTransaction;
+                  const hasRefund = !!refundTx;
 
-              return (
-                <Card
-                  key={tx.id}
-                  className={`transition-colors duration-150 hover:bg-muted/30 ${isVoided ? "opacity-60" : ""}`}
-                >
-                  <CardContent className="p-0">
-                    {/* 主交易 */}
-                    <div 
-                      className="flex items-center justify-between p-4 cursor-pointer"
-                      onClick={() => handleTransactionClick(tx)}
-                    >
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`flex h-10 w-10 items-center justify-center rounded-full ${typeInfo.bgColor}`}
-                        >
-                          <TypeIcon className={`h-5 w-5 ${typeInfo.color}`} />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className={`font-medium ${isVoided ? "line-through text-muted-foreground" : ""}`}>
-                              {tx.description}
-                            </p>
-                            <Badge variant={isVoided ? "outline" : "secondary"} className="text-xs">
-                              {typeInfo.label}
+                  return (
+                    <div key={tx.id}>
+                      <div className="relative">
+                        {renderRow(tx)}
+                        {hasRefund && !tx.voided && (
+                          <div className="absolute right-2 top-3">
+                            <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 font-normal text-chart-4 border-chart-4/30">
+                              <Link2 className="h-2.5 w-2.5 mr-0.5" />
+                              已退款
                             </Badge>
-                            {isVoided && (
-                              <Badge variant="destructive" className="text-xs">
-                                已作废
-                              </Badge>
-                            )}
-                            {hasRefund && (
-                              <Badge variant="outline" className="text-xs text-chart-4 border-chart-4/30">
-                                <Link2 className="h-3 w-3 mr-1" />
-                                已退款
-                              </Badge>
-                            )}
                           </div>
-                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                            <span>{tx.memberName}</span>
-                            <span>•</span>
-                            <span>
-                              {format(new Date(tx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
-                            </span>
-                            {tx.paymentMethod && (
-                              <>
-                                <span>•</span>
-                                <span>{paymentMethodMap[tx.paymentMethod]}</span>
-                              </>
-                            )}
-                          </div>
-                          {/* 显示合并的子交易 */}
-                          {tx.subTransactions && tx.subTransactions.length > 0 && (
-                            <div className="mt-1 flex flex-wrap gap-1">
-                              {tx.subTransactions.map((sub, index) => (
-                                <Badge key={index} variant="outline" className="text-xs">
-                                  {sub.type === 'balance' ? '余额' : sub.type === 'card' ? '次卡' : '补差价'}
-                                  ¥{sub.amount}
-                                </Badge>
-                              ))}
-                            </div>
-                          )}
-                        </div>
+                        )}
                       </div>
-                      <div
-                        className={`text-lg font-semibold ${
-                          isVoided 
-                            ? "line-through text-muted-foreground" 
-                            : tx.type === "recharge" || tx.type === "refund"
-                              ? "text-chart-2"
-                              : "text-destructive"
-                        }`}
-                      >
-                        {tx.type === "recharge" || tx.type === "refund" ? "+" : "-"}¥
-                        {tx.amount.toFixed(2)}
-                      </div>
+                      {refundTx && renderRow(refundTx, true)}
                     </div>
-                    
-                    {/* 关联退款记录（合并显示） */}
-                    {refundTx && (
-                      <div 
-                        className="flex items-center justify-between px-4 py-3 border-t border-dashed border-border bg-chart-4/5 cursor-pointer hover:bg-chart-4/10"
-                        onClick={() => handleTransactionClick(refundTx)}
-                      >
-                        <div className="flex items-center gap-4">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-chart-4/10 ml-1">
-                            <ArrowUpCircle className="h-4 w-4 text-chart-4" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-medium">退款记录</p>
-                              <Badge variant="outline" className="text-xs text-chart-4 border-chart-4/30">
-                                退款
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-muted-foreground">
-                              {format(new Date(refundTx.createdAt), "MM-dd HH:mm", { locale: zhCN })}
-                            </p>
-                          </div>
-                        </div>
-                        <span className="text-sm font-semibold text-chart-4">
-                          +¥{refundTx.amount.toFixed(2)}
-                        </span>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
 
           {/* Pagination */}
           {totalPages > 1 && (
@@ -324,9 +265,9 @@ export default function Transactions() {
                 size="sm"
                 onClick={() => goToPage(currentPage - 1)}
                 disabled={currentPage === 1}
-                className="gap-1"
+                className="gap-1 h-8"
               >
-                <ChevronLeft className="h-4 w-4" />
+                <ChevronLeft className="h-3.5 w-3.5" />
                 上一页
               </Button>
               <div className="flex items-center gap-1">
@@ -335,7 +276,7 @@ export default function Transactions() {
                     key={page}
                     variant={currentPage === page ? "default" : "outline"}
                     size="sm"
-                    className="w-10"
+                    className="w-8 h-8"
                     onClick={() => goToPage(page)}
                   >
                     {page}
@@ -347,17 +288,16 @@ export default function Transactions() {
                 size="sm"
                 onClick={() => goToPage(currentPage + 1)}
                 disabled={currentPage === totalPages}
-                className="gap-1"
+                className="gap-1 h-8"
               >
                 下一页
-                <ChevronRight className="h-4 w-4" />
+                <ChevronRight className="h-3.5 w-3.5" />
               </Button>
             </div>
           )}
         </>
       )}
 
-      {/* Refund Dialog */}
       <TransactionRefundDialog
         transaction={selectedTransaction}
         open={refundDialogOpen}
