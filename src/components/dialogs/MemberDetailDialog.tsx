@@ -348,7 +348,7 @@ export function MemberDetailDialog({ memberId, open, onOpenChange }: MemberDetai
                   <X className="h-4 w-4" />
                   取消
                 </Button>
-                <Button onClick={handleSaveEdit} className="gap-1.5">
+                <Button onClick={handleRequestSave} className="gap-1.5">
                   <Save className="h-4 w-4" />
                   保存
                 </Button>
