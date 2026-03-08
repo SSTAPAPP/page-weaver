@@ -17,7 +17,7 @@ export function PageHeader({
   return (
     <div className={cn("flex items-center justify-between", className)}>
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-foreground">
+        <h1 className="font-serif text-2xl font-bold tracking-tight text-foreground">
           {title}
         </h1>
         {description && (

@@ -17,32 +17,16 @@ const ITEMS_PER_PAGE = 24;
 
 function MemberCardSkeleton() {
   return (
-    <Card>
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
-            <Skeleton className="h-12 w-12 rounded-full" />
-            <div className="space-y-2">
-              <Skeleton className="h-4 w-20" />
-              <Skeleton className="h-3 w-28" />
-            </div>
-          </div>
-          <Skeleton className="h-5 w-8" />
+    <div className="flex items-center justify-between px-4 py-3">
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-9 w-9 rounded-md" />
+        <div className="space-y-1.5">
+          <Skeleton className="h-4 w-20" />
+          <Skeleton className="h-3 w-28" />
         </div>
-        <div className="mt-4 rounded-lg bg-muted/50 p-3">
-          <div className="flex items-center justify-between">
-            <div className="space-y-1">
-              <Skeleton className="h-3 w-8" />
-              <Skeleton className="h-5 w-16" />
-            </div>
-            <div className="space-y-1">
-              <Skeleton className="h-3 w-8" />
-              <Skeleton className="h-5 w-12" />
-            </div>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
+      </div>
+      <Skeleton className="h-4 w-16" />
+    </div>
   );
 }
 
@@ -55,7 +39,6 @@ export default function Members() {
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
 
-  // 搜索防抖
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedQuery(searchQuery);
@@ -64,43 +47,39 @@ export default function Members() {
     return () => clearTimeout(timer);
   }, [searchQuery]);
 
-  // 实时搜索 - 支持拼音首字母和手机号
   const filteredMembers = useMemo(() => {
     if (!debouncedQuery) return members;
     return members.filter((m) => matchMemberSearch(m.name, m.phone, debouncedQuery));
   }, [members, debouncedQuery]);
 
-  // 分页
   const totalPages = Math.ceil(filteredMembers.length / ITEMS_PER_PAGE);
   const paginatedMembers = useMemo(() => {
     const start = (currentPage - 1) * ITEMS_PER_PAGE;
     return filteredMembers.slice(start, start + ITEMS_PER_PAGE);
   }, [filteredMembers, currentPage]);
 
-  // 计算总余额
   const totalBalance = useMemo(() => {
     return members.reduce((sum, m) => sum + m.balance, 0);
   }, [members]);
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <PageHeader
         title="会员管理"
         description={isLoading ? "加载中..." : `共 ${members.length} 位会员 · 总余额 ¥${totalBalance.toFixed(2)}`}
       >
-        <Button variant="outline" onClick={() => setRechargeDialogOpen(true)}>
-          <Wallet className="mr-2 h-4 w-4" />
+        <Button variant="outline" size="sm" onClick={() => setRechargeDialogOpen(true)}>
+          <Wallet className="mr-1.5 h-3.5 w-3.5" />
           会员充值
         </Button>
-        <Button onClick={() => setMemberDialogOpen(true)}>
-          <UserPlus className="mr-2 h-4 w-4" />
+        <Button size="sm" onClick={() => setMemberDialogOpen(true)}>
+          <UserPlus className="mr-1.5 h-3.5 w-3.5" />
           快速开卡
         </Button>
       </PageHeader>
 
       {/* Search */}
-      <div className="relative">
+      <div className="relative max-w-md">
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="输入姓名或手机号搜索"
@@ -109,22 +88,27 @@ export default function Members() {
           className="pl-10"
         />
         {searchQuery && (
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute right-1 top-1/2 h-8 -translate-y-1/2 px-2"
-            onClick={() => setSearchQuery("")}
-          >
+          <Button variant="ghost" size="sm" className="absolute right-1 top-1/2 h-7 -translate-y-1/2 px-2 text-xs" onClick={() => setSearchQuery("")}>
             清除
           </Button>
         )}
       </div>
 
-      {/* Loading skeleton */}
+      {/* Members grid */}
       {isLoading ? (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <MemberCardSkeleton key={i} />
+            <Card key={i}>
+              <CardContent className="p-0">
+                <MemberCardSkeleton />
+                <div className="border-t px-4 py-3">
+                  <div className="flex gap-4">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-4 w-16" />
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           ))}
         </div>
       ) : filteredMembers.length === 0 ? (
@@ -132,14 +116,11 @@ export default function Members() {
           icon={UserPlus}
           title={searchQuery ? "未找到匹配的会员" : "暂无会员"}
           description={searchQuery ? "请尝试其他搜索条件" : '点击"快速开卡"添加第一位会员'}
-          action={
-            !searchQuery ? (
-              <Button onClick={() => setMemberDialogOpen(true)}>
-                <UserPlus className="mr-2 h-4 w-4" />
-                快速开卡
-              </Button>
-            ) : undefined
-          }
+          action={!searchQuery ? (
+            <Button size="sm" onClick={() => setMemberDialogOpen(true)}>
+              <UserPlus className="mr-1.5 h-3.5 w-3.5" />快速开卡
+            </Button>
+          ) : undefined}
         />
       ) : (
         <>
@@ -147,55 +128,55 @@ export default function Members() {
             {paginatedMembers.map((member) => (
               <Card
                 key={member.id}
-                className="cursor-pointer transition-all hover:border-primary/50 hover:shadow-md"
+                className="cursor-pointer transition-colors hover:bg-muted/30"
                 onClick={() => setSelectedMemberId(member.id)}
               >
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-lg font-semibold text-primary transition-colors group-hover:bg-primary/20">
+                <CardContent className="p-0">
+                  {/* Top row */}
+                  <div className="flex items-center justify-between px-4 py-3">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-muted text-sm font-medium">
                         {member.name.charAt(0)}
                       </div>
                       <div className="min-w-0">
-                        <p className="font-semibold truncate">{member.name}</p>
-                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                        <p className="text-sm font-medium truncate">{member.name}</p>
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
                           <Phone className="h-3 w-3 shrink-0" />
                           <span className="truncate">{member.phone}</span>
                         </div>
                       </div>
                     </div>
-                    <Badge variant={member.gender === "male" ? "secondary" : "outline"} className="shrink-0">
+                    <Badge variant="secondary" className="shrink-0 text-xs font-normal">
                       {member.gender === "male" ? "男" : "女"}
                     </Badge>
                   </div>
 
-                  <div className="mt-4 flex items-center justify-between rounded-lg bg-muted/50 p-3">
+                  {/* Bottom row */}
+                  <div className="border-t border-border/60 px-4 py-3 flex items-center justify-between bg-muted/20">
                     <div>
-                      <p className="text-sm text-muted-foreground">余额</p>
-                      <p className="text-lg font-bold">¥{member.balance.toFixed(2)}</p>
+                      <p className="text-[11px] text-muted-foreground">余额</p>
+                      <p className="text-sm font-semibold tabular-nums">¥{member.balance.toFixed(2)}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-muted-foreground">次卡</p>
-                      <div className="flex items-center gap-1">
-                        <CreditCard className="h-4 w-4 text-chart-2" />
-                        <span className="font-bold">{member.cards.length}张</span>
-                      </div>
+                      <p className="text-[11px] text-muted-foreground">次卡</p>
+                      <p className="text-sm font-semibold">{member.cards.length}张</p>
                     </div>
                   </div>
 
+                  {/* Card badges */}
                   {member.cards.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-1">
+                    <div className="border-t border-border/40 px-4 py-2 flex flex-wrap gap-1">
                       {member.cards.slice(0, 3).map((card) => (
                         <Badge
                           key={card.id}
-                          variant={card.remainingCount <= 1 ? "destructive" : "secondary"}
-                          className="text-xs"
+                          variant={card.remainingCount <= 1 ? "destructive" : "outline"}
+                          className="text-[10px] font-normal"
                         >
                           {card.templateName} ({card.remainingCount})
                         </Badge>
                       ))}
                       {member.cards.length > 3 && (
-                        <Badge variant="outline" className="text-xs">
+                        <Badge variant="outline" className="text-[10px] font-normal">
                           +{member.cards.length - 3}
                         </Badge>
                       )}
@@ -206,49 +187,26 @@ export default function Members() {
             ))}
           </div>
 
-          {/* 分页控制 */}
+          {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 pt-4">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-                disabled={currentPage === 1}
-              >
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1}>
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <div className="flex items-center gap-1 text-sm">
-                <span className="text-muted-foreground">第</span>
-                <Input
-                  type="number"
-                  min={1}
-                  max={totalPages}
-                  value={currentPage}
-                  onChange={(e) => {
-                    const val = parseInt(e.target.value) || 1;
-                    setCurrentPage(Math.min(Math.max(1, val), totalPages));
-                  }}
-                  className="w-14 h-8 text-center"
-                />
-                <span className="text-muted-foreground">/ {totalPages} 页</span>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-                disabled={currentPage === totalPages}
-              >
+              <span className="text-sm text-muted-foreground tabular-nums">
+                {currentPage} / {totalPages}
+              </span>
+              <Button variant="outline" size="sm" onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}>
                 <ChevronRight className="h-4 w-4" />
               </Button>
-              <span className="text-sm text-muted-foreground ml-2">
-                共 {filteredMembers.length} 位会员
+              <span className="text-xs text-muted-foreground ml-2">
+                共 {filteredMembers.length} 位
               </span>
             </div>
           )}
         </>
       )}
 
-      {/* Dialogs */}
       <QuickMemberDialog open={memberDialogOpen} onOpenChange={setMemberDialogOpen} />
       <QuickRechargeDialog open={rechargeDialogOpen} onOpenChange={setRechargeDialogOpen} />
       <MemberDetailDialog

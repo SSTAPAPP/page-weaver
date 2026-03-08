@@ -11,8 +11,6 @@ import {
   ChevronRight,
   Settings,
   LogOut,
-  Sparkles,
-  UserCircle,
 } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { cn } from "@/lib/utils";
@@ -59,15 +57,15 @@ function SidebarNavItem({
     <NavLink
       to={item.url}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
-        "text-sidebar-foreground/80 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        isActive && "bg-sidebar-primary/15 text-sidebar-primary font-semibold",
+        "flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors duration-150",
+        "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+        isActive && "bg-sidebar-accent text-sidebar-primary font-medium",
         collapsed && "justify-center px-0"
       )}
     >
       <item.icon className={cn(
-        "h-[18px] w-[18px] shrink-0 transition-colors",
-        isActive ? "text-sidebar-primary" : "text-sidebar-foreground/60"
+        "h-[18px] w-[18px] shrink-0",
+        isActive ? "text-sidebar-primary" : "text-sidebar-foreground/50"
       )} />
       {!collapsed && <span>{item.title}</span>}
     </NavLink>
@@ -111,24 +109,24 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
           collapsed ? "w-16" : "w-60"
         )}
       >
-        {/* Logo / Brand */}
+        {/* Brand */}
         <div className={cn(
           "flex h-14 items-center border-b border-sidebar-border/50",
           collapsed ? "justify-center px-2" : "justify-between px-4"
         )}>
           {!collapsed ? (
             <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-accent border border-sidebar-border">
-                <Sparkles className="h-4 w-4 text-sidebar-primary" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-accent border border-sidebar-border font-serif font-bold text-sm text-sidebar-primary">
+                F
               </div>
               <div className="flex flex-col">
-                <span className="font-bold text-sidebar-accent-foreground text-sm leading-tight">FFk Barber</span>
-                <span className="text-[10px] text-sidebar-foreground/50 leading-tight">Management System</span>
+                <span className="font-serif font-bold text-sidebar-accent-foreground text-sm leading-tight">FFk Barber</span>
+                <span className="text-[10px] text-sidebar-foreground/40 leading-tight tracking-wide">经营管理系统</span>
               </div>
             </div>
           ) : (
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-accent border border-sidebar-border">
-              <Sparkles className="h-4 w-4 text-sidebar-primary" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-sidebar-accent border border-sidebar-border font-serif font-bold text-sm text-sidebar-primary">
+              F
             </div>
           )}
           {!collapsed && (
@@ -136,21 +134,21 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
               variant="ghost"
               size="icon"
               onClick={() => onCollapsedChange(!collapsed)}
-              className="h-7 w-7 shrink-0 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              className="h-7 w-7 shrink-0 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
           )}
         </div>
 
-        {/* Collapsed expand button */}
+        {/* Collapsed expand */}
         {collapsed && (
           <div className="flex justify-center py-2">
             <Button
               variant="ghost"
               size="icon"
               onClick={() => onCollapsedChange(false)}
-              className="h-7 w-7 text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent"
+              className="h-7 w-7 text-sidebar-foreground/40 hover:text-sidebar-foreground hover:bg-sidebar-accent"
             >
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
@@ -159,9 +157,8 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto px-2 py-3">
-          {/* Main section */}
           {!collapsed && (
-            <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+            <p className="mb-1.5 px-3 text-[10px] font-medium uppercase tracking-widest text-sidebar-foreground/30">
               主要功能
             </p>
           )}
@@ -176,14 +173,12 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
             ))}
           </div>
 
-          {/* Separator */}
           <div className={cn("my-3", collapsed ? "mx-2" : "mx-3")}>
-            <Separator className="bg-sidebar-border/50" />
+            <Separator className="bg-sidebar-border/40" />
           </div>
 
-          {/* Management section */}
           {!collapsed && (
-            <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-wider text-sidebar-foreground/40">
+            <p className="mb-1.5 px-3 text-[10px] font-medium uppercase tracking-widest text-sidebar-foreground/30">
               经营管理
             </p>
           )}
@@ -198,12 +193,10 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
             ))}
           </div>
 
-          {/* Separator */}
           <div className={cn("my-3", collapsed ? "mx-2" : "mx-3")}>
-            <Separator className="bg-sidebar-border/50" />
+            <Separator className="bg-sidebar-border/40" />
           </div>
 
-          {/* Settings */}
           <SidebarNavItem
             item={{ title: "设置", url: "/settings", icon: Settings }}
             isActive={location.pathname === "/settings"}
@@ -211,25 +204,23 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
           />
         </nav>
 
-        {/* Bottom section */}
+        {/* Bottom */}
         <div className="p-2 space-y-2">
           <SyncStatusIndicator collapsed={collapsed} />
 
-          {/* User info & logout */}
           <div className={cn(
-            "rounded-lg bg-sidebar-accent/50 p-2",
+            "rounded-md bg-sidebar-accent/40 p-2",
             collapsed && "flex flex-col items-center gap-1"
           )}>
             {!collapsed ? (
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sidebar-primary/20 text-xs font-bold text-sidebar-primary">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-sidebar-primary/15 text-xs font-medium text-sidebar-primary">
                   {userInitial}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-medium text-sidebar-accent-foreground truncate">
+                  <p className="text-xs text-sidebar-accent-foreground truncate">
                     {user?.email || "管理员"}
                   </p>
-                  <p className="text-[10px] text-sidebar-foreground/50">管理员</p>
                 </div>
                 <Tooltip delayDuration={0}>
                   <TooltipTrigger asChild>
@@ -237,7 +228,7 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
                       variant="ghost"
                       size="icon"
                       onClick={handleLogout}
-                      className="h-7 w-7 shrink-0 text-sidebar-foreground/50 hover:text-destructive hover:bg-sidebar-accent"
+                      className="h-7 w-7 shrink-0 text-sidebar-foreground/40 hover:text-destructive hover:bg-sidebar-accent"
                     >
                       <LogOut className="h-3.5 w-3.5" />
                     </Button>
@@ -252,7 +243,7 @@ export function AppSidebar({ collapsed, onCollapsedChange }: AppSidebarProps) {
                     variant="ghost"
                     size="icon"
                     onClick={handleLogout}
-                    className="h-8 w-8 text-sidebar-foreground/50 hover:text-destructive hover:bg-sidebar-accent"
+                    className="h-8 w-8 text-sidebar-foreground/40 hover:text-destructive hover:bg-sidebar-accent"
                   >
                     <LogOut className="h-4 w-4" />
                   </Button>
