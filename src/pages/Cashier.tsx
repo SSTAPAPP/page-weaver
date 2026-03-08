@@ -380,24 +380,35 @@ export default function Cashier() {
             </CardContent>
           </Card>
 
-          {/* 服务列表 */}
-          <Card>
-            <CardHeader className="pb-3">
+          {/* 服务列表 - 大厂风格 */}
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-0 pt-4 px-4">
               <CardTitle className="text-base">服务项目</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {services.length === 0 ? (
-                <EmptyState
-                  icon={ShoppingCart}
-                  title="暂无服务项目"
-                  description="请先在服务管理中添加服务"
-                />
+                <div className="p-4">
+                  <EmptyState
+                    icon={ShoppingCart}
+                    title="暂无服务项目"
+                    description="请先在服务管理中添加服务"
+                  />
+                </div>
               ) : (
-                <div className="space-y-4">
+                <div className="divide-y divide-border">
                   {servicesByCategory.map(({ category, services: categoryServices }) => (
-                    <div key={category}>
-                      <p className="mb-2 text-sm font-medium text-muted-foreground">{category}</p>
-                      <div className="grid gap-2 sm:grid-cols-2">
+                    <div key={category} className="py-3">
+                      {/* 分类标题 */}
+                      <div className="flex items-center gap-2 px-4 mb-2">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          {category}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground/60">
+                          {categoryServices.length}项
+                        </span>
+                      </div>
+                      {/* 服务网格 */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 px-4">
                         {categoryServices.map((service) => {
                           const hasCard = selectedMember?.cards.some(
                             (card) => card.services.includes(service.id) && card.remainingCount > 0
@@ -409,23 +420,24 @@ export default function Cashier() {
                               role="button"
                               tabIndex={0}
                               onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); addToCart(service); } }}
-                              className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 min-h-[44px] transition-colors duration-150 hover:border-primary/50 hover:bg-muted/30"
+                              className="group relative flex flex-col items-center justify-center rounded-lg border border-border bg-card p-3 min-h-[72px] cursor-pointer transition-all duration-150 hover:border-primary/40 hover:bg-primary/5 hover:shadow-sm active:scale-[0.98]"
                             >
-                              <div>
-                                <p className="font-medium">{service.name}</p>
-                                <div className="flex items-center gap-2">
-                                  <p className="text-sm text-muted-foreground">¥{service.price}</p>
-                                  {hasCard && (
-                                    <Badge variant="secondary" className="text-xs">
-                                      <CreditCard className="mr-1 h-3 w-3" />
-                                      有次卡
-                                    </Badge>
-                                  )}
+                              {/* 次卡标记 */}
+                              {hasCard && (
+                                <div className="absolute top-1.5 right-1.5">
+                                  <div className="flex items-center justify-center h-4 w-4 rounded-full bg-chart-2/15">
+                                    <CreditCard className="h-2.5 w-2.5 text-chart-2" />
+                                  </div>
                                 </div>
-                              </div>
-                              <Button variant="ghost" size="icon" className="shrink-0 h-10 w-10" aria-label={`添加${service.name}到购物车`}>
-                                <ShoppingCart className="h-4 w-4" />
-                              </Button>
+                              )}
+                              {/* 服务名称 */}
+                              <span className="text-sm font-medium text-center leading-tight line-clamp-2 mb-1">
+                                {service.name}
+                              </span>
+                              {/* 价格 */}
+                              <span className="text-xs text-muted-foreground tabular-nums">
+                                ¥{service.price}
+                              </span>
                             </div>
                           );
                         })}
