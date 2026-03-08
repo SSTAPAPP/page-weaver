@@ -79,12 +79,12 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
           "group relative flex items-center gap-3 rounded-md min-h-9 text-[13px] font-medium transition-all duration-150",
           isCollapsed ? "justify-center w-9 h-9 mx-auto rounded-lg" : "px-2.5 py-1.5",
           isActive
-            ? "bg-background text-foreground shadow-[0_1px_3px_0_hsl(var(--foreground)/0.06)]"
-            : "text-muted-foreground hover:text-foreground hover:bg-background/50"
+            ? "bg-background/80 text-foreground"
+            : "text-muted-foreground hover:text-foreground hover:bg-background/40"
         )}
       >
         {isActive && !isCollapsed && (
-          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-4 w-[2.5px] rounded-r-full bg-foreground" />
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-3.5 w-[2px] rounded-r-full bg-foreground/70" />
         )}
         <item.icon
           className={cn(
