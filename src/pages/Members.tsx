@@ -145,9 +145,6 @@ export default function Members() {
                         </div>
                       </div>
                     </div>
-                    <Badge variant="outline" className={`text-[10px] font-semibold border ${level.color}`}>
-                      {level.label}
-                    </Badge>
                   </div>
 
                   <Separator className="my-3" />
