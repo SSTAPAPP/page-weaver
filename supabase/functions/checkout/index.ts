@@ -205,7 +205,7 @@ Deno.serve(async (req) => {
       p_member_id: effectiveMemberId,
       p_member_name: memberName,
       p_is_walk_in: isWalkIn,
-      p_cart: JSON.stringify(validatedCart),
+      p_cart: validatedCart,
       p_payment_method: paymentMethod || 'cash',
       p_balance_deduct: serverBalanceDeduct,
       p_cash_need: serverCashNeed,
