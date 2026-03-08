@@ -76,19 +76,22 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
         to={item.url}
         onClick={onNavigate}
         className={cn(
-          "group relative flex items-center gap-3 rounded-lg min-h-10 text-[15px] font-medium transition-colors duration-150",
+          "group relative flex items-center gap-3 rounded-md min-h-10 text-[14px] font-medium transition-all duration-150",
           isCollapsed ? "justify-center w-10 h-10 mx-auto" : "px-3 py-2",
           isActive
-            ? "bg-muted text-sidebar-foreground font-semibold"
-            : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/60"
+            ? "bg-background text-foreground shadow-sm border border-border"
+            : "text-muted-foreground hover:text-foreground hover:bg-background/60"
         )}
       >
+        {isActive && !isCollapsed && (
+          <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-foreground" />
+        )}
         <item.icon
           className={cn(
-            "h-[18px] w-[18px] shrink-0",
+            "h-[17px] w-[17px] shrink-0 transition-colors duration-150",
             isActive
-              ? "text-sidebar-foreground"
-              : "text-sidebar-foreground/50 group-hover:text-sidebar-foreground"
+              ? "text-foreground"
+              : "text-muted-foreground/60 group-hover:text-foreground"
           )}
         />
         {!isCollapsed && <span className="truncate">{item.title}</span>}
@@ -124,14 +127,14 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
         {/* Brand + collapse toggle */}
         <div
           className={cn(
-            "flex items-center shrink-0",
-            isCollapsed ? "justify-center h-16 px-2" : "justify-between h-16 px-4"
+            "flex items-center shrink-0 border-b border-border",
+            isCollapsed ? "justify-center h-14 px-2" : "justify-between h-14 px-4"
           )}
         >
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-foreground shrink-0 shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-foreground shrink-0">
               <span
-                className="text-base font-black text-background"
+                className="text-sm font-black text-background"
                 style={{ fontFamily: "Lora, serif" }}
               >
                 F
@@ -139,10 +142,10 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
             </div>
             {!isCollapsed && (
               <div className="flex flex-col">
-                <span className="font-bold text-foreground text-[15px] leading-tight tracking-tight">
+                <span className="font-bold text-foreground text-sm leading-tight tracking-tight">
                   FFk
                 </span>
-                <span className="text-[10px] text-muted-foreground leading-tight">
+                <span className="text-[10px] text-muted-foreground/70 leading-tight">
                   Management System
                 </span>
               </div>
@@ -154,7 +157,7 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
               size="icon"
               onClick={() => setCollapsed(true)}
               aria-label="折叠导航栏"
-              className="h-8 w-8 shrink-0 text-muted-foreground hover:text-foreground hover:bg-accent"
+              className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground"
             >
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
@@ -180,24 +183,24 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
         <nav
           className={cn(
             "flex-1 overflow-y-auto",
-            isCollapsed ? "px-1.5 py-2" : "px-3 py-2"
+            isCollapsed ? "px-1.5 py-3" : "px-2.5 py-3"
           )}
           aria-label="主导航"
         >
-          <div className="space-y-4">
-            {navGroups.map((group) => (
+          <div className="space-y-5">
+            {navGroups.map((group, idx) => (
               <div key={group.label}>
                 {!isCollapsed && (
-                  <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                  <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/50">
                     {group.label}
                   </p>
                 )}
-                {isCollapsed && (
-                  <div className="mx-auto mb-1.5 h-px w-6 bg-border" />
+                {isCollapsed && idx > 0 && (
+                  <div className="mx-auto mb-2 h-px w-5 bg-border/60" />
                 )}
                 <div
                   className={cn(
-                    "space-y-0.5",
+                    "space-y-1",
                     isCollapsed && "flex flex-col items-center"
                   )}
                 >
@@ -213,8 +216,8 @@ export function AppSidebar({ forceExpanded, onNavigate }: AppSidebarProps) {
         {/* Bottom settings */}
         <div
           className={cn(
-            "shrink-0 pb-3",
-            isCollapsed ? "px-1.5" : "px-3"
+            "shrink-0 border-t border-border py-2.5",
+            isCollapsed ? "px-1.5" : "px-2.5"
           )}
         >
           <div
