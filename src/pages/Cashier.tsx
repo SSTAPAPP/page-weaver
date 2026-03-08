@@ -57,6 +57,8 @@ export default function Cashier() {
   const [paymentMethod, setPaymentMethod] = useState<"wechat" | "alipay" | "cash">("wechat");
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [successDialogOpen, setSuccessDialogOpen] = useState(false);
+  const [lastReceiptData, setLastReceiptData] = useState<ReceiptData | null>(null);
 
   const isWalkIn = !selectedMember;
 
