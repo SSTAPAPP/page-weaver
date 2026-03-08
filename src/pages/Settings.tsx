@@ -496,7 +496,7 @@ export default function Settings() {
                     className={cn(
                       "w-full flex items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
                       isActive 
-                        ? "bg-primary text-primary-foreground" 
+                        ? "bg-muted text-foreground" 
                         : "hover:bg-muted text-muted-foreground hover:text-foreground"
                     )}
                   >
@@ -505,14 +505,14 @@ export default function Settings() {
                       <p className="font-medium text-sm truncate">{category.label}</p>
                       <p className={cn(
                         "text-xs truncate",
-                        isActive ? "text-primary-foreground/70" : "text-muted-foreground"
+                        isActive ? "text-muted-foreground" : "text-muted-foreground"
                       )}>
                         {category.description}
                       </p>
                     </div>
                     <ChevronRight className={cn(
                       "h-4 w-4 shrink-0",
-                      isActive ? "text-primary-foreground" : "text-muted-foreground"
+                      isActive ? "text-foreground" : "text-muted-foreground"
                     )} />
                   </button>
                 );
