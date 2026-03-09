@@ -169,7 +169,7 @@ export default function Transactions() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="交易流水"
         description={`完整的充值、消费、退款记录，共 ${filteredGroups.length} 条${filteredGroups.length > PAGE_SIZE * MAX_PAGES ? `（显示前 ${PAGE_SIZE * MAX_PAGES} 条）` : ""}`}
