@@ -112,7 +112,7 @@ export default function Appointments() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <PageHeader
         title="预约管理"

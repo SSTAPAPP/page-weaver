@@ -170,12 +170,12 @@ export default function Dashboard() {
   }, [transactions]);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
-      {/* Header - 移动端更紧凑 */}
-      <div className="flex flex-col gap-1 sm:gap-2 sm:flex-row sm:items-center sm:justify-between">
+    <div className="space-y-5">
+      {/* Header */}
+      <div className="flex flex-col gap-2 sm:gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground">仪表盘</h1>
-          <p className="text-xs sm:text-sm text-muted-foreground">实时掌握今日营收、会员动态与预约概况</p>
+          <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-muted-foreground">实时掌握今日营收、会员动态与预约概况</p>
         </div>
         <Badge variant="outline" className="font-normal text-xs self-start sm:self-auto">
           {format(new Date(), "M月d日 EEEE", { locale: zhCN })}

@@ -637,7 +637,7 @@ export default function Settings() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
         title="设置"
         description="店铺信息、外观主题、安全密码与数据导出管理"

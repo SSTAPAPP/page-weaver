@@ -218,7 +218,7 @@ export default function Services() {
   const categories = [...new Set(services.map((s) => s.category))];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <PageHeader
         title="服务管理"

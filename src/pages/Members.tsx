@@ -61,7 +61,7 @@ export default function Members() {
   }, [transactions]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <PageHeader
         title="会员管理"

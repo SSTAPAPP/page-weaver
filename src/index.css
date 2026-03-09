@@ -164,6 +164,14 @@ All colors MUST be HSL.
   body {
     @apply bg-background text-foreground;
     font-size: 14px;
+    line-height: 1.5;
+  }
+
+  /* 统一基础字体大小 */
+  html {
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   /* iOS 安全区适配 */
