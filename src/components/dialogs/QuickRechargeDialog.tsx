@@ -140,7 +140,7 @@ export function QuickRechargeDialog({ open, onOpenChange }: QuickRechargeDialogP
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>会员充值</DialogTitle>

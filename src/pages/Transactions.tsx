@@ -35,8 +35,8 @@ const paymentMethodMap: Record<string, string> = {
   cash: "现金",
 };
 
-const PAGE_SIZE = 8;
-const MAX_PAGES = 5;
+const PAGE_SIZE = 10;
+const MAX_PAGES = 10;
 
 interface GroupedTransaction {
   mainTransaction: Transaction;
