@@ -17,6 +17,18 @@
       },
       "process": {
         "relaunch": true
+      },
+      "fs": {
+        "all": true,
+        "scope": ["$APP/**", "$DOCUMENT/**", "$HOME/**", "**"]
+      },
+      "dialog": {
+        "all": true,
+        "open": true,
+        "save": true
+      },
+      "path": {
+        "all": true
       }
     },
     "updater": {

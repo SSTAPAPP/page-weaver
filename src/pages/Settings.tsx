@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { 
   Download, Save, Eye, EyeOff, Shield, Database, AlertTriangle, 
   Moon, Sun, Type, Store, MapPin, Phone,
-  Building, Palette, Lock, HardDrive
+  Building, Palette, Lock, HardDrive, FolderOpen, RefreshCw, CheckCircle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { AdminPasswordDialog } from "@/components/dialogs/AdminPasswordDialog";
+import { 
+  isTauri, 
+  getStoragePath, 
+  setStoragePath, 
+  selectFolder, 
+  migrateToFileStorage,
+  restoreFromFileStorage,
+  saveDataToFile,
+  getStorageStatus
+} from "@/lib/fileStorage";
 
 const fontSizeLabels = {
   xs: "较小",
@@ -68,6 +78,17 @@ export default function Settings() {
   const [editShopAddress, setEditShopAddress] = useState(shopInfo.address);
   const [editShopPhone, setEditShopPhone] = useState(shopInfo.phone);
   const [isSavingShop, setIsSavingShop] = useState(false);
+  
+  // 文件存储状态
+  const [currentStoragePath, setCurrentStoragePath] = useState<string | null>(null);
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [isSelectingFolder, setIsSelectingFolder] = useState(false);
+  const [isTauriEnv, setIsTauriEnv] = useState(false);
+
+  useEffect(() => {
+    setIsTauriEnv(isTauri());
+    setCurrentStoragePath(getStoragePath());
+  }, []);
 
   const handleExportMembers = async () => {
     if (members.length === 0) {
@@ -183,6 +204,69 @@ export default function Settings() {
       });
     } finally {
       setIsSavingShop(false);
+    }
+  };
+
+  // 选择存储文件夹
+  const handleSelectFolder = async () => {
+    setIsSelectingFolder(true);
+    try {
+      const folder = await selectFolder();
+      if (folder) {
+        setStoragePath(folder);
+        setCurrentStoragePath(folder);
+        
+        // 迁移现有数据到新路径
+        setIsMigrating(true);
+        const success = await migrateToFileStorage();
+        if (success) {
+          toast({
+            title: "设置成功",
+            description: `数据将保存至: ${folder}`,
+          });
+        } else {
+          toast({
+            title: "迁移失败",
+            description: "数据迁移到新路径时出错，请重试",
+            variant: "destructive",
+          });
+        }
+        setIsMigrating(false);
+      }
+    } finally {
+      setIsSelectingFolder(false);
+    }
+  };
+
+  // 重置为默认存储
+  const handleResetStorage = () => {
+    setStoragePath(null);
+    setCurrentStoragePath(null);
+    toast({
+      title: "已重置",
+      description: "数据存储已切换回浏览器本地存储",
+    });
+  };
+
+  // 手动同步数据到文件
+  const handleSyncToFile = async () => {
+    setIsMigrating(true);
+    try {
+      const success = await migrateToFileStorage();
+      if (success) {
+        toast({
+          title: "同步成功",
+          description: "数据已保存到本地文件",
+        });
+      } else {
+        toast({
+          title: "同步失败",
+          description: "保存数据到文件时出错",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsMigrating(false);
     }
   };
 
@@ -431,23 +515,95 @@ export default function Settings() {
 
               <Separator />
 
-              {/* 存储信息 */}
+              {/* 存储位置设置 */}
               <div className="space-y-3">
                 <Label className="flex items-center gap-2">
-                  <Database className="h-4 w-4" />
-                  存储信息
+                  <FolderOpen className="h-4 w-4" />
+                  数据存储位置
                 </Label>
-                <div className="rounded-lg border border-border p-4 bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">数据存储位置</p>
-                      <p className="text-sm text-muted-foreground">
-                        当前使用浏览器本地存储（localStorage）
-                      </p>
+                
+                {isTauriEnv ? (
+                  <div className="space-y-3">
+                    <div className="rounded-lg border border-border p-4 bg-muted/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium">当前存储位置</p>
+                          {currentStoragePath ? (
+                            <p className="text-sm text-muted-foreground truncate" title={currentStoragePath}>
+                              📁 {currentStoragePath}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              浏览器本地存储（localStorage）
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant={currentStoragePath ? "default" : "secondary"}>
+                          {currentStoragePath ? "文件存储" : "本地存储"}
+                        </Badge>
+                      </div>
                     </div>
-                    <Badge variant="secondary">本地存储</Badge>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <LoadingButton
+                        onClick={handleSelectFolder}
+                        loading={isSelectingFolder}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <FolderOpen className="mr-2 h-4 w-4" />
+                        {currentStoragePath ? "更改文件夹" : "选择文件夹"}
+                      </LoadingButton>
+                      
+                      {currentStoragePath && (
+                        <>
+                          <LoadingButton
+                            onClick={handleSyncToFile}
+                            loading={isMigrating}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            立即同步
+                          </LoadingButton>
+                          
+                          <Button
+                            onClick={handleResetStorage}
+                            variant="ghost"
+                            size="sm"
+                          >
+                            重置为默认
+                          </Button>
+                        </>
+                      )}
+                    </div>
+
+                    {currentStoragePath && (
+                      <Alert>
+                        <CheckCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          数据文件 <code className="rounded bg-muted px-1">barber-shop-data.json</code> 将保存在所选文件夹中。
+                          每次操作后数据会自动保存。
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <div className="rounded-lg border border-border p-4 bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">数据存储位置</p>
+                        <p className="text-sm text-muted-foreground">
+                          当前使用浏览器本地存储（localStorage）
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          💡 使用桌面版可选择本地文件夹保存数据
+                        </p>
+                      </div>
+                      <Badge variant="secondary">本地存储</Badge>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <Separator />

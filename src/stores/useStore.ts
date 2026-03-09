@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, subscribeWithSelector } from 'zustand/middleware';
 import { Member, MemberCard, CardTemplate, Service, Appointment, Transaction, Order, ShopInfo } from '@/types';
+import { getStoragePath, isTauri, saveDataToFile } from '@/lib/fileStorage';
 
 interface Store {
   // 会员
@@ -395,3 +396,30 @@ export const useStore = create<Store>()(
     }
   )
 );
+
+// 自动同步数据到文件存储（如果已配置）
+useStore.subscribe((state) => {
+  if (isTauri() && getStoragePath()) {
+    // 使用 debounce 避免频繁写入
+    if ((globalThis as any).__fileSyncTimer) {
+      clearTimeout((globalThis as any).__fileSyncTimer);
+    }
+    (globalThis as any).__fileSyncTimer = setTimeout(() => {
+      const data = {
+        state: {
+          members: state.members,
+          cardTemplates: state.cardTemplates,
+          services: state.services,
+          appointments: state.appointments,
+          transactions: state.transactions,
+          orders: state.orders,
+          adminPassword: state.adminPassword,
+          shopInfo: state.shopInfo,
+          hiddenSections: state.hiddenSections,
+        },
+        version: 1,
+      };
+      saveDataToFile(data).catch(console.error);
+    }, 1000);
+  }
+});
