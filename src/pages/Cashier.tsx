@@ -485,7 +485,7 @@ export default function Cashier() {
                                 {hasCard && (
                                   <Badge className="text-[10px] px-1.5 py-0 font-semibold bg-chart-2 text-background border-0 shrink-0 animate-pulse">
                                     <CreditCard className="h-2.5 w-2.5 mr-0.5" />
-                                    次卡 {availableCard.remainingCount}次
+                                    次卡 {effectiveRemaining}次
                                   </Badge>
                                 )}
                               </div>
