@@ -147,7 +147,7 @@ export function QuickMemberDialog({ open, onOpenChange }: QuickMemberDialogProps
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={(v) => { if (!v) resetForm(); onOpenChange(v); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>极速开卡</DialogTitle>

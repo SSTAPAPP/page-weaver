@@ -67,10 +67,16 @@ export default function Cashier() {
     setCart([]);
   };
 
+  // 计算购物车中某张卡已被使用的次数
+  const getCardUsedInCart = (cardId: string) => {
+    return cart.filter(item => item.useCard && item.card?.id === cardId).length;
+  };
+
   const addToCart = (service: Service) => {
-    // 检查是否有对应服务的次卡（仅会员）
+    // 检查是否有对应服务的次卡（仅会员），且剩余次数需扣除购物车中已占用的
     const availableCard = selectedMember?.cards.find(
-      (card) => card.services.includes(service.id) && card.remainingCount > 0
+      (card) => card.services.includes(service.id) && 
+        (card.remainingCount - getCardUsedInCart(card.id)) > 0
     );
 
     setCart([
@@ -442,8 +448,12 @@ export default function Cashier() {
                     <div className="grid gap-2 sm:grid-cols-2">
                       {categoryServices.map((service) => {
                         const availableCard = selectedMember?.cards.find(
-                          (card) => card.services.includes(service.id) && card.remainingCount > 0
+                          (card) => card.services.includes(service.id) && 
+                            (card.remainingCount - getCardUsedInCart(card.id)) > 0
                         );
+                        const effectiveRemaining = availableCard 
+                          ? availableCard.remainingCount - getCardUsedInCart(availableCard.id)
+                          : 0;
                         const hasCard = !!availableCard;
                         const cartCount = cart.filter(item => item.service.id === service.id).length;
                         
@@ -475,7 +485,7 @@ export default function Cashier() {
                                 {hasCard && (
                                   <Badge className="text-[10px] px-1.5 py-0 font-semibold bg-chart-2 text-background border-0 shrink-0 animate-pulse">
                                     <CreditCard className="h-2.5 w-2.5 mr-0.5" />
-                                    次卡 {availableCard.remainingCount}次
+                                    次卡 {effectiveRemaining}次
                                   </Badge>
                                 )}
                               </div>
