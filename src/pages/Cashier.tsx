@@ -339,7 +339,7 @@ export default function Cashier() {
   }, [services]);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <PageHeader
         title="收银台"

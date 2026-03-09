@@ -9,9 +9,9 @@ const FONT_SIZE_KEY = "barber-shop-font-size";
 const fontSizeMap: Record<FontSize, string> = {
   xs: "13px",
   sm: "14px",
-  base: "15px",
-  lg: "16px",
-  xl: "17px",
+  base: "14px",
+  lg: "15px",
+  xl: "16px",
 };
 
 export function useTheme() {

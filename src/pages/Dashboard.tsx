@@ -170,7 +170,7 @@ export default function Dashboard() {
   }, [transactions]);
 
   return (
-    <div className="space-y-4 sm:space-y-6">
+    <div className="space-y-5">
       {/* Header - 移动端更紧凑 */}
       <div className="flex flex-col gap-1 sm:gap-2 sm:flex-row sm:items-center sm:justify-between">
         <div>

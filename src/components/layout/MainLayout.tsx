@@ -185,7 +185,7 @@ export function MainLayout({ children }: MainLayoutProps) {
       <div className="flex min-h-screen w-full bg-background">
         <AppSidebar defaultCollapsed />
         <main className="flex-1 overflow-auto">
-          <div className="container py-5 px-5">{children}</div>
+          <div className="max-w-6xl mx-auto py-6 px-6">{children}</div>
         </main>
       </div>
     );
@@ -196,7 +196,7 @@ export function MainLayout({ children }: MainLayoutProps) {
     <div className="flex min-h-screen w-full bg-background">
       <AppSidebar />
       <main className="flex-1 overflow-auto">
-        <div className="container py-6 px-6">{children}</div>
+        <div className="max-w-6xl mx-auto py-6 px-6">{children}</div>
       </main>
       <UpdateChecker />
     </div>
