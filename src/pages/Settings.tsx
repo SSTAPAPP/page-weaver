@@ -1,8 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { 
   Download, Save, Eye, EyeOff, Shield, Database, AlertTriangle, 
   Moon, Sun, Type, Store, MapPin, Phone,
-  Building, Palette, Lock, HardDrive
+  Building, Palette, Lock, HardDrive, FolderOpen, RefreshCw, CheckCircle
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useTheme } from "@/hooks/useTheme";
 import { cn } from "@/lib/utils";
 import { AdminPasswordDialog } from "@/components/dialogs/AdminPasswordDialog";
+import { 
+  isTauri, 
+  getStoragePath, 
+  setStoragePath, 
+  selectFolder, 
+  migrateToFileStorage,
+  restoreFromFileStorage,
+  saveDataToFile,
+  getStorageStatus
+} from "@/lib/fileStorage";
 
 const fontSizeLabels = {
   xs: "较小",
