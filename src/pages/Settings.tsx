@@ -207,6 +207,69 @@ export default function Settings() {
     }
   };
 
+  // 选择存储文件夹
+  const handleSelectFolder = async () => {
+    setIsSelectingFolder(true);
+    try {
+      const folder = await selectFolder();
+      if (folder) {
+        setStoragePath(folder);
+        setCurrentStoragePath(folder);
+        
+        // 迁移现有数据到新路径
+        setIsMigrating(true);
+        const success = await migrateToFileStorage();
+        if (success) {
+          toast({
+            title: "设置成功",
+            description: `数据将保存至: ${folder}`,
+          });
+        } else {
+          toast({
+            title: "迁移失败",
+            description: "数据迁移到新路径时出错，请重试",
+            variant: "destructive",
+          });
+        }
+        setIsMigrating(false);
+      }
+    } finally {
+      setIsSelectingFolder(false);
+    }
+  };
+
+  // 重置为默认存储
+  const handleResetStorage = () => {
+    setStoragePath(null);
+    setCurrentStoragePath(null);
+    toast({
+      title: "已重置",
+      description: "数据存储已切换回浏览器本地存储",
+    });
+  };
+
+  // 手动同步数据到文件
+  const handleSyncToFile = async () => {
+    setIsMigrating(true);
+    try {
+      const success = await migrateToFileStorage();
+      if (success) {
+        toast({
+          title: "同步成功",
+          description: "数据已保存到本地文件",
+        });
+      } else {
+        toast({
+          title: "同步失败",
+          description: "保存数据到文件时出错",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsMigrating(false);
+    }
+  };
+
   const fontSizeValue = ["xs", "sm", "base", "lg", "xl"].indexOf(fontSize);
 
   const renderContent = () => {
