@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
+import { persist, subscribeWithSelector } from 'zustand/middleware';
 import { Member, MemberCard, CardTemplate, Service, Appointment, Transaction, Order, ShopInfo } from '@/types';
+import { getStoragePath, isTauri, saveDataToFile } from '@/lib/fileStorage';
 
 interface Store {
   // 会员
