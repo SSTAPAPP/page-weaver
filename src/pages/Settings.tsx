@@ -78,6 +78,17 @@ export default function Settings() {
   const [editShopAddress, setEditShopAddress] = useState(shopInfo.address);
   const [editShopPhone, setEditShopPhone] = useState(shopInfo.phone);
   const [isSavingShop, setIsSavingShop] = useState(false);
+  
+  // 文件存储状态
+  const [currentStoragePath, setCurrentStoragePath] = useState<string | null>(null);
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [isSelectingFolder, setIsSelectingFolder] = useState(false);
+  const [isTauriEnv, setIsTauriEnv] = useState(false);
+
+  useEffect(() => {
+    setIsTauriEnv(isTauri());
+    setCurrentStoragePath(getStoragePath());
+  }, []);
 
   const handleExportMembers = async () => {
     if (members.length === 0) {
