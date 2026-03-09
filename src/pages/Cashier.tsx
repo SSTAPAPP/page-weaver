@@ -67,10 +67,16 @@ export default function Cashier() {
     setCart([]);
   };
 
+  // 计算购物车中某张卡已被使用的次数
+  const getCardUsedInCart = (cardId: string) => {
+    return cart.filter(item => item.useCard && item.card?.id === cardId).length;
+  };
+
   const addToCart = (service: Service) => {
-    // 检查是否有对应服务的次卡（仅会员）
+    // 检查是否有对应服务的次卡（仅会员），且剩余次数需扣除购物车中已占用的
     const availableCard = selectedMember?.cards.find(
-      (card) => card.services.includes(service.id) && card.remainingCount > 0
+      (card) => card.services.includes(service.id) && 
+        (card.remainingCount - getCardUsedInCart(card.id)) > 0
     );
 
     setCart([
