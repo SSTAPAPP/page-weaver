@@ -51,8 +51,8 @@
         "title": "FFk - 理发店管理系统",
         "width": 1280,
         "height": 800,
-        "minWidth": 900,
-        "minHeight": 600,
+        "minWidth": 1200,
+        "minHeight": 750,
         "resizable": true,
         "fullscreen": false,
         "center": true
