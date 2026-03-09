@@ -515,23 +515,95 @@ export default function Settings() {
 
               <Separator />
 
-              {/* 存储信息 */}
+              {/* 存储位置设置 */}
               <div className="space-y-3">
                 <Label className="flex items-center gap-2">
-                  <Database className="h-4 w-4" />
-                  存储信息
+                  <FolderOpen className="h-4 w-4" />
+                  数据存储位置
                 </Label>
-                <div className="rounded-lg border border-border p-4 bg-muted/30">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">数据存储位置</p>
-                      <p className="text-sm text-muted-foreground">
-                        当前使用浏览器本地存储（localStorage）
-                      </p>
+                
+                {isTauriEnv ? (
+                  <div className="space-y-3">
+                    <div className="rounded-lg border border-border p-4 bg-muted/30">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium">当前存储位置</p>
+                          {currentStoragePath ? (
+                            <p className="text-sm text-muted-foreground truncate" title={currentStoragePath}>
+                              📁 {currentStoragePath}
+                            </p>
+                          ) : (
+                            <p className="text-sm text-muted-foreground">
+                              浏览器本地存储（localStorage）
+                            </p>
+                          )}
+                        </div>
+                        <Badge variant={currentStoragePath ? "default" : "secondary"}>
+                          {currentStoragePath ? "文件存储" : "本地存储"}
+                        </Badge>
+                      </div>
                     </div>
-                    <Badge variant="secondary">本地存储</Badge>
+                    
+                    <div className="flex flex-wrap gap-2">
+                      <LoadingButton
+                        onClick={handleSelectFolder}
+                        loading={isSelectingFolder}
+                        variant="outline"
+                        size="sm"
+                      >
+                        <FolderOpen className="mr-2 h-4 w-4" />
+                        {currentStoragePath ? "更改文件夹" : "选择文件夹"}
+                      </LoadingButton>
+                      
+                      {currentStoragePath && (
+                        <>
+                          <LoadingButton
+                            onClick={handleSyncToFile}
+                            loading={isMigrating}
+                            variant="outline"
+                            size="sm"
+                          >
+                            <RefreshCw className="mr-2 h-4 w-4" />
+                            立即同步
+                          </LoadingButton>
+                          
+                          <Button
+                            onClick={handleResetStorage}
+                            variant="ghost"
+                            size="sm"
+                          >
+                            重置为默认
+                          </Button>
+                        </>
+                      )}
+                    </div>
+
+                    {currentStoragePath && (
+                      <Alert>
+                        <CheckCircle className="h-4 w-4" />
+                        <AlertDescription>
+                          数据文件 <code className="rounded bg-muted px-1">barber-shop-data.json</code> 将保存在所选文件夹中。
+                          每次操作后数据会自动保存。
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
-                </div>
+                ) : (
+                  <div className="rounded-lg border border-border p-4 bg-muted/30">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">数据存储位置</p>
+                        <p className="text-sm text-muted-foreground">
+                          当前使用浏览器本地存储（localStorage）
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          💡 使用桌面版可选择本地文件夹保存数据
+                        </p>
+                      </div>
+                      <Badge variant="secondary">本地存储</Badge>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <Separator />
