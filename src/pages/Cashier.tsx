@@ -448,8 +448,12 @@ export default function Cashier() {
                     <div className="grid gap-2 sm:grid-cols-2">
                       {categoryServices.map((service) => {
                         const availableCard = selectedMember?.cards.find(
-                          (card) => card.services.includes(service.id) && card.remainingCount > 0
+                          (card) => card.services.includes(service.id) && 
+                            (card.remainingCount - getCardUsedInCart(card.id)) > 0
                         );
+                        const effectiveRemaining = availableCard 
+                          ? availableCard.remainingCount - getCardUsedInCart(availableCard.id)
+                          : 0;
                         const hasCard = !!availableCard;
                         const cartCount = cart.filter(item => item.service.id === service.id).length;
                         
